@@ -12,10 +12,7 @@ const StorageSchema = new Schema(
       required: true,
       minlength: 8,
     },
-    // role :{
-    //   type :String,
-    //   default : "user"
-    // },
+    
     StorageName: {
       type: String,
       required: true,
@@ -66,7 +63,6 @@ const StorageSchema = new Schema(
       type: Boolean,
       default: false,
     },
-
     orders: [
       {
         type: Types.ObjectId,
