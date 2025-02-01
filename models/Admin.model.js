@@ -17,6 +17,7 @@ const AdminSchema = new Schema(
       required: true,
     },
     phone: {
+      
       type: String,
       required: true,
     },
