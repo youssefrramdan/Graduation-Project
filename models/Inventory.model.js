@@ -1,6 +1,6 @@
-import { Schema, Types, model } from "mongoose";
+import mongoose, { Schema, Types, model } from "mongoose";
 
-const StorageSchema = new Schema(
+const inventorySchema = new Schema(
   {
     email: {
       type: String,
@@ -12,8 +12,7 @@ const StorageSchema = new Schema(
       required: true,
       minlength: 8,
     },
-    
-    StorageName: {
+    storageName: {
       type: String,
       required: true,
     },
@@ -36,6 +35,7 @@ const StorageSchema = new Schema(
     location: {
       type: {
         type: String,
+        enum: ["Point"], 
         default: "Point",
       },
       coordinates: {
@@ -75,10 +75,16 @@ const StorageSchema = new Schema(
         ref: "Stock",
       },
     ],
+    role: {
+      type: String,
+      enum: ["pharmacy", "admin", "inventory"], 
+      default: "inventory",
+    },
   },
   { timestamps: true }
 );
 
-pharmacyUserSchema.index({ location: "2dsphere" });
+// Fixed schema name for indexing
+StorageSchema.index({ location: "2dsphere" });
 
-export default model("Storage", StorageSchema);
+export default model("Inventory", inventorySchema);

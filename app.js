@@ -7,21 +7,20 @@ dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 
-app.use(express.json());
 
+// middlewares
+app.use(express.json());
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
+  console.log(`mode : ${process.env.NODE_ENV}`);
 }
+app.all("*", (req, res, next) => {
+  next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
+});
 
-// mount Routes 
+// mount Routes
 app.use("/categories", categoryRouter);
 
-app.use((req, res, next) => {
-  res.status(404).json({ message: "Route not found" });
-});
-
-app.use((err, req, res, next) => {
-  res.status(500).json({ message: err.message });
-});
+app.use(globalError);
 
 export default app;

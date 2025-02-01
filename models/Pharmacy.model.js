@@ -1,6 +1,6 @@
-import { Schema, Types, model } from "mongoose";
+import mongoose, { Schema, Types, model } from "mongoose";
 
-const pharmacyUserSchema = new Schema(
+const pharmacySchema = new Schema(
   {
     email: {
       type: String,
@@ -49,6 +49,7 @@ const pharmacyUserSchema = new Schema(
     location: {
       type: {
         type: String,
+        enum: ["Point"], 
         default: "Point",
       },
       coordinates: {
@@ -72,8 +73,13 @@ const pharmacyUserSchema = new Schema(
         ref: "Cart",
       },
     ],
-    imageOfPharmchy: {
+    imageOfPharmacy: {
       type: String,
+    },
+    role: {
+      type: String,
+      enum: ["pharmacy", "admin", "inventory"],
+      default: "pharmacy",
     },
   },
   { timestamps: true }
@@ -81,4 +87,4 @@ const pharmacyUserSchema = new Schema(
 
 pharmacyUserSchema.index({ location: "2dsphere" });
 
-export default model("PharmacyUser", pharmacyUserSchema);
+export default model("Pharmacy", pharmacySchema);
