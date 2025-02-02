@@ -1,16 +1,16 @@
-import mongoose, { Schema, Types, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 const pharmacySchema = new Schema(
   {
     email: {
       type: String,
-      required: true,
-      unique: true,
+      required: [true, "email required ..."],
+      unique: [true,"email must be unique"],
     },
     password: {
       type: String,
-      required: true,
-      minlength: 8,
+      required: [true, "passsword required ..."],
+      minlength: [8, "Too short password ..."],
     },
     pharmacyName: {
       type: String,
@@ -45,18 +45,6 @@ const pharmacySchema = new Schema(
       type: String,
       required: true,
     },
-
-    location: {
-      type: {
-        type: String,
-        enum: ["Point"], 
-        default: "Point",
-      },
-      coordinates: {
-        type: [Number],
-        required: true,
-      },
-    },
     isVerified: {
       type: Boolean,
       default: false,
@@ -78,13 +66,23 @@ const pharmacySchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["pharmacy", "admin", "inventory"],
+      enum: ["pharmacy", "admin"],
       default: "pharmacy",
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+      },
     },
   },
   { timestamps: true }
 );
 
-pharmacyUserSchema.index({ location: "2dsphere" });
+pharmacySchema.index({ location: "2dsphere" });
 
 export default model("Pharmacy", pharmacySchema);

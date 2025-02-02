@@ -1,20 +1,25 @@
-import mongoose, { Schema, Types, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 
 const inventorySchema = new Schema(
   {
+    storageName: {
+      type: String,
+      trim: true,
+      required: [true, "storageName required ..."],
+    },
+    slug: {
+      type: String,
+      lowercase: true,
+    },
     email: {
       type: String,
-      required: true,
+      required: [true, "email required ..."],
       unique: true,
     },
     password: {
       type: String,
-      required: true,
-      minlength: 8,
-    },
-    storageName: {
-      type: String,
-      required: true,
+      required: [true, "password required ..."],
+      minlength: [8, "Too short password ..."],
     },
     ownerName: {
       type: String,
@@ -35,7 +40,7 @@ const inventorySchema = new Schema(
     location: {
       type: {
         type: String,
-        enum: ["Point"], 
+        enum: ["Point"],
         default: "Point",
       },
       coordinates: {
@@ -69,22 +74,21 @@ const inventorySchema = new Schema(
         ref: "Order",
       },
     ],
-    stock: [
+    Drugs: [
       {
         type: Types.ObjectId,
-        ref: "Stock",
+        ref: "Drug",
       },
     ],
     role: {
       type: String,
-      enum: ["pharmacy", "admin", "inventory"], 
+      enum: ["admin", "inventory"],
       default: "inventory",
     },
   },
   { timestamps: true }
 );
 
-// Fixed schema name for indexing
-StorageSchema.index({ location: "2dsphere" });
+inventorySchema.index({ location: "2dsphere" });
 
 export default model("Inventory", inventorySchema);
