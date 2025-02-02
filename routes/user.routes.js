@@ -16,21 +16,32 @@ import {
 
 const userRouter = express.Router();
 
-const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
+const upload = createUploader("userslicenseDocuments", [
+  "jpeg",
+  "jpg",
+  "png",
+  "pdf",
+]);
 
 userRouter
   .route("/")
   .get(getAllUsers)
-  .post(
-    upload.single("licenseDocument"),
-    createUserValidator,
-    createUser
-  );
+  .post(upload.single("licenseDocument"), createUserValidator, createUser);
+const uploadProfileImage = createUploader("usersImages", [
+  "jpeg",
+  "jpg",
+  "png",
+  "pdf",
+]);
 
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(updateUserValidator, updateUser)
+  .put(
+    uploadProfileImage.single("profileImage"), 
+    updateUserValidator,
+    updateUser
+  )
   .delete(deleteUserValidator, deleteUser);
 
 export default userRouter;

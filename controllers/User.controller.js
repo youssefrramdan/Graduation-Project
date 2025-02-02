@@ -9,7 +9,7 @@ import ApiError from "../utils/apiError.js";
  * @access  Private
  */
 const getAllUsers = asyncHandler(async (req, res) => {
-  const filter = {}; 
+  const filter = {};
 
   if (req.query.keyword) {
     filter.$or = [
@@ -35,10 +35,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
   if (page * limit < countDocuments) pagination.nextPage = page + 1;
   if (page > 1) pagination.previousPage = page - 1;
 
-  let mongooseQuery = UserModel.find(filter)
-    .skip(skip)
-    .limit(limit)
-    .lean();
+  let mongooseQuery = UserModel.find(filter).skip(skip).limit(limit).lean();
 
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
@@ -79,59 +76,84 @@ const getSpecificUser = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Create a new user 
+ * @desc    Create a new user
  * @route   POST /api/v1/users
  * @access  Private
  */
 const createUser = asyncHandler(async (req, res, next) => {
-  const existingUser = await UserModel.findOne({
-    $or: [
-      { email: req.body.email },
-      { phone: req.body.phone },
-      { identificationNumber: req.body.identificationNumber },
-      { registrationNumber: req.body.registrationNumber },
-    ],
-  });
-
-  if (existingUser) {
+  if (!req.file.path) {
+    return next(new ApiError("Please Send licenseDocument ..."));
+  }
+  req.body.licenseDocument = req.file.path;
+  if (
+    !req.body.location ||
+    !req.body.location.coordinates ||
+    req.body.location.coordinates.length !== 2
+  ) {
     return next(
       new ApiError(
-        "Some data is already in use. Please check the entered information.",
+        "Please provide valid location coordinates (longitude, latitude).",
         400
       )
     );
   }
-  if (!req.file.path) {
-  return next(new ApiError("Please Send licenseDocument ..."))
+  const coordinates = req.body.location.coordinates.map((coord) =>
+    parseFloat(coord)
+  );
+  if (coordinates.some(isNaN)) {
+    return next(
+      new ApiError(
+        "Invalid coordinates. Please provide valid longitude and latitude.",
+        400
+      )
+    );
   }
-  req.body.licenseDocument = req.file.path;
+
+  req.body.location = {
+    type: "Point",
+    coordinates: coordinates,
+  };
 
   const user = await UserModel.create(req.body);
+
   res.status(201).json({ message: "success", data: user });
 });
 
 /**
- * @desc    Update an existing user 
+ * @desc    Update an existing user
  * @route   PUT /api/v1/users/:id
  * @access  Private
  */
 const updateUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  const user = await UserModel.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  }).select("-password -__v");
+  if (req.file && req.file.path) {
+    req.body.profileImage = req.file.path;
+  }
 
+  const user = await UserModel.findByIdAndUpdate(
+    id,
+    {
+      name: req.body.name,
+      phone: req.body.phone,
+      email: req.body.email,
+      profileImage: req.body.profileImage,
+      role: req.body.role,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -__v");
   if (!user) {
-    return next(new ApiError(`There isnt user for this ${id}`, 404));
+    return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
 
   res.status(200).json({ message: "success", data: user });
 });
 
 /**
- * @desc    Delete an existing user 
+ * @desc    Delete an existing user
  * @route   DELETE /api/v1/users/:id
  * @access  Private
  */

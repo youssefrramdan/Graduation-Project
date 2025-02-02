@@ -1,4 +1,6 @@
 import { Schema, Types, model } from "mongoose";
+// eslint-disable-next-line import/no-extraneous-dependencies
+import bcrypt from "bcryptjs";
 
 const userSchema = new Schema(
   {
@@ -46,9 +48,8 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
-    imageOfProfile: {
+    profileImage: {
       type: String,
-      trim: true,
     },
     city: {
       type: String,
@@ -82,7 +83,7 @@ const userSchema = new Schema(
         ref: "Cart",
       },
     ],
-    
+
     role: {
       type: String,
       trim: true,
@@ -93,21 +94,30 @@ const userSchema = new Schema(
       type: {
         type: String,
         enum: ["Point"],
-        default: "Point",
+        required: true,
       },
       coordinates: {
         type: [Number],
+        required: true,
         validate: {
           validator: function (val) {
-            return val.length === 2;
+            return val.length === 2; 
           },
-          message: "Location coordinates must contain exactly [longitude, latitude].",
+          message:
+            "Location coordinates must contain exactly [longitude, latitude].",
         },
       },
     },
   },
   { timestamps: true }
 );
+// Pre middleware For Hasing Password
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  // Hasing User Password
+  this.password = await bcrypt.hash(this.password, 12);
+  next();
+});
 
 // Indexing for geospatial queries
 userSchema.index({ location: "2dsphere" });
