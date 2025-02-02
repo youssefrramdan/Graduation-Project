@@ -37,17 +37,3 @@ pharmacyRouter
 
 export default pharmacyRouter;
 
-// upload.single("imageOfPharmacy"), async (req, res, next) => {
-//   try {
-//     if (!req.file) {
-//       return res.status(400).json({ message: "No file uploaded" });
-//     }
-
-//     const imageUrl = await uploadToCloudinary(req.file.buffer);
-//     req.body.imageOfPharmacy = imageUrl;
-
-//     next();
-//   } catch (error) {
-//     res.status(500).json({ message: "Image upload failed", error });
-//   }
-// },

@@ -12,12 +12,12 @@ cloudinary.config({
   api_key: "722638671225421",
   api_secret: "vu7qUoXXgII4RkU3yHHY2q912sg",
 });
-// 📌 إنشاء رفع مرن للصور والمستندات
 const createUploader = (folder, allowedFormats = ["jpeg", "jpg", "png", "pdf"]) => {
   const storage = new CloudinaryStorage({
     cloudinary,
     params: {
       folder: folder,
+      resource_type: "auto",
       format: async (req, file) => {
         const ext = file.mimetype.split("/")[1];
         return allowedFormats.includes(ext) ? ext : "jpeg";
@@ -30,6 +30,9 @@ const createUploader = (folder, allowedFormats = ["jpeg", "jpg", "png", "pdf"]) 
     storage,
     fileFilter: (req, file, cb) => {
       try {
+        if (!file) {
+          cb(new Error("No file uploaded"), false);
+        }
         const ext = file.mimetype.split("/")[1];
         if (allowedFormats.includes(ext)) {
           cb(null, true);

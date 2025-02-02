@@ -7,10 +7,6 @@ const inventorySchema = new Schema(
       trim: true,
       required: [true, "storageName required ..."],
     },
-    slug: {
-      type: String,
-      lowercase: true,
-    },
     email: {
       type: String,
       required: [true, "email required ..."],
@@ -45,7 +41,6 @@ const inventorySchema = new Schema(
       },
       coordinates: {
         type: [Number],
-        required: true,
       },
     },
     workingHours: {

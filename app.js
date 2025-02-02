@@ -4,6 +4,7 @@ import morgan from "morgan";
 import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import pharmacyRouter from "./routes/pharmachy.routes.js";
+import inventoryRouter from "./routes/inventory.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -18,6 +19,7 @@ if (process.env.NODE_ENV === "development") {
 
 // mount Routes
 app.use("/api/v1/pharmacies", pharmacyRouter);
+app.use("/api/v1/inventories", inventoryRouter); // ✅ ربط المسارات
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));

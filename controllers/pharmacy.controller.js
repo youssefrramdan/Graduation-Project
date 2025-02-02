@@ -3,28 +3,26 @@ import asyncHandler from "express-async-handler";
 import PharmacyModel from "../models/Pharmacy.model.js";
 import ApiError from "../utils/apiError.js";
 
-// @desc     Get all pharmacies
-// @route    GET /api/v1/pharmacies
-// @access   Private
+/**
+ * @desc    Get all pharmacies (جلب جميع الصيدليات)
+ * @route   GET /api/v1/pharmacies
+ * @access  Private
+ */
 const getAllPharmacies = asyncHandler(async (req, res) => {
   const countDocuments = await PharmacyModel.countDocuments();
-  //----------------------------------------------------
-  // pagination Result
+
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 5;
+  const limit = Number(req.query.limit) || 10;
   const skip = (page - 1) * limit;
-  const endIndex = page * limit;
-  const pagination = {};
-  pagination.currentPage = page;
-  pagination.resultsPerPage = limit;
-  pagination.totalPages = Math.ceil(countDocuments / limit); //
-  if (endIndex < countDocuments) {
-    pagination.nextPage = page + 1;
-  }
-  if (page > 0) {
-    pagination.previousPage = page - 1;
-  }
-  // ---------------------------------------------
+  const pagination = {
+    currentPage: page,
+    resultsPerPage: limit,
+    totalPages: Math.ceil(countDocuments / limit),
+  };
+
+  if (page * limit < countDocuments) pagination.nextPage = page + 1;
+  if (page > 1) pagination.previousPage = page - 1;
+
   let mongooseQuery = PharmacyModel.find().skip(skip).limit(limit);
 
   if (req.query.keyword) {
@@ -61,9 +59,11 @@ const getAllPharmacies = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc     Get specific pharmacy by id
-// @route    GET /api/v1/pharmacies/:id
-// @access   Private
+/**
+ * @desc    Get specific pharmacy by ID (جلب صيدلية معينة)
+ * @route   GET /api/v1/pharmacies/:id
+ * @access  Private
+ */
 const getSpecificPharmacy = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const pharmacy = await PharmacyModel.findById(id);
@@ -73,9 +73,11 @@ const getSpecificPharmacy = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: pharmacy });
 });
 
-// @desc     Create a new pharmacy
-// @route    POST /api/v1/pharmacies
-// @access   Private
+/**
+ * @desc    Create a new pharmacy (إنشاء صيدلية جديدة)
+ * @route   POST /api/v1/pharmacies
+ * @access  Private
+ */
 const createPharmacy = asyncHandler(async (req, res) => {
   console.log("Received Files:", req.files);
 
@@ -90,9 +92,11 @@ const createPharmacy = asyncHandler(async (req, res) => {
   res.status(201).json({ message: "success", data: pharmacy });
 });
 
-// @desc     Update an existing pharmacy
-// @route    PUT /api/v1/pharmacies/:id
-// @access   Private
+/**
+ * @desc    Update an existing pharmacy (تحديث بيانات صيدلية)
+ * @route   PUT /api/v1/pharmacies/:id
+ * @access  Private
+ */
 const updatePharmacy = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const pharmacy = await PharmacyModel.findByIdAndUpdate(id, req.body, {
@@ -105,9 +109,11 @@ const updatePharmacy = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: pharmacy });
 });
 
-// @desc     Delete an existing pharmacy
-// @route    DELETE /api/v1/pharmacies/:id
-// @access   Private
+/**
+ * @desc    Delete an existing pharmacy (حذف صيدلية)
+ * @route   DELETE /api/v1/pharmacies/:id
+ * @access  Private
+ */
 const deletePharmacy = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const pharmacy = await PharmacyModel.findByIdAndDelete(id);
