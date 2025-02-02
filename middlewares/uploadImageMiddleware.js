@@ -13,6 +13,7 @@ cloudinary.config({
   api_key: "722638671225421",
   api_secret: "vu7qUoXXgII4RkU3yHHY2q912sg",
 });
+
 const createUploader = (
   folder,
   allowedFormats = ["jpeg", "jpg", "png", "pdf"]

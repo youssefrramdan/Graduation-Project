@@ -46,7 +46,7 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
-    imageOfPharmacy: {
+    imageOfProfile: {
       type: String,
       trim: true,
     },
