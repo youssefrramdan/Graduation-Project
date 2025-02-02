@@ -86,18 +86,7 @@ const createUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Please Send licenseDocument ..."));
   }
   req.body.licenseDocument = req.file.path;
-  if (
-    !req.body.location ||
-    !req.body.location.coordinates ||
-    req.body.location.coordinates.length !== 2
-  ) {
-    return next(
-      new ApiError(
-        "Please provide valid location coordinates (longitude, latitude).",
-        400
-      )
-    );
-  }
+  
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)
   );
