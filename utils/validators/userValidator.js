@@ -3,6 +3,7 @@ import { check } from "express-validator";
 import asyncHandler from "express-async-handler";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import UserModel from "../../models/User.model.js";
+import bcrypt from "bcryptjs";
 
 // Validators
 const createUserValidator = [
@@ -97,9 +98,42 @@ const deleteUserValidator = [
   validatorMiddleware,
 ];
 
+const changePasswordValidator = [
+  check("id").isMongoId().withMessage("Invalid user ID"),
+  check("currentPassword")
+    .notEmpty()
+    .withMessage("you must enter your current Password"),
+  check("rePassword")
+    .notEmpty()
+    .withMessage("you must enter the password confirm"),
+  check("password")
+    .notEmpty()
+    .withMessage("you must enter the new password ")
+    .custom(async (val, { req }) => {
+      // 1) verify current password
+      const user = await UserModel.findById(req.params.id);
+
+      const isCorrectPassword = await bcrypt.compare(
+        req.body.currentPassword,
+        user.password
+      );
+      if (!isCorrectPassword) {
+        throw new Error("incorrect current password");
+      }
+      if (!user) throw new Error("There is no user for this id");
+      // 2) verify password confirmation
+      if (val != req.body.rePassword) {
+        throw new Error("rePassword in correct");
+      }
+      return true;
+    }),
+  validatorMiddleware,
+];
+
 export {
   createUserValidator,
   deleteUserValidator,
   updateUserValidator,
   getSpecificUserValidator,
+  changePasswordValidator,
 };

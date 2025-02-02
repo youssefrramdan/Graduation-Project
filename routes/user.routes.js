@@ -1,6 +1,7 @@
 import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
+  changeUserPassword,
   createUser,
   deleteUser,
   getAllUsers,
@@ -8,6 +9,7 @@ import {
   updateUser,
 } from "../controllers/User.controller.js";
 import {
+  changePasswordValidator,
   createUserValidator,
   deleteUserValidator,
   getSpecificUserValidator,
@@ -33,7 +35,7 @@ const uploadProfileImage = createUploader("usersImages", [
   "png",
   "pdf",
 ]);
-
+userRouter.route("/changePassword/:id").put(changePasswordValidator,changeUserPassword)
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)

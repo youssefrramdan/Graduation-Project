@@ -2,6 +2,7 @@
 import asyncHandler from "express-async-handler";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
+import bcrypt from "bcryptjs";
 
 /**
  * @desc    Get all users
@@ -167,5 +168,22 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ message: "success", data: user });
 });
+const changeUserPassword = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const hashedPassword = await bcrypt.hash(req.body.password , 12)
+  const user = await UserModel.findByIdAndUpdate(
+    id,
+    {password : hashedPassword},
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
+  if (!user) {
+    return next(new ApiError(`There is no user with ID ${id}`, 404));
+  }
 
-export { getAllUsers, getSpecificUser, createUser, updateUser, deleteUser };
+  res.status(200).json({ message: "success", data: user });
+});
+
+export { getAllUsers, getSpecificUser, createUser, updateUser, deleteUser , changeUserPassword};
