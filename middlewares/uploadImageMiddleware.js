@@ -1,3 +1,4 @@
+/* eslint-disable arrow-body-style */
 /* eslint-disable import/no-extraneous-dependencies */
 
 import multer from "multer";
@@ -12,7 +13,10 @@ cloudinary.config({
   api_key: "722638671225421",
   api_secret: "vu7qUoXXgII4RkU3yHHY2q912sg",
 });
-const createUploader = (folder, allowedFormats = ["jpeg", "jpg", "png", "pdf"]) => {
+const createUploader = (
+  folder,
+  allowedFormats = ["jpeg", "jpg", "png", "pdf"]
+) => {
   const storage = new CloudinaryStorage({
     cloudinary,
     params: {
@@ -22,25 +26,26 @@ const createUploader = (folder, allowedFormats = ["jpeg", "jpg", "png", "pdf"]) 
         const ext = file.mimetype.split("/")[1];
         return allowedFormats.includes(ext) ? ext : "jpeg";
       },
-      public_id: (req, file) => `${file.fieldname}-${Date.now()}`,
+      public_id: (req, file) => {
+        return `${file.fieldname}-${Date.now()}-${file.originalname}`;
+      },
     },
   });
 
   return multer({
     storage,
     fileFilter: (req, file, cb) => {
-      try {
-        if (!file) {
-          cb(new Error("No file uploaded"), false);
-        }
-        const ext = file.mimetype.split("/")[1];
-        if (allowedFormats.includes(ext)) {
-          cb(null, true);
-        } else {
-          cb(new Error(`Only ${allowedFormats.join(", ")} files are allowed`), false);
-        }
-      } catch (error) {
-        cb(new Error("File upload error"), false);
+      if (!file) {
+        return cb(new Error("No file uploaded"), false);
+      }
+      const ext = file.mimetype.split("/")[1];
+      if (allowedFormats.includes(ext)) {
+        cb(null, true);
+      } else {
+        cb(
+          new Error(`Only ${allowedFormats.join(", ")} files are allowed`),
+          false
+        );
       }
     },
   });

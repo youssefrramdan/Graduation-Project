@@ -1,54 +1,75 @@
 import { Schema, Types, model } from "mongoose";
 
-const pharmacySchema = new Schema(
+const userSchema = new Schema(
   {
     email: {
       type: String,
-      required: [true, "email required ..."],
-      unique: [true,"email must be unique"],
+      required: [true, "Email is required."],
+      unique: true,
+      trim: true,
+      lowercase: true,
     },
     password: {
       type: String,
-      required: [true, "passsword required ..."],
-      minlength: [8, "Too short password ..."],
+      required: [true, "Password is required."],
+      minlength: [8, "Password must be at least 8 characters long."],
     },
-    pharmacyName: {
+    name: {
       type: String,
       required: true,
+      trim: true,
     },
     ownerName: {
       type: String,
       required: true,
+      trim: true,
     },
     phone: {
       type: String,
       required: true,
+      unique: true,
+      trim: true,
     },
     identificationNumber: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     registrationNumber: {
       type: String,
       required: true,
       unique: true,
+      trim: true,
     },
     licenseDocument: {
       type: String,
+      trim: true,
+    },
+    imageOfPharmacy: {
+      type: String,
+      trim: true,
     },
     city: {
       type: String,
       required: true,
+      trim: true,
     },
     governorate: {
       type: String,
       required: true,
+      trim: true,
     },
     isVerified: {
       type: Boolean,
       default: false,
     },
+    drugs: [
+      {
+        type: Types.ObjectId,
+        ref: "Drug",
+      },
+    ],
     orders: [
       {
         type: Types.ObjectId,
@@ -61,12 +82,11 @@ const pharmacySchema = new Schema(
         ref: "Cart",
       },
     ],
-    imageOfPharmacy: {
-      type: String,
-    },
+    
     role: {
       type: String,
-      enum: ["pharmacy", "admin"],
+      trim: true,
+      enum: ["pharmacy", "inventory", "admin"],
       default: "pharmacy",
     },
     location: {
@@ -77,12 +97,19 @@ const pharmacySchema = new Schema(
       },
       coordinates: {
         type: [Number],
+        validate: {
+          validator: function (val) {
+            return val.length === 2;
+          },
+          message: "Location coordinates must contain exactly [longitude, latitude].",
+        },
       },
     },
   },
   { timestamps: true }
 );
 
-pharmacySchema.index({ location: "2dsphere" });
+// Indexing for geospatial queries
+userSchema.index({ location: "2dsphere" });
 
-export default model("Pharmacy", pharmacySchema);
+export default model("User", userSchema);

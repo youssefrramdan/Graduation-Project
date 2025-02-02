@@ -1,3 +1,4 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import { matchedData, validationResult } from "express-validator";
 
 // 2- middle ware => catch errors from rules if exist
