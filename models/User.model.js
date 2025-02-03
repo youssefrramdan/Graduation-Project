@@ -16,7 +16,6 @@ const userSchema = new Schema(
       required: [true, "Password is required."],
       minlength: [8, "Password must be at least 8 characters long."],
     },
-    passwordChangeAt: Date,
     passwordResetExpires: Date,
     passwordResetCode: String,
     passwordResetVerified: Boolean,
