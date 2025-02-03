@@ -105,7 +105,9 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
 
   // 4) Check if user change his password after token created
   if (currentUser.passwordChangedAt) {
-    const passChangedTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000 );
+    const passChangedTimestamp = parseInt(
+      currentUser.passwordChangedAt.getTime() / 1000
+    );
     // Password changed after token created (Error)
     if (passChangedTimestamp > decoded.iat) {
       return next(
@@ -183,7 +185,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   user.passwordResetCode = undefined;
   user.passwordResetExpires = undefined;
   user.passwordResetVerified = false;
-  await user.save(); 
+  await user.save();
 
   const token = genrateToken(user._id);
   res.status(200).json({ message: "Password reset successfully", token });

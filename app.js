@@ -5,7 +5,6 @@ import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
 import authRouter from "./routes/auth.routes.js";
-import { confirmEmail } from "./controllers/auth.controller.js";
 
 dotenv.config({ path: "./config/config.env" });
 

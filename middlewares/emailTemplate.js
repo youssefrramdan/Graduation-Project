@@ -1,3 +1,5 @@
+/* eslint-disable arrow-body-style */
+/* eslint-disable import/prefer-default-export */
 
 
 export const emailTemplate=(token)=>{
@@ -39,7 +41,7 @@ export const emailTemplate=(token)=>{
       <p>Your One-Time Password (OTP) for verification is:</p>
       <div class="otp-code">123456</div>
       <p class="mt-4">Please use this OTP to complete your verification. The OTP is valid for the next 10 minutes.</p>
-      <a href="http://localhost:8000/verify/${token}" class="btn-verify">Verify Now</a>
+      <a href="http://localhost:8000/api/v1/auth/verify/${token}" class="btn-verify">Verify Now</a>
     </div>
     <div class="footer-text">
       <p>If you did not request this OTP, please <a href="#">contact us</a> immediately.</p>
