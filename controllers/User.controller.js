@@ -180,7 +180,11 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   const hashedPassword = await bcrypt.hash(req.body.password , 12)
   const user = await UserModel.findByIdAndUpdate(
     id,
-    {password : hashedPassword},
+    {
+      password : hashedPassword,
+      passwordChangedAt: Date.now(),
+    },
+    
     {
       new: true,
       runValidators: true,

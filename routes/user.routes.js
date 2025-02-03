@@ -2,6 +2,7 @@ import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   activateSpecificUser,
+  changeUserPassword,
   createUser,
   deleteUser,
   getAllUsers,
@@ -15,6 +16,7 @@ import {
   getSpecificUserValidator,
   updateUserValidator,
 } from "../utils/validators/userValidator.js";
+import { protect } from "../controllers/auth.controller.js";
 
 const userRouter = express.Router();
 
@@ -32,9 +34,9 @@ userRouter
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(updateUserValidator, updateUser)
+  .put(protect,updateUserValidator, updateUser)
   .delete(deleteUserValidator, deleteUser);
 
-
+userRouter.route("/changePassword/:id").patch(changeUserPassword);
 userRouter.route("/activate/:id").patch(activeValidator,activateSpecificUser);
 export default userRouter;

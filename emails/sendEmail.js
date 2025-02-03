@@ -12,7 +12,7 @@ export const sendEmail = async(email)=>{
         },
     });
 
-    let token = jwt.sign({email},'myNameIsYotii')
+    let token = jwt.sign({email},process.env.JWT_SECRET_KEY)
 
     const info = await transporter.sendMail({
         from: '"PFlow 👻" <aya.h.abdelsamed@gmail.com>', // sender address
