@@ -36,7 +36,6 @@ userRouter
   .get(getSpecificUserValidator, getSpecificUser)
   .put(protectedRoutes,updateUserValidator, updateUser)
   .delete(deleteUserValidator, deleteUser);
-  // -----------------------------------------------------------------
 userRouter.route("/changePassword/:id").patch(changeUserPassword);
 userRouter.route("/activate/:id").patch(activeValidator,activateSpecificUser);
 export default userRouter;

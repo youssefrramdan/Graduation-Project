@@ -128,9 +128,7 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
 
   const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-  console.log(resetCode);
   const hashedCode = await bcrypt.hash(resetCode, 12);
-  console.log(hashedCode);
 
   user.passwordResetCode = hashedCode;
   user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
@@ -181,12 +179,11 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   if (!user.passwordResetVerified) {
     return next(new ApiError("Reset code has not been verified", 400));
   }
-
-  user.password = await bcrypt.hash(req.body.newPassword, 12);
+  user.password = req.body.newPassword;
   user.passwordResetCode = undefined;
   user.passwordResetExpires = undefined;
   user.passwordResetVerified = false;
-  await user.save(); // ← تأكد من أنه يتم الحفظ بنجاح
+  await user.save(); 
 
   const token = genrateToken(user._id);
   res.status(200).json({ message: "Password reset successfully", token });

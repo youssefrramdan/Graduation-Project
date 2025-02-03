@@ -140,14 +140,13 @@ const updateUser = asyncHandler(async (req, res, next) => {
   if (req.file && req.file.path) {
     req.body.profileImage = req.file.path;
   }
-
   const user = await UserModel.findByIdAndUpdate(
     id,
     {
       name: req.body.name,
       phone: req.body.phone,
       email: req.body.email,
-      profileImage: req.body.profileImage,
+      profileImage: req.body.profileImage,  
       role: req.body.role,
     },
     {
