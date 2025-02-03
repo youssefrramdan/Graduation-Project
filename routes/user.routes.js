@@ -26,6 +26,7 @@ userRouter
   .route("/")
   .get(getAllUsers)
   .post(
+    protectedRoutes,
     upload.single("licenseDocument"),
     createUserValidator,
     createUser
@@ -35,7 +36,7 @@ userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
   .put(protectedRoutes,updateUserValidator, updateUser)
-  .delete(deleteUserValidator, deleteUser);
-userRouter.route("/changePassword/:id").patch(changeUserPassword);
-userRouter.route("/activate/:id").patch(activeValidator,activateSpecificUser);
+  .delete(protectedRoutes,deleteUserValidator, deleteUser);
+userRouter.route("/changePassword/:id").patch(protectedRoutes,changeUserPassword);
+userRouter.route("/activate/:id").patch(protectedRoutes,activeValidator,activateSpecificUser);
 export default userRouter;
