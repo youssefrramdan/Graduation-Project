@@ -65,6 +65,10 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    active: {
+      type: Boolean,
+      default: false,
+    },
     drugs: [
       {
         type: Types.ObjectId,
@@ -88,7 +92,6 @@ const userSchema = new Schema(
       type: String,
       trim: true,
       enum: ["pharmacy", "inventory", "admin"],
-      default: "pharmacy",
     },
     location: {
       type: {
