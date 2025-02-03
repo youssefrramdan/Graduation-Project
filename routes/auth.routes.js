@@ -4,7 +4,8 @@ import {
   loginValidator,
   signUpValidator,
 } from "../utils/validators/authValidator.js";
-import { forgetPassword, login, resetPassword, signup, verifyResetCode } from "../controllers/auth.controller.js";
+
+import { confirmEmail, forgetPassword, login, resetPassword, signup, verifyResetCode  } from "../controllers/auth.controller.js";
 
 const authRouter = express.Router();
 
@@ -18,10 +19,9 @@ const upload = createUploader("userslicenseDocuments", [
 authRouter
   .route("/signup")
   .post(upload.single("licenseDocument"), signUpValidator, signup);
+  // app.use("/verify/:token", confirmEmail);
 
-
-authRouter.route("/verify/:token")
-  .get(verify);
+authRouter.route("/verify/:token").get(confirmEmail);
 authRouter.route("/login").post(loginValidator, login);
 authRouter.route("/forgetpassword").post(forgetPassword);
 authRouter.route("/verifyResetCode").post(verifyResetCode);

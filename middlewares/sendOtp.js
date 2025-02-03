@@ -4,7 +4,7 @@
 import nodemailer from "nodemailer";
 
 // eslint-disable-next-line import/prefer-default-export
-export const sendEmail = async(email ,subject, message)=>{
+export const sendOtp = async(email ,subject, message)=>{
     const transporter = nodemailer.createTransport({
         service:"gmail",
         auth: {
@@ -18,8 +18,6 @@ export const sendEmail = async(email ,subject, message)=>{
         to: email, // list of receivers
         subject: subject, 
         text: message,  // Subject line
-       
-
     });
     console.log("Message sent: %s", info.messageId);
 }

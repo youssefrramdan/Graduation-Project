@@ -16,7 +16,7 @@ import {
   getSpecificUserValidator,
   updateUserValidator,
 } from "../utils/validators/userValidator.js";
-import { protect } from "../controllers/auth.controller.js";
+import { protectedRoutes } from "../controllers/auth.controller.js";
 
 const userRouter = express.Router();
 
@@ -34,9 +34,9 @@ userRouter
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(protect,updateUserValidator, updateUser)
+  .put(protectedRoutes,updateUserValidator, updateUser)
   .delete(deleteUserValidator, deleteUser);
-
+  // -----------------------------------------------------------------
 userRouter.route("/changePassword/:id").patch(changeUserPassword);
 userRouter.route("/activate/:id").patch(activeValidator,activateSpecificUser);
 export default userRouter;

@@ -1,3 +1,4 @@
+/* eslint-disable import/prefer-default-export */
 import jwt from "jsonwebtoken"
 import nodemailer from "nodemailer"
 import { emailTemplate } from "./emailTemplate.js";
