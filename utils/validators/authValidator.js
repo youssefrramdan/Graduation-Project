@@ -7,8 +7,8 @@ import UserModel from "../../models/User.model.js";
 // Validators
 const signUpValidator = [
   check("email")
-    .isEmail()
-    .withMessage("Invalid email format")
+    //.isEmail()
+    //.withMessage("Invalid email format")
     .custom(
       asyncHandler(async (val) => {
         const user = await UserModel.findOne({

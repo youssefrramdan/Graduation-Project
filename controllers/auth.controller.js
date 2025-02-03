@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import ApiError from "../utils/apiError.js";
 import UserModel from "../models/User.model.js";
+import { sendEmail } from "../emails/sendEmail.js";
 
 const genrateToken = (payload) =>
   jwt.sign({ userId: payload }, process.env.JWT_SECRET_KEY, {
@@ -29,6 +30,8 @@ const signup = asyncHandler(async (req, res, next) => {
   }
 
   const user = await UserModel.create(req.body);
+
+  sendEmail(req.body.email)
   // 2 - generate Token
   const token = genrateToken(user._id);
   res
@@ -53,4 +56,13 @@ const login = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: user, token });
 });
 
-export { signup, login };
+const verify = asyncHandler(async(req,res)=>{
+  jwt.verify(req.params.token,'myNameIsYotii',async(err,decoded)=>{
+    if(err) return res.json(err)
+
+    await UserModel.findOneAndUpdate({email:decoded.email},{isVerified:true})
+    res.json({ message: "success"});
+  })
+  
+});
+export { signup, login, verify };

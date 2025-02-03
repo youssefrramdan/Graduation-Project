@@ -1,7 +1,6 @@
 import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
-  changeUserPassword,
   createUser,
   deleteUser,
   getAllUsers,
@@ -9,7 +8,6 @@ import {
   updateUser,
 } from "../controllers/User.controller.js";
 import {
-  changePasswordValidator,
   createUserValidator,
   deleteUserValidator,
   getSpecificUserValidator,
@@ -18,32 +16,21 @@ import {
 
 const userRouter = express.Router();
 
-const upload = createUploader("userslicenseDocuments", [
-  "jpeg",
-  "jpg",
-  "png",
-  "pdf",
-]);
+const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
 
 userRouter
   .route("/")
   .get(getAllUsers)
-  .post(upload.single("licenseDocument"), createUserValidator, createUser);
-const uploadProfileImage = createUploader("usersImages", [
-  "jpeg",
-  "jpg",
-  "png",
-  "pdf",
-]);
-userRouter.route("/changePassword/:id").put(changePasswordValidator,changeUserPassword)
+  .post(
+    upload.single("licenseDocument"),
+    createUserValidator,
+    createUser
+  );
+
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(
-    uploadProfileImage.single("profileImage"), 
-    updateUserValidator,
-    updateUser
-  )
+  .put(updateUserValidator, updateUser)
   .delete(deleteUserValidator, deleteUser);
 
 export default userRouter;
