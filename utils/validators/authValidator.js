@@ -24,6 +24,7 @@ const signUpValidator = [
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters")
     .custom((password, { req }) => {
+      // eslint-disable-next-line eqeqeq
       if (password != req.body.rePassword) {
         throw new Error("rePassword in correct");
       }

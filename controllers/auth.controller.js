@@ -2,8 +2,11 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import crypto from "crypto";
 import ApiError from "../utils/apiError.js";
 import UserModel from "../models/User.model.js";
+import { sendEmail } from "./Email/sendEmail.js";
+
 
 const genrateToken = (payload) =>
   jwt.sign({ userId: payload }, process.env.JWT_SECRET_KEY, {
@@ -53,4 +56,87 @@ const login = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: user, token });
 });
 
-export { signup, login };
+
+
+
+//  forgetPassword
+const forgetPassword = asyncHandler(async (req, res, next) => {
+
+  const user = await UserModel.findOne({ email: req.body.email });
+  if (!user) {
+    return next(new ApiError("Email not found", 404));
+  }
+
+
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+  console.log(resetCode);
+  const hashedCode = await bcrypt.hash(resetCode, 12);
+  console.log(hashedCode);
+   
+  user.passwordResetCode = hashedCode;
+  user.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  user.passwordResetVerified = false;
+   await user.save();
+   await sendEmail(
+    user.email,
+    "Password Reset Code",
+    `Your password reset code is: ${resetCode}\nThis code will expire in 10 minutes.`
+);
+
+   res.status(200).json({
+     message: "Reset code sent successfully",
+   });
+  });
+
+
+  const verifyResetCode = asyncHandler(async (req, res, next) => {
+    const user = await UserModel.findOne({
+        passwordResetExpires: { $gt: Date.now() } 
+    });
+
+    if (!user) {
+        return next(new ApiError("Reset code is invalid or has expired", 400));
+    }
+
+    const isCodeValid = await bcrypt.compare(req.body.resetCode, user.passwordResetCode);
+
+    if (!isCodeValid) {
+        return next(new ApiError("Invalid reset code", 400));
+    }
+
+    user.passwordResetVerified = true;
+    await user.save();
+
+    res.status(200).json({ message: "Reset code verified successfully" });
+});
+
+const resetPassword = asyncHandler(async (req, res, next) => {
+  const user = await UserModel.findOne({ email: req.body.email });
+
+  if (!user) {
+      return next(new ApiError("Email not found", 404));
+  }
+
+  if (!user.passwordResetVerified) {
+      return next(new ApiError("Reset code has not been verified", 400));
+  }
+
+  // تحديث كلمة المرور الجديدة
+  user.password = await bcrypt.hash(req.body.newPassword, 12);
+  user.passwordResetCode = undefined;
+  user.passwordResetExpires = undefined;
+  user.passwordResetVerified = false;
+  await user.save(); // ← تأكد من أنه يتم الحفظ بنجاح
+
+  const token = genrateToken(user._id);
+  res.status(200).json({ message: "Password reset successfully", token });
+});
+
+
+
+
+
+
+
+export { signup, login ,forgetPassword, verifyResetCode, resetPassword};

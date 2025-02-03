@@ -1,8 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import asyncHandler from "express-async-handler";
+import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
-import bcrypt from "bcryptjs";
+
 
 /**
  * @desc    Get all users
@@ -90,6 +91,7 @@ const createUser = asyncHandler(async (req, res, next) => {
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)
   );
+  // eslint-disable-next-line no-restricted-globals
   if (coordinates.some(isNaN)) {
     return next(
       new ApiError(

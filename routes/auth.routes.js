@@ -4,7 +4,7 @@ import {
   loginValidator,
   signUpValidator,
 } from "../utils/validators/authValidator.js";
-import { login, signup } from "../controllers/auth.controller.js";
+import { forgetPassword, login, resetPassword, signup, verifyResetCode } from "../controllers/auth.controller.js";
 
 const authRouter = express.Router();
 
@@ -20,5 +20,8 @@ authRouter
   .post(upload.single("licenseDocument"), signUpValidator, signup);
 
 authRouter.route("/login").post(loginValidator, login);
+authRouter.route("/forgetpassword").post(forgetPassword);
+authRouter.route("/verifyResetCode").post(verifyResetCode);
+authRouter.route("/resetPassword").put(resetPassword);
 
 export default authRouter;
