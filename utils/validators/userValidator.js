@@ -1,9 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import { check } from "express-validator";
 import asyncHandler from "express-async-handler";
+import bcrypt from "bcryptjs";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import UserModel from "../../models/User.model.js";
-import bcrypt from "bcryptjs";
 
 // Validators
 const createUserValidator = [
@@ -25,6 +25,7 @@ const createUserValidator = [
     .isLength({ min: 8 })
     .withMessage("Password must be at least 8 characters")
     .custom((password, { req }) => {
+      // eslint-disable-next-line eqeqeq
       if (password != req.body.rePassword) {
         throw new Error("rePassword in correct");
       }
@@ -127,6 +128,7 @@ const changePasswordValidator = [
       }
       if (!user) throw new Error("There is no user for this id");
       // 2) verify password confirmation
+      // eslint-disable-next-line eqeqeq
       if (val != req.body.rePassword) {
         throw new Error("rePassword in correct");
       }

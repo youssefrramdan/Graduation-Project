@@ -16,7 +16,11 @@ const userSchema = new Schema(
       required: [true, "Password is required."],
       minlength: [8, "Password must be at least 8 characters long."],
     },
-    passwordChangedAt : Date,
+    passwordChangeAt: Date,
+    passwordResetExpires: Date,
+    passwordResetCode: String,
+    passwordResetVerified: Boolean,
+    passwordChangedAt: Date,
     name: {
       type: String,
       required: true,
@@ -105,7 +109,7 @@ const userSchema = new Schema(
         required: true,
         validate: {
           validator: function (val) {
-            return val.length === 2; 
+            return val.length === 2;
           },
           message:
             "Location coordinates must contain exactly [longitude, latitude].",
