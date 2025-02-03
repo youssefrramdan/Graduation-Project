@@ -81,7 +81,12 @@ const getSpecificUserValidator = [
   check("id").isMongoId().withMessage("Invalid user ID"),
   validatorMiddleware,
 ];
-
+const activeValidator = [
+  check("active")
+    .isBoolean(),
+    // .withMessage("The 'active' field must be a boolean value"),
+  validatorMiddleware,
+];
 const updateUserValidator = [
   check("id").isMongoId().withMessage("Invalid user ID"),
   check("email").optional().isEmail().withMessage("Invalid email format"),
@@ -135,5 +140,6 @@ export {
   deleteUserValidator,
   updateUserValidator,
   getSpecificUserValidator,
+  activeValidator,
   changePasswordValidator,
 };

@@ -1,6 +1,7 @@
 import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
+  activateSpecificUser,
   createUser,
   deleteUser,
   getAllUsers,
@@ -8,6 +9,7 @@ import {
   updateUser,
 } from "../controllers/User.controller.js";
 import {
+  activeValidator,
   createUserValidator,
   deleteUserValidator,
   getSpecificUserValidator,
@@ -33,4 +35,6 @@ userRouter
   .put(updateUserValidator, updateUser)
   .delete(deleteUserValidator, deleteUser);
 
+
+userRouter.route("/activate/:id").patch(activeValidator,activateSpecificUser);
 export default userRouter;

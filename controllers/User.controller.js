@@ -77,6 +77,24 @@ const getSpecificUser = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Update user's active status
+ * @route   PATCH /api/v1/users/activate/:id
+ * @access  Private
+ */
+
+const activateSpecificUser = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const user = await UserModel.findByIdAndUpdate(id, { active: true });
+
+  if (!user) {
+    return next(new ApiError(`There isn't a user for this ID: ${id}`, 404));
+  }
+
+  res.status(200).json({ message: "User activated successfully", data: user });
+});
+
+
+/**
  * @desc    Create a new user
  * @route   POST /api/v1/users
  * @access  Private
@@ -175,4 +193,4 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: user });
 });
 
-export { getAllUsers, getSpecificUser, createUser, updateUser, deleteUser , changeUserPassword};
+export { getAllUsers, getSpecificUser,activateSpecificUser, createUser, updateUser, deleteUser , changeUserPassword};
