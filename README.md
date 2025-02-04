@@ -21,7 +21,7 @@ The project is deployed using **Render** at:
 
 Test the API using the **Postman Workspace**:
 
-🔗 [Postman Workspace]([https://www.postman.com/YOUR_WORKSPACE_LINK](https://gradutrion-team.postman.co/workspace/Gradutrion-Team-Workspace~08a56819-e2f9-4236-8037-ed1f17be8aab/collection/34651419-a5c24e06-f7bc-4d0b-823d-cafb326ebbbb?action=share&creator=34651419&active-environment=29367402-302f271f-4638-4098-90d7-26256c3f97d2])
+🔗 [Postman Workspace]((https://gradutrion-team.postman.co/workspace/Gradutrion-Team-Workspace~08a56819-e2f9-4236-8037-ed1f17be8aab/collection/34651419-a5c24e06-f7bc-4d0b-823d-cafb326ebbbb?action=share&creator=34651419&active-environment=29367402-302f271f-4638-4098-90d7-26256c3f97d2])
 
 ---
 
