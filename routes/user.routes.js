@@ -35,8 +35,12 @@ userRouter
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(protectedRoutes,updateUserValidator, updateUser)
-  .delete(protectedRoutes,deleteUserValidator, deleteUser);
-userRouter.route("/changePassword/:id").patch(protectedRoutes,changeUserPassword);
-userRouter.route("/activate/:id").patch(protectedRoutes,activeValidator,activateSpecificUser);
+  .put(protectedRoutes, updateUserValidator,upload.single('profileImage'), updateUser)
+  .delete(protectedRoutes, deleteUserValidator, deleteUser);
+userRouter
+  .route("/changePassword/:id")
+  .patch(protectedRoutes, changeUserPassword);
+userRouter
+  .route("/activate/:id")
+  .patch(protectedRoutes, activeValidator, activateSpecificUser);
 export default userRouter;

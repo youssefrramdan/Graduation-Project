@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 
-
 /**
  * @desc    Get all users
  * @route   GET /api/v1/users
@@ -71,7 +70,7 @@ const getSpecificUser = asyncHandler(async (req, res, next) => {
   const user = await UserModel.findById(id).select("-password -__v");
 
   if (!user) {
-    return next(new ApiError(` there isnt user for this ${id}`, 404));
+    return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
   res.status(200).json({ message: "success", data: user });
@@ -82,7 +81,6 @@ const getSpecificUser = asyncHandler(async (req, res, next) => {
  * @route   PATCH /api/v1/users/activate/:id
  * @access  Private
  */
-
 const activateSpecificUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const user = await UserModel.findByIdAndUpdate(id, { active: true });
@@ -94,7 +92,6 @@ const activateSpecificUser = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "User activated successfully", data: user });
 });
 
-
 /**
  * @desc    Create a new user
  * @route   POST /api/v1/users
@@ -105,11 +102,11 @@ const createUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Please Send licenseDocument ..."));
   }
   req.body.licenseDocument = req.file.path;
-  
+
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)
   );
-  // eslint-disable-next-line no-restricted-globals
+
   if (coordinates.some(isNaN)) {
     return next(
       new ApiError(
@@ -140,20 +137,17 @@ const updateUser = asyncHandler(async (req, res, next) => {
   if (req.file && req.file.path) {
     req.body.profileImage = req.file.path;
   }
+  console.log(req.file);
+
   const user = await UserModel.findByIdAndUpdate(
     id,
-    {
-      name: req.body.name,
-      phone: req.body.phone,
-      email: req.body.email,
-      profileImage: req.body.profileImage,  
-      role: req.body.role,
-    },
+    { profileImage: req.body.profileImage },
     {
       new: true,
       runValidators: true,
     }
-  ).select("-password -__v");
+  );
+  console.log(req.body);
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
@@ -171,26 +165,32 @@ const deleteUser = asyncHandler(async (req, res, next) => {
   const user = await UserModel.findByIdAndDelete(id);
 
   if (!user) {
-    return next(new ApiError(`There isnt user for this ${id}`, 404));
+    return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
   res.status(200).json({ message: "success", data: user });
 });
+
+/**
+ * @desc    Change user password
+ * @route   PATCH /api/v1/users/changePassword/:id
+ * @access  Private
+ */
 const changeUserPassword = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const hashedPassword = await bcrypt.hash(req.body.password , 12)
+  const hashedPassword = await bcrypt.hash(req.body.password, 12);
   const user = await UserModel.findByIdAndUpdate(
     id,
     {
-      password : hashedPassword,
+      password: hashedPassword,
       passwordChangedAt: Date.now(),
     },
-    
     {
       new: true,
       runValidators: true,
     }
-  )
+  );
+
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
@@ -198,4 +198,12 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: user });
 });
 
-export { getAllUsers, getSpecificUser,activateSpecificUser, createUser, updateUser, deleteUser , changeUserPassword};
+export {
+  getAllUsers,
+  getSpecificUser,
+  activateSpecificUser,
+  createUser,
+  updateUser,
+  deleteUser,
+  changeUserPassword,
+};

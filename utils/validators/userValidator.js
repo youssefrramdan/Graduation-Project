@@ -84,8 +84,8 @@ const getSpecificUserValidator = [
 ];
 const activeValidator = [
   check("active")
-    .isBoolean(),
-    // .withMessage("The 'active' field must be a boolean value"),
+    .isBoolean()
+    .withMessage("The 'active' field must be a boolean value"),
   validatorMiddleware,
 ];
 const updateUserValidator = [

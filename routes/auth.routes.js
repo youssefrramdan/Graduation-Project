@@ -19,7 +19,6 @@ const upload = createUploader("userslicenseDocuments", [
 authRouter
   .route("/signup")
   .post(upload.single("licenseDocument"), signUpValidator, signup);
-  // app.use("/verify/:token", confirmEmail);
 
 authRouter.route("/verify/:token").get(confirmEmail);
 authRouter.route("/login").post(loginValidator, login);

@@ -1,14 +1,11 @@
-/* eslint-disable arrow-body-style */
-/* eslint-disable import/prefer-default-export */
-
-export const emailTemplate = (token) => {
+export const otpTemplate = (otpCode) => {
   return `
   <!DOCTYPE html>
   <html lang="en">
   <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Email Verification</title>
+      <title>OTP Verification</title>
       <style>
           body {
               font-family: Arial, sans-serif;
@@ -40,15 +37,16 @@ export const emailTemplate = (token) => {
               color: #666;
               margin: 20px 0;
           }
-          .verify-button {
+          .otp-code {
+              font-size: 22px;
+              font-weight: bold;
+              color: #007bff;
+              background: #f1f1f1;
+              padding: 10px 20px;
               display: inline-block;
-              padding: 12px 20px;
-              font-size: 18px;
-              color: #ffffff;
-              background-color: #007bff;
-              text-decoration: none;
               border-radius: 5px;
-              margin-top: 20px;
+              letter-spacing: 4px;
+              margin-top: 15px;
           }
           .footer {
               margin-top: 30px;
@@ -64,13 +62,13 @@ export const emailTemplate = (token) => {
   <body>
       <div class="container">
           <img src="https://yourcompany.com/logo.png" alt="Company Logo" class="logo">
-          <div class="header">Verify Your Email Address</div>
+          <div class="header">One-Time Password (OTP)</div>
           <div class="message">
-              Thank you for signing up! Please confirm your email address by clicking the button below.
+              Use the OTP below to verify your identity. This code is valid for the next 10 minutes.
           </div>
-          <a href="http://localhost:8000/api/v1/auth/verify/${token}" class="verify-button">Verify Email</a>
+          <div class="otp-code">${otpCode}</div>
           <div class="footer">
-              <p>If you did not create an account, please ignore this email or <a href="#">contact support</a>.</p>
+              <p>If you did not request this OTP, please <a href="#">contact support</a> immediately.</p>
               <p>Best regards,<br>The [Your Company] Team</p>
           </div>
       </div>
