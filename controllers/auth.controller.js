@@ -34,7 +34,7 @@ const signup = asyncHandler(async (req, res, next) => {
     coordinates: coordinates,
   };
 
-  if (!req.body.role || !["pharmacy", "inventory"].includes(req.body.role)) {
+  if (!req.body.role && !["pharmacy", "inventory"].includes(req.body.role)) {
     return next(
       new ApiError("Please enter your role from ['pharmacy', 'inventory']")
     );
