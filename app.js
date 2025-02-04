@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
+import cors from "cors";
+import compression from "compression";
 import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
@@ -10,11 +12,12 @@ dotenv.config({ path: "./config/config.env" });
 
 const app = express();
 
+app.use(cors());
+app.options("*", cors());
+app.use(compression());
 // middlewares
 app.use(express.json());
-app.use(express.json()); 
-app.use(express.urlencoded({ extended: true })); 
-
+app.use(express.urlencoded({ extended: true }));
 
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
