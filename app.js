@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
 import compression from "compression";
+import cookieParser from "cookie-parser";
 import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
@@ -16,7 +17,9 @@ app.use(cors());
 app.options("*", cors());
 app.use(compression());
 // middlewares
+
 app.use(express.json());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 
 if (process.env.NODE_ENV === "development") {

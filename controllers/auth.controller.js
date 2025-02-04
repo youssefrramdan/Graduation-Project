@@ -42,10 +42,14 @@ const signup = asyncHandler(async (req, res, next) => {
 
   const user = await UserModel.create(req.body);
 
-  // إرسال بريد التحقق بعد التسجيل
   sendEmail(user.email, "verification");
 
   const token = generateToken(user._id);
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",  
+    maxAge: 3600000,  
+  });
   res.status(201).json({ message: "User created successfully", data: user, token });
 });
 
@@ -66,6 +70,11 @@ const login = asyncHandler(async (req, res, next) => {
   }
 
   const token = generateToken(user._id);
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",  
+    maxAge: 3600000,  
+  });
   res.status(200).json({ message: "Login successful", data: user, token });
 });
 
@@ -196,6 +205,12 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   await user.save();
 
   const token = generateToken(user._id);
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",  
+    maxAge: 3600000,  
+  });
+  
   res.status(200).json({ message: "Password reset successfully", token });
 });
 
