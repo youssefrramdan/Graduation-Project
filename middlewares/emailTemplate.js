@@ -4,7 +4,7 @@
 export const emailTemplate = (token) => {
   const isProduction = process.env.NODE_ENV === "production";
 
-  const logoUrl = isProduction
+  const Url = isProduction
     ? `https://pflow.onrender.com/api/v1/auth/verify/${token}`
     : `http://localhost:8000/api/v1/auth/verify/${token}`;
 
@@ -69,12 +69,12 @@ export const emailTemplate = (token) => {
   </head>
   <body>
       <div class="container">
-          <img src="${logoUrl}" alt="Company Logo" class="logo">
+          <img src="https://yourcompany.com/logo.png" alt="Company Logo" class="logo">
           <div class="header">Verify Your Email Address</div>
           <div class="message">
               Thank you for signing up! Please confirm your email address by clicking the button below.
           </div>
-          <a href="https://pflow.onrender.com/api/v1/auth/verify/${token}" class="verify-button">Verify Email</a>
+          <a href="${Url}" class="verify-button">Verify Email</a>
           <div class="footer">
               <p>If you did not create an account, please ignore this email or <a href="#">contact support</a>.</p>
               <p>Best regards,<br>The [Your Company] Team</p>
