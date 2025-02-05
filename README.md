@@ -2,37 +2,37 @@
 
 ## 🌟 Overview
 
-This project is a **Pharmacy-Storage Management System** that connects **pharmacies with storage facilities (drug stores)**. The system enables pharmacies to place orders from drug stores, manage their stock, and communicate efficiently.
+This project is a **Pharmacy-Storage Management System** that connects **pharmacies with storage facilities (drug stores)**. The system allows pharmacies to place orders from drug stores, manage their stock, and communicate efficiently.
 
 ---
 
 ## 🌍 Deployment
 
-The project is deployed using **Render** at:  
-🔗 [PFlow on Keyob]((https://agricultural-emmaline-youssef-ramadan-899e2b27.koyeb.app))
+The project is deployed using **Koyeb** at the following link:  
+🔗 [PFlow on Koyeb](https://agricultural-emmaline-youssef-ramadan-899e2b27.koyeb.app)
 
 ### 🌐 Access the Live Application
 
 ```sh
-🔗 Deployed URL: https://pflow.onrender.com
+🔗 Deployed URL: [https://pflow.koyeb.app](https://agricultural-emmaline-youssef-ramadan-899e2b27.koyeb.app)
 ```
 
 ### 📩 Postman API Collection
 
-Test the API using the **Postman Workspace**:
+You can test the API using **Postman Workspace**:
 
-🔗 [Postman Workspace]((https://gradutrion-team.postman.co/workspace/Gradutrion-Team-Workspace~08a56819-e2f9-4236-8037-ed1f17be8aab/collection/34651419-a5c24e06-f7bc-4d0b-823d-cafb326ebbbb?action=share&creator=34651419&active-environment=29367402-302f271f-4638-4098-90d7-26256c3f97d2])
+🔗 [Postman Workspace](https://gradutrion-team.postman.co/workspace/Gradutrion-Team-Workspace~08a56819-e2f9-4236-8037-ed1f17be8aab/collection/34651419-a5c24e06-f7bc-4d0b-823d-cafb326ebbbb?action=share&creator=34651419&active-environment=29367402-302f271f-4638-4098-90d7-26256c3f97d2])
 
 ---
 
 ## 🔥 Features
 
-✅ **Authentication:** Login & Sign-up for pharmacies and storage facilities.  
-✅ **User Management:** Pharmacies, storage facilities, and admin roles.  
+✅ **Authentication:** Login and registration for pharmacies and drug stores.  
+✅ **User Management:** Management of pharmacies, drug stores, and admin roles.  
 ✅ **Medicine Management:** Add, update, and view medicines.  
-✅ **Orders System:** Place, track, and manage orders between pharmacies and drug stores.  
+✅ **Orders System:** Create, track, and manage orders between pharmacies and drug stores.  
 ✅ **Location-based Search:** Find the nearest drug store based on pharmacy location.  
-✅ **Messaging System:** Communication between pharmacies and storage facilities.  
+✅ **Messaging System:** Communication between pharmacies and drug stores.  
 ✅ **Reports & Analytics:** Track orders, stock levels, and sales performance.  
 
 ---
@@ -53,9 +53,9 @@ Test the API using the **Postman Workspace**:
 
 ### 📦 **Other Tools**
 - 🔴 **Postman** *(API Testing)*
-- 
-### 🚀 **Deployment & MLOps**
-- 🔴 **Render** *(Hosting Service)*
+
+### 🚀 **Deployment**
+- 🔴 **Koyeb** *(Hosting Service)*
 - 📊 **Monitoring & Logging**
 
 ---
@@ -77,7 +77,7 @@ npm install
 
 ### 3️⃣ Set Up Environment Variables
 
-Create a `.env` file in the root directory and configure the following variables:
+Create a `.env` file in the **root directory** and configure the following variables:
 
 ```env
 # Server Configuration
@@ -98,15 +98,15 @@ JWT_EXPIRE_TIME=3d
 EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 ```
-⚠ **Make sure not to share these credentials publicly. Add `.env` to your `.gitignore` file.**
+⚠ **Make sure not to share these credentials publicly and add `.env` to `.gitignore`.**
 
 ### 4️⃣ Run the Application
 
 ```sh
-npm start
+npm run start:dev
 ```
 
-The server will start at `http://localhost:8000`.
+The server will run at `http://localhost:8000`.
 
 ---
 
@@ -139,8 +139,7 @@ The server will start at `http://localhost:8000`.
 
 ## ⚠ Error Handling
 
-The application has global error handling to catch:
-
+The application supports **global error handling** for:
 - ❌ **Unhandled Promise Rejections**
 - ❌ **Uncaught Exceptions**
 - ❌ **Invalid Routes**
@@ -149,11 +148,13 @@ The application has global error handling to catch:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to fork this repository and submit pull requests.
+Contributions are welcome! Feel free to **fork** the repository and submit **pull requests**.
 
 ---
 
 ## 📜 License
 
-This project is licensed under the MIT License.
+This project is licensed under the **MIT License**.
+
+---
 
