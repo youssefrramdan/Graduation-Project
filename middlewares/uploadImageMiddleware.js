@@ -22,7 +22,7 @@ const createUploader = (
     cloudinary,
     params: {
       folder: folder,
-      resource_type: "auto",
+      resource_type: "raw",
       format: async (req, file) => {
         const ext = file.mimetype.split("/")[1];
         return allowedFormats.includes(ext) ? ext : "jpeg";
