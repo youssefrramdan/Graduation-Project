@@ -14,7 +14,7 @@ The project is deployed using **Koyeb** at the following link:
 ### 🌐 Access the Live Application
 
 ```sh
-🔗 (https://agricultural-emmaline-youssef-ramadan-899e2b27.koyeb.app)
+🔗 https://agricultural-emmaline-youssef-ramadan-899e2b27.koyeb.app
 ```
 
 ### 📩 Postman API Collection
