@@ -64,7 +64,7 @@ export const emailTemplate = (token) => {
   <body>
       <div class="container">
           <img src="https://yourcompany.com/logo.png" alt="Company Logo" class="logo">
-          <div class="header">Verify Your Email Addresssssssssssssssssssssssssssssssssssssss</div>
+          <div class="header">Verify Your Email Address</div>
           <div class="message">
               Thank you for signing up! Please confirm your email address by clicking the button below.
           </div>
