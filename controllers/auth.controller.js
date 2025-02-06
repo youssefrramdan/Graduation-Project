@@ -21,10 +21,10 @@ const generateToken = (payload) =>
  * @access  Public
  */
 const signup = asyncHandler(async (req, res, next) => {
-  if (!req.file.path) {
-    return next(new ApiError("Please Send licenseDocument ..."));
-  }
-  req.body.licenseDocument = req.file.path;
+  // if (!req.file.path) {
+  //   return next(new ApiError("Please Send licenseDocument ..."));
+  // }
+  // req.body.licenseDocument = req.file.path;
 
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)

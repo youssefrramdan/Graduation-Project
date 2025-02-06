@@ -18,8 +18,8 @@ const upload = createUploader("userslicenseDocuments", [
 
 authRouter
   .route("/signup")
-  .post(upload.single("licenseDocument"), signUpValidator, signup);
-
+  .post(signUpValidator, signup);
+  // upload.single("licenseDocument"), 
 authRouter.route("/verify/:token").get(confirmEmail);
 authRouter.route("/login").post(loginValidator, login);
 authRouter.route("/forgetpassword").post(forgetPassword);

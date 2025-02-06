@@ -66,14 +66,14 @@ const signUpValidator = [
   check("governorate").notEmpty().withMessage("Governorate is required"),
   check("role").notEmpty().withMessage("Role is required"),
 
-  check("licenseDocument").custom((_, { req }) => {
-    if (!req.file || !req.file.path) {
-      throw new Error("License document is required");
-    }
-    req.body.licenseDocument = req.file.path;
-    return true;
-  }),
-
+  // check("licenseDocument").custom((_, { req }) => {
+  //   if (!req.file || !req.file.path) {
+  //     throw new Error("License document is required");
+  //   }
+  //   req.body.licenseDocument = req.file.path;
+  //   return true;
+  // }),
+  
   validatorMiddleware,
 ];
 
