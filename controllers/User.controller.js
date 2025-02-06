@@ -56,7 +56,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     message: "success",
     pagination,
     result: users.length,
-    user: users,
+    users: users,
   });
 });
 
