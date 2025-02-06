@@ -50,7 +50,7 @@ const signup = asyncHandler(async (req, res, next) => {
     secure: process.env.NODE_ENV === "production",  
     maxAge: 3600000,  
   });
-  res.status(201).json({ message: "User created successfully", data: user, token });
+  res.status(201).json({ message: "success", data: user, token });
 });
 
 /**
@@ -75,7 +75,7 @@ const login = asyncHandler(async (req, res, next) => {
     secure: process.env.NODE_ENV === "production",  
     maxAge: 3600000,  
   });
-  res.status(200).json({ message: "Login successful", data: user, token });
+  res.status(200).json({ message: "success", data: user, token });
 });
 
 /**
@@ -88,7 +88,7 @@ const confirmEmail = asyncHandler(async (req, res, next) => {
     if (err) return next(new ApiError("Email verification failed", 404));
 
     await UserModel.findOneAndUpdate({ email: decoded.email }, { isVerified: true });
-    res.json({ message: "Email verified successfully" });
+    res.json({ message: "success" });
   });
 });
 
@@ -179,7 +179,7 @@ const verifyResetCode = asyncHandler(async (req, res, next) => {
   user.passwordResetVerified = true;
   await user.save();
 
-  res.status(200).json({ message: "Reset code verified successfully" });
+  res.status(200).json({ message: "success" });
 });
 
 /**
@@ -211,7 +211,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
     maxAge: 3600000,  
   });
   
-  res.status(200).json({ message: "Password reset successfully", token });
+  res.status(200).json({ message: "success", token });
 });
 
 export {
