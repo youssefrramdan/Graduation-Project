@@ -1,5 +1,5 @@
 import express from "express";
-import createUploader from "../middlewares/uploadImageMiddleware.js";
+// import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   loginValidator,
   signUpValidator,
@@ -9,12 +9,12 @@ import { confirmEmail, forgetPassword, login, resetPassword, signup, verifyReset
 
 const authRouter = express.Router();
 
-const upload = createUploader("userslicenseDocuments", [
-  "jpeg",
-  "jpg",
-  "png",
-  "pdf",
-]);
+// const upload = createUploader("userslicenseDocuments", [
+//   "jpeg",
+//   "jpg",
+//   "png",
+//   "pdf",
+// ]);
 
 authRouter
   .route("/signup")

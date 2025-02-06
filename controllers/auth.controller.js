@@ -47,10 +47,19 @@ const signup = asyncHandler(async (req, res, next) => {
   const token = generateToken(user._id);
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",  
-    maxAge: 3600000,  
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 3600000,
   });
-  res.status(201).json({ message: "success", data: user, token });
+
+  res.status(201).json({
+    message: "success",
+    user: {
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    },
+    token,
+  });
 });
 
 /**
@@ -66,16 +75,30 @@ const login = asyncHandler(async (req, res, next) => {
   }
 
   if (!user.isVerified) {
-    return next(new ApiError("Your email is not verified. Please verify your email first.", 401));
+    return next(
+      new ApiError(
+        "Your email is not verified. Please verify your email first.",
+        401
+      )
+    );
   }
 
   const token = generateToken(user._id);
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",  
-    maxAge: 3600000,  
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 3600000,
   });
-  res.status(200).json({ message: "success", data: user, token });
+
+  res.status(201).json({
+    message: "success",
+    user: {
+      email: user.email,
+      role: user.role,
+      name: user.name,
+    },
+    token,
+  });
 });
 
 /**
@@ -84,12 +107,19 @@ const login = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 const confirmEmail = asyncHandler(async (req, res, next) => {
-  jwt.verify(req.params.token, process.env.JWT_SECRET_KEY, async (err, decoded) => {
-    if (err) return next(new ApiError("Email verification failed", 404));
+  jwt.verify(
+    req.params.token,
+    process.env.JWT_SECRET_KEY,
+    async (err, decoded) => {
+      if (err) return next(new ApiError("Email verification failed", 404));
 
-    await UserModel.findOneAndUpdate({ email: decoded.email }, { isVerified: true });
-    res.json({ message: "success" });
-  });
+      await UserModel.findOneAndUpdate(
+        { email: decoded.email },
+        { isVerified: true }
+      );
+      res.json({ message: "success" });
+    }
+  );
 });
 
 /**
@@ -99,24 +129,38 @@ const confirmEmail = asyncHandler(async (req, res, next) => {
  */
 const protectedRoutes = asyncHandler(async (req, res, next) => {
   let token;
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
     token = req.headers.authorization.split(" ")[1];
   }
   if (!token) {
-    return next(new ApiError("You are not logged in. Please log in to access this route", 401));
+    return next(
+      new ApiError(
+        "You are not logged in. Please log in to access this route",
+        401
+      )
+    );
   }
 
   const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
   const currentUser = await UserModel.findById(decoded.userId);
 
   if (!currentUser) {
-    return next(new ApiError("The user belonging to this token no longer exists", 401));
+    return next(
+      new ApiError("The user belonging to this token no longer exists", 401)
+    );
   }
 
   if (currentUser.passwordChangedAt) {
-    const passChangedTimestamp = parseInt(currentUser.passwordChangedAt.getTime() / 1000);
+    const passChangedTimestamp = parseInt(
+      currentUser.passwordChangedAt.getTime() / 1000
+    );
     if (passChangedTimestamp > decoded.iat) {
-      return next(new ApiError("User recently changed password. Please login again.", 401));
+      return next(
+        new ApiError("User recently changed password. Please login again.", 401)
+      );
     }
   }
 
@@ -127,9 +171,13 @@ const protectedRoutes = asyncHandler(async (req, res, next) => {
 /**
  * @desc    Allow Access to Specific Roles - تحديد الصلاحيات للمستخدمين
  */
-const allowTo = (...roles) => (req, res, next) => {
+const allowTo =
+  (...roles) =>
+  (req, res, next) => {
     if (!roles.includes(req.user.role)) {
-      return next(new ApiError("You do not have permission to perform this action", 403));
+      return next(
+        new ApiError("You do not have permission to perform this action", 403)
+      );
     }
     next();
   };
@@ -164,13 +212,18 @@ const forgetPassword = asyncHandler(async (req, res, next) => {
  * @access  Public
  */
 const verifyResetCode = asyncHandler(async (req, res, next) => {
-  const user = await UserModel.findOne({ passwordResetExpires: { $gt: Date.now() } });
+  const user = await UserModel.findOne({
+    passwordResetExpires: { $gt: Date.now() },
+  });
 
   if (!user) {
     return next(new ApiError("Reset code is invalid or has expired", 400));
   }
 
-  const isCodeValid = await bcrypt.compare(req.body.resetCode, user.passwordResetCode);
+  const isCodeValid = await bcrypt.compare(
+    req.body.resetCode,
+    user.passwordResetCode
+  );
 
   if (!isCodeValid) {
     return next(new ApiError("Invalid reset code", 400));
@@ -207,10 +260,10 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   const token = generateToken(user._id);
   res.cookie("token", token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",  
-    maxAge: 3600000,  
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 3600000,
   });
-  
+
   res.status(200).json({ message: "success", token });
 });
 

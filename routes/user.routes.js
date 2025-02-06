@@ -1,5 +1,5 @@
 import express from "express";
-import createUploader from "../middlewares/uploadImageMiddleware.js";
+// import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   activateSpecificUser,
   changeUserPassword,
@@ -20,14 +20,14 @@ import { protectedRoutes } from "../controllers/auth.controller.js";
 
 const userRouter = express.Router();
 
-const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
-
+// const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
+// upload.single("licenseDocument"),
+// ,upload.single('profileImage'),
 userRouter
   .route("/")
   .get(getAllUsers)
   .post(
     protectedRoutes,
-    upload.single("licenseDocument"),
     createUserValidator,
     createUser
   );
@@ -35,7 +35,7 @@ userRouter
 userRouter
   .route("/:id")
   .get(getSpecificUserValidator, getSpecificUser)
-  .put(protectedRoutes, updateUserValidator,upload.single('profileImage'), updateUser)
+  .put(protectedRoutes, updateUserValidator, updateUser)
   .delete(protectedRoutes, deleteUserValidator, deleteUser);
 userRouter
   .route("/changePassword/:id")

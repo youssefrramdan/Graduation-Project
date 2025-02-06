@@ -56,7 +56,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
     message: "success",
     pagination,
     result: users.length,
-    data: users,
+    user: users,
   });
 });
 
@@ -73,7 +73,7 @@ const getSpecificUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", data: user });
+  res.status(200).json({ message: "success", user: user });
 });
 
 /**
@@ -89,7 +89,7 @@ const activateSpecificUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`There isn't a user for this ID: ${id}`, 404));
   }
 
-  res.status(200).json({ message: "User activated successfully", data: user });
+  res.status(200).json({ message: "success" });
 });
 
 /**
@@ -98,10 +98,10 @@ const activateSpecificUser = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 const createUser = asyncHandler(async (req, res, next) => {
-  if (!req.file.path) {
-    return next(new ApiError("Please Send licenseDocument ..."));
-  }
-  req.body.licenseDocument = req.file.path;
+  // if (!req.file.path) {
+  //   return next(new ApiError("Please Send licenseDocument ..."));
+  // }
+  // req.body.licenseDocument = req.file.path;
 
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)
@@ -123,7 +123,7 @@ const createUser = asyncHandler(async (req, res, next) => {
 
   const user = await UserModel.create(req.body);
 
-  res.status(201).json({ message: "success", data: user });
+  res.status(201).json({ message: "success", user: user });
 });
 
 /**
@@ -134,25 +134,21 @@ const createUser = asyncHandler(async (req, res, next) => {
 const updateUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
 
-  if (req.file && req.file.path) {
-    req.body.profileImage = req.file.path;
-  }
-  console.log(req.file);
+  // if (req.file && req.file.path) {
+  //   req.body.profileImage = req.file.path;
+  // }
+  // console.log(req.file);
 
-  const user = await UserModel.findByIdAndUpdate(
-    id,
-    { profileImage: req.body.profileImage },
-    {
-      new: true,
-      runValidators: true,
-    }
-  );
+  const user = await UserModel.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
   console.log(req.body);
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", data: user });
+  res.status(200).json({ message: "success", user: user });
 });
 
 /**
@@ -168,7 +164,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", data: user });
+  res.status(200).json({ message: "success", user: user });
 });
 
 /**
@@ -195,7 +191,7 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", data: user });
+  res.status(200).json({ message: "success", user: user });
 });
 
 export {
