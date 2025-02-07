@@ -82,14 +82,14 @@ const signUpValidator = [
       return true;
     }),
 
-  // License document validation (must be provided)
-  body("licenseDocument")
-    .customSanitizer((value, { req }) => {
-      if (req.file && req.file.path) {
-        return req.file.path;
-      }
-      return value;
-    }),
+  // // License document validation (must be provided)
+  // body("licenseDocument")
+  //   .customSanitizer((value, { req }) => {
+  //     if (req.file && req.file.path) {
+  //       return req.file.path;
+  //     }
+  //     return value;
+  //   }),
 
   // Apply validator middleware to handle validation results
   validatorMiddleware,

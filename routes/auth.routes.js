@@ -17,12 +17,12 @@ import {
 const authRouter = express.Router();
 
 // Initialize file uploader for user license documents
-const upload = createUploader("userslicenseDocuments", [
-  "jpeg",
-  "jpg",
-  "png",
-  "pdf",
-]);
+// const upload = createUploader("userslicenseDocuments", [
+//   "jpeg",
+//   "jpg",
+//   "png",
+//   "pdf",
+// ]);
 
 /**
  * @description  Register a new user
@@ -31,8 +31,8 @@ const upload = createUploader("userslicenseDocuments", [
  */
 authRouter
   .route("/signup")
-  .post(upload.single("licenseDocument"), signUpValidator, signup);
-
+  .post(signUpValidator, signup);
+  // upload.single("licenseDocument"), 
 /**
  * @description  Verify email via token
  * @route        GET /api/v1/auth/verify/:token
