@@ -66,14 +66,14 @@ const login = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Incorrect email or password", 404));
   }
 
-  if (!user.isVerified) {
-    return next(
-      new ApiError(
-        "Your email is not verified. Please verify your email first.",
-        401
-      )
-    );
-  }
+  // if (!user.isVerified) {
+  //   return next(
+  //     new ApiError(
+  //       "Your email is not verified. Please verify your email first.",
+  //       401
+  //     )
+  //   );
+  // }
 
   const token = generateToken(user._id);
   res.cookie("token", token, {
