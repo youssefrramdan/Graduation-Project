@@ -84,8 +84,6 @@ const signUpValidator = [
 
   // License document validation (must be provided)
   body("licenseDocument")
-    .notEmpty()
-    .withMessage("License document is required")
     .customSanitizer((value, { req }) => {
       if (req.file && req.file.path) {
         return req.file.path;
