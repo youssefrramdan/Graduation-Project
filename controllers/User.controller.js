@@ -3,6 +3,7 @@ import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
+import { sendEmail } from "../middlewares/sendEmail.js";
 
 /**
  * @desc    Get all users
@@ -98,31 +99,24 @@ const activateSpecificUser = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 const createUser = asyncHandler(async (req, res, next) => {
-  // if (!req.file.path) {
-  //   return next(new ApiError("Please Send licenseDocument ..."));
-  // }
-  // req.body.licenseDocument = req.file.path;
-
-  const coordinates = req.body.location.coordinates.map((coord) =>
-    parseFloat(coord)
-  );
-
-  if (coordinates.some(isNaN)) {
-    return next(
-      new ApiError(
-        "Invalid coordinates. Please provide valid longitude and latitude.",
-        400
-      )
+  if (req.body.location && req.body.location.coordinates) {
+    // Convert each coordinate to a float
+    const coordinates = req.body.location.coordinates.map((coord) =>
+      parseFloat(coord)
     );
+    // Check if every coordinate is a valid number
+    if (!coordinates.some(isNaN)) {
+      // If valid, assign the location as a GeoJSON Point object
+      req.body.location = {
+        type: "Point",
+        coordinates: coordinates,
+      };
+    }
   }
 
-  req.body.location = {
-    type: "Point",
-    coordinates: coordinates,
-  };
-
   const user = await UserModel.create(req.body);
-
+  sendEmail(user.email, "verification");
+  
   res.status(201).json({ message: "success", user: user });
 });
 
@@ -133,17 +127,10 @@ const createUser = asyncHandler(async (req, res, next) => {
  */
 const updateUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-
-  // if (req.file && req.file.path) {
-  //   req.body.profileImage = req.file.path;
-  // }
-  // console.log(req.file);
-
   const user = await UserModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
-  console.log(req.body);
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }

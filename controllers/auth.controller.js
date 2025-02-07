@@ -21,11 +21,6 @@ const generateToken = (payload) =>
  * @access  Public
  */
 const signup = asyncHandler(async (req, res, next) => {
-  // if (!req.file.path) {
-  //   return next(new ApiError("Please Send licenseDocument ..."));
-  // }
-  // req.body.licenseDocument = req.file.path;
-
   const coordinates = req.body.location.coordinates.map((coord) =>
     parseFloat(coord)
   );
@@ -33,13 +28,6 @@ const signup = asyncHandler(async (req, res, next) => {
     type: "Point",
     coordinates: coordinates,
   };
-
-  if (!req.body.role && !["pharmacy", "inventory"].includes(req.body.role)) {
-    return next(
-      new ApiError("Please enter your role from ['pharmacy', 'inventory']")
-    );
-  }
-
   const user = await UserModel.create(req.body);
 
   sendEmail(user.email, "verification");
@@ -63,7 +51,7 @@ const signup = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    User Login - تسجيل الدخول
+ * @desc    User Login  
  * @route   POST /api/v1/auth/login
  * @access  Public
  */

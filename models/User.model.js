@@ -27,25 +27,18 @@ const userSchema = new Schema(
     },
     ownerName: {
       type: String,
-      required: true,
       trim: true,
     },
     phone: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
     },
     identificationNumber: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
     },
     registrationNumber: {
       type: String,
-      required: true,
-      unique: true,
       trim: true,
     },
     licenseDocument: {
@@ -57,12 +50,10 @@ const userSchema = new Schema(
     },
     city: {
       type: String,
-      required: true,
       trim: true,
     },
     governorate: {
       type: String,
-      required: true,
       trim: true,
     },
     isVerified: {
@@ -101,11 +92,9 @@ const userSchema = new Schema(
       type: {
         type: String,
         enum: ["Point"],
-        required: true,
       },
       coordinates: {
         type: [Number],
-        required: true,
         validate: {
           validator: function (val) {
             return val.length === 2;
