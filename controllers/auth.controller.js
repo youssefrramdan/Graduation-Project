@@ -28,6 +28,9 @@ const signup = asyncHandler(async (req, res, next) => {
     type: "Point",
     coordinates: coordinates,
   };
+  if (!req.body.licenseDocument) {
+   return next(new ApiError("licenseDocument is required ...." , 404))
+  }
   const user = await UserModel.create(req.body);
 
   sendEmail(user.email, "verification");
@@ -42,6 +45,7 @@ const signup = asyncHandler(async (req, res, next) => {
   res.status(201).json({
     message: "success",
     user: {
+      id : user._id,
       email: user.email,
       role: user.role,
       name: user.name,
