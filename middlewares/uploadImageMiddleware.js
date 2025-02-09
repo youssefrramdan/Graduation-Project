@@ -16,7 +16,7 @@ cloudinary.config({
 
 const createUploader = (
   folder,
-  allowedFormats = ["jpeg", "jpg", "png", "pdf"]
+  allowedFormats = ["jpeg", "jpg", "png", "pdf", "xlsx"]
 ) => {
   const storage = new CloudinaryStorage({
     cloudinary,
