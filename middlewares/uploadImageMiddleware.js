@@ -23,12 +23,14 @@ const createUploader = (
     params: {
       folder: folder,
       resource_type: "raw",
+      public_id: (req, file) =>
+        `${file.fieldname}-${Date.now()}-${file.originalname}`,
       format: async (req, file) => {
-        const ext = file.mimetype.split("/")[1];
-        return allowedFormats.includes(ext) ? ext : "jpeg";
-      },
-      public_id: (req, file) => {
-        return `${file.fieldname}-${Date.now()}-${file.originalname}`;
+        const ext = file.originalname.split(".").pop();
+        if (allowedFormats.includes(ext)) {
+          return ext;
+        }
+        throw new Error("Invalid file format.");
       },
     },
   });
@@ -36,11 +38,14 @@ const createUploader = (
   return multer({
     storage,
     fileFilter: (req, file, cb) => {
-      if (!file) {
-        return cb(new Error("No file uploaded"), false);
-      }
-      const ext = file.mimetype.split("/")[1];
-      if (allowedFormats.includes(ext)) {
+      const allowedMimes = [
+        "image/jpeg",
+        "image/png",
+        "application/pdf",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+      ];
+
+      if (allowedMimes.includes(file.mimetype)) {
         cb(null, true);
       } else {
         cb(

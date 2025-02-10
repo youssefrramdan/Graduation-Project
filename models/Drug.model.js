@@ -7,20 +7,20 @@ const drugSchema = new Schema(
       required: [true, "Drug name is required."],
       trim: true,
     },
-
-    // المادة الفعالة في الدواء
-    activeIngredient: {
-      type: String,
-      required: [true, "Active ingredient is required."],
-      trim: true,
-    },
-
     // الشركة المصنعة للدواء
     manufacturer: {
       type: String,
       trim: true,
     },
-
+    description: {
+      type: String,
+    },
+    // نوع المنتج: محلي أو مستورد
+    originType: {
+      type: String,
+      enum: ["Imported", "Local"],
+      required: [true, "Origin type is required."],
+    },
     // تاريخ الإنتاج
     productionDate: {
       type: Date,
@@ -59,25 +59,15 @@ const drugSchema = new Schema(
       required: [true, "Stock quantity is required."],
     },
 
-    // عدد الوحدات المباعة
     sold: {
       type: Number,
       default: 0,
     },
-
-    // نوع المنتج: محلي أو مستورد
-    originType: {
-      type: String,
-      enum: ["Imported", "Local"],
-      required: [true, "Origin type is required."],
-    },
-
-    // حالة العرض: مفعل أو معطل
     isVisible: {
       type: Boolean,
       default: true,
     },
-
+    imageCover: [String],
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
@@ -87,4 +77,11 @@ const drugSchema = new Schema(
   { timestamps: true }
 );
 
+drugSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "createdBy",
+    select: "name",
+  });
+  next();
+});
 export default model("Drug", drugSchema);
