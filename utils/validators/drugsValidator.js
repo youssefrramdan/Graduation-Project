@@ -12,7 +12,9 @@ const addDrugValidator = [
     .notEmpty()
     .withMessage("Manufacturer is required.")
     .trim(),
-    
+
+  check("originType").notEmpty().withMessage("Origin Type required'."),
+
   check("productionDate")
     .isISO8601()
     .toDate()
