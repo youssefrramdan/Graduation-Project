@@ -92,9 +92,8 @@ const getAllDrugs = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc     Create a new product
-// @route    POST /api/v1/products
-// @access   privite
+
+
 const addDrug = asyncHandler(async (req, res, next) => {
   // Add createdBy to req.body
   const drugData = {
