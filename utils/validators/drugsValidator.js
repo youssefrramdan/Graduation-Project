@@ -1,6 +1,5 @@
 import { check } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
-import mongoose from "mongoose";
 import UserModel from "../../models/User.model.js";
 
 const addDrugValidator = [
