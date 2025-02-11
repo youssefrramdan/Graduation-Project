@@ -20,7 +20,7 @@ const authRouter = express.Router();
  * /api/v1/auth/signup:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account with complete details.
+ *     description: Create a new user account with validation for each field.
  *     requestBody:
  *       required: true
  *       content:
@@ -42,7 +42,8 @@ const authRouter = express.Router();
  *                 description: User's phone number
  *               role:
  *                 type: string
- *                 description: Role of the user (e.g., pharmacy)
+ *                 enum: [pharmacy, inventory]
+ *                 description: Role of the user
  *               city:
  *                 type: string
  *                 description: User's city
@@ -51,7 +52,7 @@ const authRouter = express.Router();
  *                 properties:
  *                   type:
  *                     type: string
- *                     description: Location type (e.g., Point)
+ *                     example: Point
  *                   coordinates:
  *                     type: array
  *                     items:
@@ -62,21 +63,23 @@ const authRouter = express.Router();
  *                 description: Governorate of the user
  *               registrationNumber:
  *                 type: string
- *                 description: Registration number
+ *                 description: Registration number (unique)
  *               identificationNumber:
  *                 type: string
- *                 description: Identification number
+ *                 description: Identification number (unique)
  *               password:
  *                 type: string
- *                 description: User's password
+ *                 description: User's password (min 8 characters)
  *               rePassword:
  *                 type: string
- *                 description: Confirmation of the password
+ *                 description: Password confirmation (must match password)
  *     responses:
  *       201:
  *         description: User registered successfully
  *       400:
- *         description: Validation error
+ *         description: Validation error, missing or invalid fields
+ *       409:
+ *         description: Conflict, email, registration number, or identification number already in use
  */
 authRouter.route("/signup").post(signUpValidator, signup);
 
@@ -123,8 +126,12 @@ authRouter.route("/verify/:token").get(confirmEmail);
  *     responses:
  *       200:
  *         description: User logged in successfully
+ *       400:
+ *         description: Missing or invalid fields
  *       401:
  *         description: Invalid email or password
+ *       403:
+ *         description: Email not verified
  */
 authRouter.route("/login").post(loginValidator, login);
 
@@ -172,7 +179,9 @@ authRouter.route("/forgetpassword").post(forgetPassword);
  *       200:
  *         description: Reset code verified successfully
  *       400:
- *         description: Invalid reset code
+ *         description: Invalid reset code or code has expired
+ *       404:
+ *         description: User not found
  */
 authRouter.route("/verifyResetCode").post(verifyResetCode);
 
@@ -194,12 +203,14 @@ authRouter.route("/verifyResetCode").post(verifyResetCode);
  *                 description: User's email address
  *               newPassword:
  *                 type: string
- *                 description: New password for the user
+ *                 description: New password for the user (min 8 characters)
  *     responses:
  *       200:
  *         description: Password reset successfully
  *       400:
  *         description: Invalid reset code or request
+ *       404:
+ *         description: User not found
  */
 authRouter.route("/resetPassword").put(resetPassword);
 
