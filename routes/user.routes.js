@@ -24,8 +24,16 @@ const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
 
 /**
  * @swagger
+ * tags:
+ *   - name: Users
+ *     description: Endpoints for managing users
+ */
+
+/**
+ * @swagger
  * /api/v1/users:
  *   get:
+ *     tags: [Users]
  *     summary: Get all users
  *     description: Retrieve a list of all users with optional filters, sorting, and pagination.
  *     parameters:
@@ -56,6 +64,7 @@ userRouter.route("/").get(getAllUsers);
  * @swagger
  * /api/v1/users:
  *   post:
+ *     tags: [Users]
  *     summary: Create a new user
  *     description: Add a new user to the system with all necessary validation.
  *     requestBody:
@@ -104,6 +113,7 @@ userRouter
  * @swagger
  * /api/v1/users/files:
  *   get:
+ *     tags: [Users]
  *     summary: Get user files
  *     description: Retrieve the files associated with the logged-in user.
  *     responses:
@@ -118,6 +128,7 @@ userRouter.route("/files").get(protectedRoutes, getUserFiles);
  * @swagger
  * /api/v1/users/{id}:
  *   get:
+ *     tags: [Users]
  *     summary: Get specific user by ID
  *     description: Retrieve details of a specific user by their ID.
  *     parameters:
@@ -139,6 +150,7 @@ userRouter.route("/:id").get(getSpecificUserValidator, getSpecificUser);
  * @swagger
  * /api/v1/users/{id}:
  *   put:
+ *     tags: [Users]
  *     summary: Update user by ID
  *     description: Update details of a specific user.
  *     parameters:
@@ -175,6 +187,7 @@ userRouter.route("/:id").put(protectedRoutes, updateUserValidator, updateUser);
  * @swagger
  * /api/v1/users/{id}:
  *   delete:
+ *     tags: [Users]
  *     summary: Delete user by ID
  *     description: Remove a specific user from the system.
  *     parameters:
@@ -196,6 +209,7 @@ userRouter.route("/:id").delete(protectedRoutes, deleteUserValidator, deleteUser
  * @swagger
  * /api/v1/users/changePassword/{id}:
  *   patch:
+ *     tags: [Users]
  *     summary: Change user password
  *     description: Update the password for a specific user.
  *     parameters:
@@ -235,6 +249,7 @@ userRouter.route("/changePassword/:id").patch(protectedRoutes, changeUserPasswor
  * @swagger
  * /api/v1/users/activate/{id}:
  *   patch:
+ *     tags: [Users]
  *     summary: Activate specific user
  *     description: Activate the account of a specific user by their ID.
  *     parameters:

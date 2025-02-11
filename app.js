@@ -21,11 +21,25 @@ const swaggerOptions = {
     info: {
       title: "Pflow API",
       version: "1.0.0",
-      description: "API Documentation for the Storage and Pharmachy system",
+      description: "API Documentation for the Storage and Pharmacy system",
     },
     servers: [
       {
         url: "https://pflow-api-v3-1655e5b56c39.herokuapp.com",
+      },
+    ],
+    tags: [
+      {
+        name: "Auth",
+        description: "Authentication and user management endpoints",
+      },
+      {
+        name: "Users",
+        description: "Endpoints for managing users",
+      },
+      {
+        name: "Drugs",
+        description: "Endpoints for managing drugs",
       },
     ],
   },

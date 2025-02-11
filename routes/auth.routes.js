@@ -17,8 +17,16 @@ const authRouter = express.Router();
 
 /**
  * @swagger
+ * tags:
+ *   - name: Auth
+ *     description: Authentication and user management endpoints
+ */
+
+/**
+ * @swagger
  * /api/v1/auth/signup:
  *   post:
+ *     tags: [Auth]
  *     summary: Register a new user
  *     description: Create a new user account with validation for each field.
  *     requestBody:
@@ -87,6 +95,7 @@ authRouter.route("/signup").post(signUpValidator, signup);
  * @swagger
  * /api/v1/auth/verify/{token}:
  *   get:
+ *     tags: [Auth]
  *     summary: Verify email via token
  *     description: Verify the user's email address using a unique token.
  *     parameters:
@@ -108,6 +117,7 @@ authRouter.route("/verify/:token").get(confirmEmail);
  * @swagger
  * /api/v1/auth/login:
  *   post:
+ *     tags: [Auth]
  *     summary: User login
  *     description: Authenticate user with email and password.
  *     requestBody:
@@ -139,6 +149,7 @@ authRouter.route("/login").post(loginValidator, login);
  * @swagger
  * /api/v1/auth/forgetpassword:
  *   post:
+ *     tags: [Auth]
  *     summary: Send password reset request
  *     description: Send a reset request to the user's email for password recovery.
  *     requestBody:
@@ -163,6 +174,7 @@ authRouter.route("/forgetpassword").post(forgetPassword);
  * @swagger
  * /api/v1/auth/verifyResetCode:
  *   post:
+ *     tags: [Auth]
  *     summary: Verify reset code for password recovery
  *     description: Verify the reset code sent to the user's email.
  *     requestBody:
@@ -189,6 +201,7 @@ authRouter.route("/verifyResetCode").post(verifyResetCode);
  * @swagger
  * /api/v1/auth/resetPassword:
  *   put:
+ *     tags: [Auth]
  *     summary: Reset password using a valid reset code
  *     description: Reset the user's password using a verified reset code.
  *     requestBody:
