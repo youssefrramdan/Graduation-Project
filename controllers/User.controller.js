@@ -68,7 +68,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
  */
 const getSpecificUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const user = await UserModel.findById(id).select("-password -__v");
+  const user = await UserModel.findById(id);
 
   if (!user) {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
@@ -196,6 +196,108 @@ const getUserFiles = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get Logged-in User Data
+ * @route   GET /api/v1/users/getMe
+ * @access  Private (User)
+ */
+const getMe = asyncHandler(async (req, res, next) => {
+  if (!req.user || !req.user._id) {
+    return next(new ApiError("User authentication failed. Please log in.", 401));
+  }
+
+  req.params.id = req.user._id;
+
+  next();
+});
+
+/**
+ * @desc    Update Logged-in User Password
+ * @route   PATCH /api/v1/users/updateMyPassword
+ * @access  Private (User)
+ */
+const updateMyPassword = asyncHandler(async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+
+  if (!oldPassword || !newPassword) {
+    return next(new ApiError("enter both old and new passwords", 400));
+  }
+
+  const user = await UserModel.findById(req.user._id).select("+password");
+
+  if (!user) {
+    return next(new ApiError("User not found", 404));
+  }
+
+  
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) {
+    return next(new ApiError("Incorrect old password", 400));
+  }
+
+  
+  user.password = await newPassword;
+  user.passwordChangedAt = Date.now();
+
+  await user.save();
+
+  res.status(200).json({ message: "success" });
+});
+
+/**
+ * @desc    Update Logged-in User Data
+ * @route   PATCH /api/v1/users/updateMe
+ * @access  Private (User only)
+ */
+const updateMe = asyncHandler(async (req, res, next) => {
+  if (req.body.password || req.body.oldPassword) {
+    return next(new ApiError("This route is not for password updates", 400));
+  }
+
+  
+  if (req.body.email) {
+    const existingUser = await UserModel.findOne({ email: req.body.email });
+    if (existingUser && existingUser._id.toString() !== req.user._id.toString()) {
+      return next(new ApiError("Email already exists. Please use a different one.", 400));
+    }
+  }
+
+  const allowedUpdates = { name: req.body.name, email: req.body.email, phone: req.body.phone };
+
+  await UserModel.findByIdAndUpdate(req.user._id, allowedUpdates, {
+  }).select("-password -__v");
+
+
+
+  res.status(200).json({
+    message: "success",
+  });
+});
+
+const deactivateMe = asyncHandler(async (req, res, next) => {
+    await UserModel.findByIdAndUpdate(
+    req.user._id,
+    { active: false },
+  ).select("-password -__v");
+
+
+  res.status(200).json({
+    message: "success",
+  
+  });
+});
+const activateMe = asyncHandler(async (req, res, next) => {
+  await UserModel.findByIdAndUpdate(
+    req.user._id,
+    { active: true },
+  ).select("-password -__v");
+
+
+  res.status(200).json({
+    message: "success",
+  });
+});
+
 export {
   getAllUsers,
   getSpecificUser,
@@ -205,4 +307,9 @@ export {
   deleteUser,
   getUserFiles,
   changeUserPassword,
+  getMe,
+  updateMyPassword,
+  updateMe,
+  deactivateMe,
+  activateMe
 };

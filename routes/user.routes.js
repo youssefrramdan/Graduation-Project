@@ -1,13 +1,18 @@
 import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
+  activateMe,
   activateSpecificUser,
   changeUserPassword,
   createUser,
+  deactivateMe,
   deleteUser,
   getAllUsers,
+  getMe,
   getSpecificUser,
   getUserFiles,
+  updateMe,
+  updateMyPassword,
   updateUser,
 } from "../controllers/User.controller.js";
 import {
@@ -108,6 +113,19 @@ userRouter
     createUserValidator,
     createUser
   );
+
+
+
+
+userRouter.route("/getMe").get(protectedRoutes, getMe, getSpecificUser);
+userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
+userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
+userRouter.route("/deactivateMe").patch(protectedRoutes, deactivateMe);
+userRouter.route("/activateMe").patch(protectedRoutes, activateMe);
+
+
+
+
 
 /**
  * @swagger
@@ -267,4 +285,6 @@ userRouter.route("/changePassword/:id").patch(protectedRoutes, changeUserPasswor
  */
 userRouter.route("/activate/:id").patch(protectedRoutes, activeValidator, activateSpecificUser);
 
+
+  
 export default userRouter;

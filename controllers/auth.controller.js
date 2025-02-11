@@ -74,6 +74,11 @@ const login = asyncHandler(async (req, res, next) => {
       )
     );
   }
+  if (user.active== true) {
+    return next(new ApiError(
+      "Your account is not activated.", 
+      401));
+  }
 
   const token = generateToken(user._id);
   res.cookie("token", token, {
