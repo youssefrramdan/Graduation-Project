@@ -4,6 +4,8 @@
 import asyncHandler from "express-async-handler";
 import xlsx from "xlsx";
 import DrugModel from "../models/Drug.model.js";
+import ApiError from "../utils/apiError.js";
+import { ApiFeatures } from "../utils/apiFeatures.js";
 
 /**
  * @desc    Get all drugs
@@ -12,101 +14,93 @@ import DrugModel from "../models/Drug.model.js";
  * @access  Public
  */
 
-const getAllDrugs = asyncHandler(async (req, res) => {
-  // 1) Filtering
-  const query = { ...req.query };
-  const excludedFields = ["page", "limit", "skip", "sort", "keyword", "fields"];
-  excludedFields.forEach((field) => delete query[field]);
+const getAllDrugs = asyncHandler(async (req, res, next) => {
 
-  let queryStr = JSON.stringify(query);
-  queryStr = queryStr.replace(/\b(gt|gte|lt|lte)\b/g, (match) => `$${match}`);
-  let filters = JSON.parse(queryStr);
+  // Build the query
+  const countDocuments = await DrugModel.countDocuments();
+  const apiFeatures = new ApiFeatures(DrugModel.find(),req.query)
+    .paginate(countDocuments)
+    .filter()
+    .dateFilters()
+    .sort()
+    .search()
+    .limitFields();
 
-  // 2) Keyword Search (Adding to filters)
-  if (req.query.keyword) {
-    filters.$or = [
-      { name: { $regex: req.query.keyword, $options: "i" } },
-      { description: { $regex: req.query.keyword, $options: "i" } },
-    ];
-  }
-
-  // 3) Date Filtering (Adding productionDate & expirationDate filters)
-  if (req.query.productionDate) {
-    filters.productionDate = {};
-    if (req.query.productionDate.gte)
-      filters.productionDate.$gte = new Date(req.query.productionDate.gte);
-    if (req.query.productionDate.lte)
-      filters.productionDate.$lte = new Date(req.query.productionDate.lte);
-  }
-
-  if (req.query.expirationDate) {
-    filters.expirationDate = {};
-    if (req.query.expirationDate.gte)
-      filters.expirationDate.$gte = new Date(req.query.expirationDate.gte);
-    if (req.query.expirationDate.lte)
-      filters.expirationDate.$lte = new Date(req.query.expirationDate.lte);
-  }
-
-  // 4) Pagination
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 30;
-  const skip = (page - 1) * limit;
-  const countDocuments = await DrugModel.countDocuments(filters);
-
-  const pagination = {
-    currentPage: page,
-    resultsPerPage: limit,
-    totalPages: Math.ceil(countDocuments / limit),
-  };
-  if (page * limit < countDocuments) pagination.nextPage = page + 1;
-  if (page > 1) pagination.previousPage = page - 1;
-
-  // 5) Build the query
-  let mongooseQuery = DrugModel.find(filters).skip(skip).limit(limit);
-
-  // 6) Sorting
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join(" ");
-    mongooseQuery = mongooseQuery.sort(sortBy);
-  } else {
-    mongooseQuery = mongooseQuery.sort("-createdAt");
-  }
-
-  // 7) Field selection
-  if (req.query.fields) {
-    const fields = req.query.fields.split(",").join(" ");
-    mongooseQuery = mongooseQuery.select(fields);
-  } else {
-    mongooseQuery = mongooseQuery.select("-__v");
-  }
-
-  // 8) Execute the query
+  // Execute the query
+  const {mongooseQuery, paginationResult} = apiFeatures;
   const drugs = await mongooseQuery;
 
-  // 9) Return the response
+  // Return the response
   res.status(200).json({
     status: "success",
-    pagination,
+    paginationResult,
     results: drugs.length,
     data: drugs,
   });
 });
 
+/**
+ * @desc    Get specific drug by ID
+ * @route   GET /api/v1/drugs/:id
+ * @access  Public
+ */
 
+const getSpecificDrug = asyncHandler(async (req, res, next) => {
+  const {id} = req.params;
+  const drug = await DrugModel.findById(id);
+  if(!drug) {
+    return next(new ApiError(`No drug found with ID ${id}`, 404));
+  }
+  res.status(201).json({message: "success", data: drug});
+});
+
+/**
+ * @desc    Add Drug
+ * @route   post /api/v1/drugs
+ * @access  private
+ */
 
 const addDrug = asyncHandler(async (req, res, next) => {
   // Add createdBy to req.body
-  const drugData = {
-    ...req.body,
-    createdBy: req.user._id,
-  };
+  const drugData = {...req.body, createdBy: req.user._id};
   const drug = await DrugModel.create(drugData);
-  res.status(201).json({
-    message: "success",
-    data: drug,
-  });
+  res.status(201).json({message: "success", data: drug });
 });
 
+/**
+ * @desc    Update specific drug
+ * @route   post /api/v1/drugs/:id
+ * @access  private
+ */
+
+const updateDrug = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!drug) {
+      return next(new ApiError(`No drug found with ID ${id}`, 404));
+    }
+  res.status(201).json({message: "success", data: drug });
+});
+
+/**
+ * @desc    Delete specific drug
+ * @route   DELETE /api/v1/drugs/:id
+ * @access  Private
+ */
+const deleteDrug = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const drug = await DrugModel.findByIdAndDelete(id);
+
+  if (!drug) {
+    return next(new ApiError(`No drug found with ID ${id}`, 404));
+  }
+
+  res.status(200).json({ message: "success"});
+});
 
 const addDrugsFromExcel = async (req, res) => {
   try {
@@ -171,4 +165,4 @@ const addDrugsFromExcel = async (req, res) => {
   }
 };
 
-export { addDrug, getAllDrugs, addDrugsFromExcel };
+export { addDrug, getAllDrugs, addDrugsFromExcel, getSpecificDrug, updateDrug, deleteDrug };
