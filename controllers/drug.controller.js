@@ -13,14 +13,11 @@ import {
 import UserModel from "../models/User.model.js";
 
 /**
- * @desc    Get all drugs
- * @route   GET /api/drugs?price[gte]=100&price[lte]=500&expirationDate[gte]=2024-06-01
- * @route   GET /api/drugs?productionDate[gte]=2023-01-01&expirationDate[lte]=2025-12-31
+ * @desc    Get all drugs with advanced filtering, sorting, pagination, and searching.
+ * @route   GET /api/v1/drugs
  * @access  Public
  */
-
 const getAllDrugs = asyncHandler(async (req, res, next) => {
-  // Build the query
   const countDocuments = await DrugModel.countDocuments();
   const apiFeatures = new ApiFeatures(DrugModel.find(), req.query)
     .paginate(countDocuments)
@@ -30,11 +27,9 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
     .search()
     .limitFields();
 
-  // Execute the query
   const { mongooseQuery, paginationResult } = apiFeatures;
   const drugs = await mongooseQuery;
 
-  // Return the response
   res.status(200).json({
     status: "success",
     paginationResult,
@@ -44,39 +39,35 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Get specific drug by ID
+ * @desc    Get a specific drug by its ID.
  * @route   GET /api/v1/drugs/:id
  * @access  Public
  */
-
 const getSpecificDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const drug = await DrugModel.findById(id);
   if (!drug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
-  res.status(201).json({ message: "success", data: drug });
+  res.status(200).json({ message: "success", data: drug });
 });
 
 /**
- * @desc    Add Drug
- * @route   post /api/v1/drugs
- * @access  private
+ * @desc    Add a new drug.
+ * @route   POST /api/v1/drugs
+ * @access  Private (Authenticated users only)
  */
-
 const addDrug = asyncHandler(async (req, res, next) => {
-  // Add createdBy to req.body
   const drugData = { ...req.body, createdBy: req.user._id };
   const drug = await DrugModel.create(drugData);
   res.status(201).json({ message: "success", data: drug });
 });
 
 /**
- * @desc    Update specific drug
- * @route   post /api/v1/drugs/:id
- * @access  private
+ * @desc    Update a specific drug by its ID.
+ * @route   PUT /api/v1/drugs/:id
+ * @access  Private (Authenticated users only)
  */
-
 const updateDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
@@ -87,13 +78,13 @@ const updateDrug = asyncHandler(async (req, res, next) => {
   if (!drug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
-  res.status(201).json({ message: "success", data: drug });
+  res.status(200).json({ message: "success", data: drug });
 });
 
 /**
- * @desc    Delete specific drug
+ * @desc    Delete a specific drug by its ID.
  * @route   DELETE /api/v1/drugs/:id
- * @access  Private
+ * @access  Private (Authenticated users only)
  */
 const deleteDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -105,11 +96,16 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ message: "success" });
 });
+
+/**
+ * @desc    Add drugs from an Excel file.
+ * @route   POST /api/v1/drugs/from-excel
+ * @access  Private (Authenticated users only)
+ */
 const addDrugsFromExcel = asyncHandler(async (req, res) => {
   let filePath;
-  // Determine if the user wants to use an existing file or upload a new one
+
   if (req.body.fileId) {
-    // Use an existing file
     const user = await UserModel.findById(req.user._id).select("files");
     const selectedFile = user.files.find(
       (file) => file._id.toString() === req.body.fileId
@@ -121,10 +117,8 @@ const addDrugsFromExcel = asyncHandler(async (req, res) => {
 
     filePath = selectedFile.fileUrl;
   } else if (req.file?.path) {
-    // Upload a new file
     filePath = req.file.path;
 
-    // Save the new file in the user's files array
     await UserModel.findByIdAndUpdate(req.user._id, {
       $push: {
         files: {
@@ -140,7 +134,6 @@ const addDrugsFromExcel = asyncHandler(async (req, res) => {
       .json({ message: "Please provide a fileId or upload a new Excel file." });
   }
 
-  // Process the file and insert data
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
   const endRow = Number(req.body.endRow) || 40;
@@ -158,6 +151,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res) => {
     filePath,
   });
 });
+
 export {
   addDrug,
   getAllDrugs,
