@@ -58,7 +58,12 @@ const getSpecificDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrug = asyncHandler(async (req, res, next) => {
-  const drugData = { ...req.body, createdBy: req.user._id };
+  let imageCoverUrl = req.file?.path || "";
+  const drugData = { 
+    ...req.body,
+    createdBy: req.user._id,
+    imageCover: imageCoverUrl,
+  };
   const drug = await DrugModel.create(drugData);
   res.status(201).json({ message: "success", data: drug });
 });
@@ -69,8 +74,12 @@ const addDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const updateDrug = asyncHandler(async (req, res, next) => {
+  let updatedData = { ...req.body };
+  if (req.file) {
+    updatedData.imageCover = req.file.path;
+  }
   const { id } = req.params;
-  const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
+  const drug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
     new: true,
     runValidators: true,
   });

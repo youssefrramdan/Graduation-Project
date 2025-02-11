@@ -19,6 +19,7 @@ import createUploader from "../middlewares/uploadImageMiddleware.js";
 
 const drugRouter = express.Router();
 const upload = createUploader("excel-files", ["xlsx"]);
+const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
 /**
  * @swagger
@@ -142,8 +143,10 @@ drugRouter
  */
 drugRouter
   .route("/")
-  .post(protectedRoutes, upload.single("imageCover"), addDrugValidator, addDrug)
+  .post(protectedRoutes, uploadimg.single("imageCover"), addDrugValidator, addDrug)
   .get(getAllDrugs);
+
+
 
 /**
  * @swagger
@@ -241,7 +244,7 @@ drugRouter
   .get(getSpecificDrugValidator, getSpecificDrug)
   .put(
     protectedRoutes,
-    upload.single("imageCover"),
+    uploadimg.single("imageCover"),
     updateDrugValidator,
     updateDrug
   )
