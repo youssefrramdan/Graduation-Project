@@ -23,8 +23,16 @@ const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
 /**
  * @swagger
+ * tags:
+ *   - name: Drugs
+ *     description: Endpoints for managing drugs and related operations
+ */
+
+/**
+ * @swagger
  * /api/v1/drugs/excel:
  *   post:
+ *     tags: [Drugs]
  *     summary: Add multiple drugs from an Excel file
  *     description: Upload an Excel file or provide an existing file ID to add multiple drugs at once. Only one of `file` or `fileId` should be provided.
  *     requestBody:
@@ -66,6 +74,7 @@ drugRouter
  * @swagger
  * /api/v1/drugs:
  *   post:
+ *     tags: [Drugs]
  *     summary: Add a new drug
  *     description: Add a new drug to the system with an optional image upload.
  *     requestBody:
@@ -120,6 +129,7 @@ drugRouter
  *       400:
  *         description: Bad request
  *   get:
+ *     tags: [Drugs]
  *     summary: Get all drugs
  *     description: Retrieve a list of all drugs in the system.
  *     responses:
@@ -152,6 +162,7 @@ drugRouter
  * @swagger
  * /api/v1/drugs/{id}:
  *   get:
+ *     tags: [Drugs]
  *     summary: Get a drug by ID
  *     description: Retrieve details of a specific drug by its ID.
  *     parameters:
@@ -165,6 +176,7 @@ drugRouter
  *       200:
  *         description: Drug details
  *   put:
+ *     tags: [Drugs]
  *     summary: Update a drug by ID
  *     description: Update details of a specific drug and optionally upload a new image.
  *     parameters:
@@ -226,6 +238,7 @@ drugRouter
  *       400:
  *         description: Bad request
  *   delete:
+ *     tags: [Drugs]
  *     summary: Delete a drug by ID
  *     description: Remove a specific drug by its ID from the system.
  *     parameters:
