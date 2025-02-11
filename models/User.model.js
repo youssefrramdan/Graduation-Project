@@ -70,6 +70,14 @@ const userSchema = new Schema(
         ref: "Drug",
       },
     ],
+    files: [
+      {
+        fileName: { type: String, required: true },
+        fileUrl: { type: String, required: true },
+        uploadedAt: { type: Date, default: Date.now },
+      },
+    ],
+
     orders: [
       {
         type: Types.ObjectId,

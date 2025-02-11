@@ -116,7 +116,7 @@ const createUser = asyncHandler(async (req, res, next) => {
 
   const user = await UserModel.create(req.body);
   sendEmail(user.email, "verification");
-  
+
   res.status(201).json({ message: "success", user: user });
 });
 
@@ -181,6 +181,21 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", user: user });
 });
 
+const getUserFiles = asyncHandler(async (req, res) => {
+  console.log("Params:", req.params);
+  console.log("Body:", req.body);
+
+  const user = await UserModel.findById(req.user._id).select("files");
+  if (!user) {
+    return res.status(404).json({ message: "User not found." });
+  }
+
+  res.status(200).json({
+    status: "success",
+    files: user.files,
+  });
+});
+
 export {
   getAllUsers,
   getSpecificUser,
@@ -188,5 +203,6 @@ export {
   createUser,
   updateUser,
   deleteUser,
+  getUserFiles,
   changeUserPassword,
 };

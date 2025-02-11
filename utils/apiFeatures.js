@@ -1,3 +1,6 @@
+/* eslint-disable no-unused-expressions */
+/* eslint-disable node/no-unsupported-features/es-syntax */
+/* eslint-disable import/prefer-default-export */
 
 export class ApiFeatures{
     constructor(mongooseQuery, queryStr){

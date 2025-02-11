@@ -7,6 +7,7 @@ import {
   deleteUser,
   getAllUsers,
   getSpecificUser,
+  getUserFiles,
   updateUser,
 } from "../controllers/User.controller.js";
 import {
@@ -37,6 +38,8 @@ userRouter
     createUserValidator, // Validate request body
     createUser // Create new user
   );
+  
+userRouter.route("/files").get(protectedRoutes, getUserFiles); // Get user's files
 
 /**
  * @description  Get, update, or delete a specific user by ID
