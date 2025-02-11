@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start:dev": "nodemon server.js",
-    "start:prod": "cross-env NODE_ENV=production node server.js"
+    "start:prod": "node server.js"
   },
   "keywords": [],
   "author": "",
