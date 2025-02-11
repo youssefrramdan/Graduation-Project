@@ -9,6 +9,7 @@ import {
 } from "../controllers/drug.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 import {
+  addDrugsFromExcelValidator,
   addDrugValidator,
   deleteDrugValidator,
   getSpecificDrugValidator,
@@ -21,7 +22,12 @@ const upload = createUploader("excel-files", ["xlsx"]);
 
 drugRouter
   .route("/excel")
-  .post(protectedRoutes, upload.single("file"), addDrugsFromExcel);
+  .post(
+    protectedRoutes,
+    upload.single("file"),
+    addDrugsFromExcelValidator,
+    addDrugsFromExcel
+  );
 
 drugRouter
   .route("/")
@@ -33,7 +39,5 @@ drugRouter
   .get(getSpecificDrugValidator, getSpecificDrug) // Get drug by ID
   .put(protectedRoutes, updateDrugValidator, updateDrug) // Update drug details
   .delete(protectedRoutes, deleteDrugValidator, deleteDrug); // Delete drug
-
-
 
 export default drugRouter;

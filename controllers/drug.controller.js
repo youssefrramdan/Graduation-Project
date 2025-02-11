@@ -102,23 +102,12 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
  * @route   POST /api/v1/drugs/from-excel
  * @access  Private (Authenticated users only)
  */
-const addDrugsFromExcel = asyncHandler(async (req, res) => {
-  let filePath;
+const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
+  let filePath = req.selectedFilePath;  
 
-  if (req.body.fileId) {
-    const user = await UserModel.findById(req.user._id).select("files");
-    const selectedFile = user.files.find(
-      (file) => file._id.toString() === req.body.fileId
-    );
-
-    if (!selectedFile) {
-      return res.status(404).json({ message: "File not found in your files." });
-    }
-
-    filePath = selectedFile.fileUrl;
-  } else if (req.file?.path) {
+  if (!filePath && req.file?.path) {
     filePath = req.file.path;
-
+    // Save the new file in the user's files array
     await UserModel.findByIdAndUpdate(req.user._id, {
       $push: {
         files: {
@@ -128,12 +117,12 @@ const addDrugsFromExcel = asyncHandler(async (req, res) => {
         },
       },
     });
-  } else {
-    return res
-      .status(400)
-      .json({ message: "Please provide a fileId or upload a new Excel file." });
   }
 
+  if (!filePath) {
+    return next(new ApiError("Please provide a fileId or upload a new Excel file.", 400));
+  }
+  // Process the file and insert data
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
   const endRow = Number(req.body.endRow) || 40;

@@ -1,5 +1,7 @@
 import { check } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
+import mongoose from "mongoose";
+import UserModel from "../../models/User.model.js";
 
 const addDrugValidator = [
   check("name")
@@ -57,10 +59,13 @@ const addDrugValidator = [
     .optional()
     .isFloat({ min: 0 })
     .custom((val, { req }) => {
-      const expectedPrice =
-      parseFloat((req.body.price - (req.body.price * req.body.discount) / 100).toFixed(2));
+      const expectedPrice = parseFloat(
+        (req.body.price - (req.body.price * req.body.discount) / 100).toFixed(2)
+      );
       if (parseFloat(val.toFixed(2)) !== expectedPrice) {
-        throw new Error(`Discounted price calculation is incorrect. Expected ${expectedPrice}`);
+        throw new Error(
+          `Discounted price calculation is incorrect. Expected ${expectedPrice}`
+        );
       }
       return true;
     }),
@@ -82,4 +87,45 @@ const deleteDrugValidator = [
   validatorMiddleware,
 ];
 
-export { addDrugValidator, getSpecificDrugValidator, updateDrugValidator, deleteDrugValidator };
+export const addDrugsFromExcelValidator = [
+  check("fileId")
+    .optional()
+    .isMongoId()
+    .withMessage("Invalid fileId format. It must be a valid MongoDB ObjectId")
+    .custom(async (fileId, { req }) => {
+      // Check if file exists in user's files
+      const user = await UserModel.findById(req.user._id).select("files");
+      if (!user || !user.files.length) {
+        throw new Error("No files found for this user.");
+      }
+    //id رجع الفايل اللي يطابق ال 
+    // body المبعوت في ال 
+      const selectedFile = user.files.find((file) => file._id.toString() === fileId);
+
+      if (!selectedFile) {
+        throw new Error("File not found in your files.");
+      }
+      // Attach the file path to the request for use in the controller
+      req.selectedFilePath = selectedFile.fileUrl;
+      return true;
+    }),
+
+  check("startRow")
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage("Start row must be a positive integer."),
+
+  check("endRow")
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage("End row must be a positive integer greater than 0."),
+
+  validatorMiddleware,
+];
+
+export {
+  addDrugValidator,
+  getSpecificDrugValidator,
+  updateDrugValidator,
+  deleteDrugValidator,
+};
