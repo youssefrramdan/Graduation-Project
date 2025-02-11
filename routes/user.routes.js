@@ -1,13 +1,18 @@
 import express from "express";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
+  activateMe,
   activateSpecificUser,
   changeUserPassword,
   createUser,
+  deactivateMe,
   deleteUser,
   getAllUsers,
+  getMe,
   getSpecificUser,
   getUserFiles,
+  updateMe,
+  updateMyPassword,
   updateUser,
 } from "../controllers/User.controller.js";
 import {
@@ -41,6 +46,19 @@ userRouter
   
 userRouter.route("/files").get(protectedRoutes, getUserFiles); // Get user's files
 
+
+
+
+userRouter.route("/getMe").get(protectedRoutes, getMe, getSpecificUser);
+userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
+userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
+userRouter.route("/deactivateMe").patch(protectedRoutes, deactivateMe);
+userRouter.route("/activateMe").patch(protectedRoutes, activateMe);
+
+
+
+
+
 /**
  * @description  Get, update, or delete a specific user by ID
  * @route        GET, PUT, DELETE /api/v1/users/:id
@@ -70,4 +88,6 @@ userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser); // Activate/Deactivate user
 
+
+  
 export default userRouter;
