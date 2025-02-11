@@ -1,5 +1,4 @@
 import express from "express";
-import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   loginValidator,
   signUpValidator,
@@ -21,7 +20,7 @@ const authRouter = express.Router();
  * /api/v1/auth/signup:
  *   post:
  *     summary: Register a new user
- *     description: Create a new user account with email and password.
+ *     description: Create a new user account with complete details.
  *     requestBody:
  *       required: true
  *       content:
@@ -29,15 +28,50 @@ const authRouter = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               name:
- *                 type: string
- *                 description: User's full name
  *               email:
  *                 type: string
  *                 description: User's email address
+ *               name:
+ *                 type: string
+ *                 description: User's username
+ *               ownerName:
+ *                 type: string
+ *                 description: Owner's full name
+ *               phone:
+ *                 type: string
+ *                 description: User's phone number
+ *               role:
+ *                 type: string
+ *                 description: Role of the user (e.g., pharmacy)
+ *               city:
+ *                 type: string
+ *                 description: User's city
+ *               location:
+ *                 type: object
+ *                 properties:
+ *                   type:
+ *                     type: string
+ *                     description: Location type (e.g., Point)
+ *                   coordinates:
+ *                     type: array
+ *                     items:
+ *                       type: number
+ *                     description: Coordinates [longitude, latitude]
+ *               governorate:
+ *                 type: string
+ *                 description: Governorate of the user
+ *               registrationNumber:
+ *                 type: string
+ *                 description: Registration number
+ *               identificationNumber:
+ *                 type: string
+ *                 description: Identification number
  *               password:
  *                 type: string
  *                 description: User's password
+ *               rePassword:
+ *                 type: string
+ *                 description: Confirmation of the password
  *     responses:
  *       201:
  *         description: User registered successfully
@@ -155,9 +189,9 @@ authRouter.route("/verifyResetCode").post(verifyResetCode);
  *           schema:
  *             type: object
  *             properties:
- *               resetCode:
+ *               email:
  *                 type: string
- *                 description: Verified reset code
+ *                 description: User's email address
  *               newPassword:
  *                 type: string
  *                 description: New password for the user
