@@ -58,17 +58,28 @@ const addDrugValidator = [
     .isFloat({ min: 0 })
     .custom((val, { req }) => {
       const expectedPrice =
-        req.body.price - (req.body.price * req.body.discount) / 100;
-      if (val !== expectedPrice) {
-        throw new Error("Discounted price calculation is incorrect.");
+      parseFloat((req.body.price - (req.body.price * req.body.discount) / 100).toFixed(2));
+      if (parseFloat(val.toFixed(2)) !== expectedPrice) {
+        throw new Error(`Discounted price calculation is incorrect. Expected ${expectedPrice}`);
       }
       return true;
     }),
   validatorMiddleware,
 ];
+
 const getSpecificDrugValidator = [
-  check("id").isMongoId().withMessage("Invalid user ID"),
+  check("id").isMongoId().withMessage("Invalid drug ID"),
   validatorMiddleware,
 ];
 
-export { addDrugValidator, getSpecificDrugValidator };
+const updateDrugValidator = [
+  check("id").isMongoId().withMessage("Invalid drug ID"),
+  validatorMiddleware,
+];
+
+const deleteDrugValidator = [
+  check("id").isMongoId().withMessage("Invalid drug ID"),
+  validatorMiddleware,
+];
+
+export { addDrugValidator, getSpecificDrugValidator, updateDrugValidator, deleteDrugValidator };

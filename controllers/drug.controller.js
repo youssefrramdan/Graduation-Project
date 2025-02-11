@@ -4,6 +4,7 @@
 import asyncHandler from "express-async-handler";
 import xlsx from "xlsx";
 import DrugModel from "../models/Drug.model.js";
+import ApiError from "../utils/apiError.js";
 
 /**
  * @desc    Get all drugs
@@ -92,21 +93,68 @@ const getAllDrugs = asyncHandler(async (req, res) => {
   });
 });
 
+/**
+ * @desc    Get specific drug by ID
+ * @route   GET /api/v1/drugs/:id
+ * @access  Public
+ */
 
+const getSpecificDrug = asyncHandler(async (req, res, next) => {
+  const {id} = req.params;
+  const drug = await DrugModel.findById(id);
+  if(!drug) {
+    return next(new ApiError(`No drug found with ID ${id}`, 404));
+  }
+  res.status(201).json({message: "success", data: drug});
+});
+
+/**
+ * @desc    Add Drug
+ * @route   post /api/v1/drugs
+ * @access  private
+ */
 
 const addDrug = asyncHandler(async (req, res, next) => {
   // Add createdBy to req.body
-  const drugData = {
-    ...req.body,
-    createdBy: req.user._id,
-  };
+  const drugData = {...req.body, createdBy: req.user._id};
   const drug = await DrugModel.create(drugData);
-  res.status(201).json({
-    message: "success",
-    data: drug,
-  });
+  res.status(201).json({message: "success", data: drug });
 });
 
+/**
+ * @desc    Update specific drug
+ * @route   post /api/v1/drugs/:id
+ * @access  private
+ */
+
+const updateDrug = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!drug) {
+      return next(new ApiError(`No drug found with ID ${id}`, 404));
+    }
+  res.status(201).json({message: "success", data: drug });
+});
+
+/**
+ * @desc    Delete specific drug
+ * @route   DELETE /api/v1/drugs/:id
+ * @access  Private
+ */
+const deleteDrug = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const drug = await DrugModel.findByIdAndDelete(id);
+
+  if (!drug) {
+    return next(new ApiError(`No drug found with ID ${id}`, 404));
+  }
+
+  res.status(200).json({ message: "success"});
+});
 
 const addDrugsFromExcel = async (req, res) => {
   try {
@@ -171,4 +219,4 @@ const addDrugsFromExcel = async (req, res) => {
   }
 };
 
-export { addDrug, getAllDrugs, addDrugsFromExcel };
+export { addDrug, getAllDrugs, addDrugsFromExcel, getSpecificDrug, updateDrug, deleteDrug };
