@@ -71,13 +71,13 @@ const createUserValidator = [
   // Ensure role is provided
   check("role").notEmpty().withMessage("Role is required"),
 
-  // Sanitize and validate license document
-  body("licenseDocument").customSanitizer((value, { req }) => {
-    if (req.file && req.file.path) {
-      return req.file.path;
-    }
-    return value;
-  }),
+  // // Sanitize and validate license document
+  // body("licenseDocument").customSanitizer((value, { req }) => {
+  //   if (req.file && req.file.path) {
+  //     return req.file.path;
+  //   }
+  //   return value;
+  // }),
 
   // Apply validation middleware
   validatorMiddleware,
