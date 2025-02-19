@@ -5,6 +5,9 @@ import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import { sendEmail } from "../middlewares/sendEmail.js";
 
+
+
+
 /**
  * @desc    Get all users
  * @route   GET /api/v1/users
@@ -298,6 +301,30 @@ const activateMe = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+const getNearestInventories = asyncHandler(async (req, res, next) => {
+  const { latitude, longitude } = req.query;
+  if (!latitude || !longitude) {
+    return next(new ApiError("Latitude and Longitude are required!", 400));
+  }
+
+  const inventories = await UserModel.find({
+    role: "inventory",
+    location: {
+      $near: {
+        $geometry: {
+          type: "Point",
+          coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        },
+        $maxDistance: 10000,
+      },
+    },
+  }).select("name location phone");
+
+  res.status(200).json({ message: "success", inventories });
+});
+
+
 export {
   getAllUsers,
   getSpecificUser,
@@ -311,5 +338,6 @@ export {
   updateMyPassword,
   updateMe,
   deactivateMe,
-  activateMe
+  activateMe,
+  getNearestInventories,
 };

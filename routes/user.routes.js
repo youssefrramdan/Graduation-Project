@@ -9,6 +9,7 @@ import {
   deleteUser,
   getAllUsers,
   getMe,
+  getNearestInventories,
   getSpecificUser,
   getUserFiles,
   updateMe,
@@ -124,7 +125,7 @@ userRouter.route("/deactivateMe").patch(protectedRoutes, deactivateMe);
 userRouter.route("/activateMe").patch(protectedRoutes, activateMe);
 
 
-
+userRouter.route("/nearest-inventories").get(getNearestInventories);
 
 
 /**
@@ -286,5 +287,6 @@ userRouter.route("/changePassword/:id").patch(protectedRoutes, changeUserPasswor
 userRouter.route("/activate/:id").patch(protectedRoutes, activeValidator, activateSpecificUser);
 
 
-  
+
+
 export default userRouter;
