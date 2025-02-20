@@ -36,7 +36,14 @@ const signup = asyncHandler(async (req, res, next) => {
   sendEmail(user.email, "verification");
 
   const token = generateToken(user._id);
-  res.cookie("token", token, {
+  const userData = {
+    token,
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    name: user.name
+  };
+  res.cookie("userData", JSON.stringify(userData), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 3600000,
@@ -83,7 +90,14 @@ const login = asyncHandler(async (req, res, next) => {
       */
 
   const token = generateToken(user._id);
-  res.cookie("token", token, {
+  const userData = {
+    token,
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    name: user.name
+  };
+  res.cookie("userData", JSON.stringify(userData), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
@@ -258,7 +272,14 @@ const resetPassword = asyncHandler(async (req, res, next) => {
   await user.save();
 
   const token = generateToken(user._id);
-  res.cookie("token", token, {
+  const userData = {
+    token,
+    id: user._id,
+    email: user.email,
+    role: user.role,
+    name: user.name
+  };
+  res.cookie("userData", JSON.stringify(userData), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     maxAge: 3600000,
