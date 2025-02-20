@@ -42,15 +42,16 @@ const signup = asyncHandler(async (req, res, next) => {
     sameSite: "none",
     maxAge: 3600000,
   });
-  
+
   res.status(201).json({
     message: "success",
     user: {
-      id : user._id,
+      id: user._id,
       email: user.email,
       role: user.role,
       name: user.name,
     },
+    token,
   });
 });
 
@@ -96,6 +97,7 @@ const login = asyncHandler(async (req, res, next) => {
       role: user.role,
       name: user.name,
     },
+    token,
   });
 });
 
@@ -261,7 +263,7 @@ const resetPassword = asyncHandler(async (req, res, next) => {
     id: user._id,
     email: user.email,
     role: user.role,
-    name: user.name
+    name: user.name,
   };
   res.cookie("userData", JSON.stringify(userData), {
     httpOnly: true,
