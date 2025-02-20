@@ -96,7 +96,6 @@ const login = asyncHandler(async (req, res, next) => {
       role: user.role,
       name: user.name,
     },
-    token,
   });
 });
 
