@@ -49,8 +49,14 @@ const swaggerOptions = {
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use("/apidocs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
-app.use(cors());
-app.options("*", cors());
+const corsOptions = {
+  origin: true,
+  credentials: true, 
+  optionsSuccessStatus: 200 
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 app.use(compression());
 // middlewares
 
