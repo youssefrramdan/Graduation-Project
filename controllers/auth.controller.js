@@ -36,19 +36,13 @@ const signup = asyncHandler(async (req, res, next) => {
   sendEmail(user.email, "verification");
 
   const token = generateToken(user._id);
-  const userData = {
-    token,
-    id: user._id,
-    email: user.email,
-    role: user.role,
-    name: user.name
-  };
-  res.cookie("userData", JSON.stringify(userData), {
+  res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
+    sameSite: "none",
     maxAge: 3600000,
   });
-
+  
   res.status(201).json({
     message: "success",
     user: {
@@ -57,7 +51,6 @@ const signup = asyncHandler(async (req, res, next) => {
       role: user.role,
       name: user.name,
     },
-    token,
   });
 });
 
@@ -88,16 +81,8 @@ const login = asyncHandler(async (req, res, next) => {
       401));
   }
       */
-
   const token = generateToken(user._id);
-  const userData = {
-    token,
-    id: user._id,
-    email: user.email,
-    role: user.role,
-    name: user.name
-  };
-  res.cookie("userData", JSON.stringify(userData), {
+  res.cookie("token", token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "none",
