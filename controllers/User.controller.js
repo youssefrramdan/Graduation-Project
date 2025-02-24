@@ -133,7 +133,7 @@ const updateUser = asyncHandler(async (req, res, next) => {
   const user = await UserModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
-  });
+  }).select("-password -identificationNumber -registrationNumber -role -location");
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
