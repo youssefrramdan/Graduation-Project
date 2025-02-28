@@ -305,8 +305,8 @@ const activateMe = asyncHandler(async (req, res, next) => {
 
 const getNearestInventories = asyncHandler(async (req, res, next) => {
   const userCoordinates = req.user.location.coordinates;
-  const inventories = await UserModel.find({
-    location: {
+  const inventories = await UserModel.aggregate([
+    {
       $geoNear: {
         near: { type: "Point", coordinates: userCoordinates },
         spherical: true,
@@ -314,8 +314,15 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         distanceField: "calcDistance",
       },
     },
-  });
-
+    {
+      $project: {
+        name: 1,
+        location: 1,
+        role : 1,
+        DistanceInKm: { $divide: ["$calcDistance", 1000] } // تحويل المسافة إلى كم
+      },
+    },
+  ]);
   res.status(200).json({ message: "success", inventories });
 });
 
@@ -339,8 +346,6 @@ export {
 // 🔹 $geometry هو المشغل الذي يحدد نوع الشكل الجغرافي (Point, Polygon, LineString) وإحداثياته (coordinates).
 // 📌 بدون $geometry، لن يفهم MongoDB أن هذا كائن GeoJSON، وسيرفض الاستعلام.
 
-
-
 // const inventories = await UserModel.find({
 //   role: "inventory", // تصفية النتائج بناءً على الدور
 //   location: {
@@ -355,8 +360,6 @@ export {
 //   }
 // });
 
-
-
 //! ده غلط
 // const inventories = await UserModel.find({
 //   location: {
@@ -369,8 +372,8 @@ export {
 //   },
 // });
 
-//!! ده صح 
-// $near مع find() 
+//!! ده صح
+// $near مع find()
 //  إذا كنت تحتاج فقط إلى البحث عن أقرب الأماكن بدون ترتيب دقيق أو عمليات إضافية.
 
 // const inventories = await UserModel.aggregate([
