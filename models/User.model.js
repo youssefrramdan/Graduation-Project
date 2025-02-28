@@ -7,7 +7,6 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: [true, "Email is required."],
-      unique: true,
       trim: true,
       lowercase: true,
     },
@@ -107,7 +106,13 @@ const userSchema = new Schema(
         default: [0, 0],
         validate: {
           validator: function (val) {
-            return val.length === 2;
+            return (
+              val.length === 2 &&
+              val[0] >= -180 &&
+              val[0] <= 180 &&
+              val[1] >= -90 &&
+              val[1] <= 90
+            );
           },
           message:
             "Location coordinates must contain exactly [longitude, latitude].",
@@ -125,7 +130,11 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Indexing for geospatial queries
+userSchema.index({ email: 1 }, { unique: true }); 
+userSchema.index({ phone: 1 }); 
+userSchema.index({ city: 1, governorate: 1 });
+userSchema.index({ role: 1 });
 userSchema.index({ location: "2dsphere" });
+userSchema.index({ active: 1 }, { partialFilterExpression: { active: true } }); 
 
 export default model("User", userSchema);

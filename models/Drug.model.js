@@ -77,6 +77,16 @@ const drugSchema = new Schema(
   { timestamps: true }
 );
 
+
+drugSchema.index({ name: 1 }); 
+drugSchema.index({ manufacturer: 1 }); 
+drugSchema.index({ originType: 1, price: 1 })
+drugSchema.index({ expirationDate: 1 });
+drugSchema.index({ stock: 1 }); 
+drugSchema.index({ isVisible: 1 }, { partialFilterExpression: { isVisible: true } }); 
+drugSchema.index({ createdBy: 1 });
+
+
 drugSchema.pre(/^find/, function (next) {
   this.populate({
     path: "createdBy",
