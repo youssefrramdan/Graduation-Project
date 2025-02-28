@@ -4,9 +4,7 @@ import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import { sendEmail } from "../middlewares/sendEmail.js";
-
-
-
+import { Aggregate } from "mongoose";
 
 /**
  * @desc    Get all users
@@ -133,7 +131,9 @@ const updateUser = asyncHandler(async (req, res, next) => {
   const user = await UserModel.findByIdAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
-  }).select("-password -identificationNumber -registrationNumber -role -location");
+  }).select(
+    "-password -identificationNumber -registrationNumber -role -location"
+  );
   if (!user) {
     return next(new ApiError(`There is no user with ID ${id}`, 404));
   }
@@ -206,7 +206,9 @@ const getUserFiles = asyncHandler(async (req, res) => {
  */
 const getMe = asyncHandler(async (req, res, next) => {
   if (!req.user || !req.user._id) {
-    return next(new ApiError("User authentication failed. Please log in.", 401));
+    return next(
+      new ApiError("User authentication failed. Please log in.", 401)
+    );
   }
 
   req.params.id = req.user._id;
@@ -232,13 +234,11 @@ const updateMyPassword = asyncHandler(async (req, res, next) => {
     return next(new ApiError("User not found", 404));
   }
 
-  
   const isMatch = await bcrypt.compare(oldPassword, user.password);
   if (!isMatch) {
     return next(new ApiError("Incorrect old password", 400));
   }
 
-  
   user.password = await newPassword;
   user.passwordChangedAt = Date.now();
 
@@ -257,20 +257,27 @@ const updateMe = asyncHandler(async (req, res, next) => {
     return next(new ApiError("This route is not for password updates", 400));
   }
 
-  
   if (req.body.email) {
     const existingUser = await UserModel.findOne({ email: req.body.email });
-    if (existingUser && existingUser._id.toString() !== req.user._id.toString()) {
-      return next(new ApiError("Email already exists. Please use a different one.", 400));
+    if (
+      existingUser &&
+      existingUser._id.toString() !== req.user._id.toString()
+    ) {
+      return next(
+        new ApiError("Email already exists. Please use a different one.", 400)
+      );
     }
   }
 
-  const allowedUpdates = { name: req.body.name, email: req.body.email, phone: req.body.phone };
+  const allowedUpdates = {
+    name: req.body.name,
+    email: req.body.email,
+    phone: req.body.phone,
+  };
 
-  await UserModel.findByIdAndUpdate(req.user._id, allowedUpdates, {
-  }).select("-password -__v");
-
-
+  await UserModel.findByIdAndUpdate(req.user._id, allowedUpdates, {}).select(
+    "-password -__v"
+  );
 
   res.status(200).json({
     message: "success",
@@ -278,46 +285,39 @@ const updateMe = asyncHandler(async (req, res, next) => {
 });
 
 const deactivateMe = asyncHandler(async (req, res, next) => {
-    await UserModel.findByIdAndUpdate(
-    req.user._id,
-    { active: false },
-  ).select("-password -__v");
-
+  await UserModel.findByIdAndUpdate(req.user._id, { active: false }).select(
+    "-password -__v"
+  );
 
   res.status(200).json({
     message: "success",
-  
   });
 });
 const activateMe = asyncHandler(async (req, res, next) => {
-  await UserModel.findByIdAndUpdate(
-    req.user._id,
-    { active: true },
-  ).select("-password -__v");
-
+  await UserModel.findByIdAndUpdate(req.user._id, { active: true }).select(
+    "-password -__v"
+  );
 
   res.status(200).json({
     message: "success",
   });
 });
-
 
 const getNearestInventories = asyncHandler(async (req, res, next) => {
   const userCoordinates = req.user.location.coordinates;
   const inventories = await UserModel.find({
-    role: "inventory",
     location: {
-      $near: {
-        $geometry: {
-          type: "Point",
-          coordinates: userCoordinates, 
-        },
+      $geoNear: {
+        near: { type: "Point", coordinates: userCoordinates },
+        spherical: true,
+        query: { role: "inventory" },
+        distanceField: "calcDistance",
       },
     },
-  })
+  });
+
   res.status(200).json({ message: "success", inventories });
 });
-
 
 export {
   getAllUsers,
@@ -335,3 +335,52 @@ export {
   activateMe,
   getNearestInventories,
 };
+
+// 🔹 $geometry هو المشغل الذي يحدد نوع الشكل الجغرافي (Point, Polygon, LineString) وإحداثياته (coordinates).
+// 📌 بدون $geometry، لن يفهم MongoDB أن هذا كائن GeoJSON، وسيرفض الاستعلام.
+
+
+
+// const inventories = await UserModel.find({
+//   role: "inventory", // تصفية النتائج بناءً على الدور
+//   location: {
+//     $near: {
+//       $geometry: {
+//         type: "Point",
+//         coordinates: userCoordinates, // إحداثيات المستخدم
+//       },
+//       $maxDistance: 10000, // الحد الأقصى للمسافة (10 كم)
+//       $minDistance: 500  // الحد الأدنى للمسافة (500 متر)
+//     }
+//   }
+// });
+
+
+
+//! ده غلط
+// const inventories = await UserModel.find({
+//   location: {
+//     $geoNear: {
+//       near: { type: "Point", coordinates: userCoordinates },
+//       spherical: true,
+//       query: { role: "inventory" },
+//       distanceField: "calcDistance",
+//     },
+//   },
+// });
+
+//!! ده صح 
+// $near مع find() 
+//  إذا كنت تحتاج فقط إلى البحث عن أقرب الأماكن بدون ترتيب دقيق أو عمليات إضافية.
+
+// const inventories = await UserModel.aggregate([
+//   {
+//     $geoNear: {
+//       near: { type: "Point", coordinates: userCoordinates }, // ❌ `$geometry` غير مطلوب هنا
+//       spherical: true,
+//       query: { role: "inventory" },
+//       distanceField: "calcDistance",
+//       maxDistance: 10000
+//     }
+//   }
+// ]);

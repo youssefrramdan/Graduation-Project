@@ -138,3 +138,12 @@ userSchema.index({ location: "2dsphere" });
 userSchema.index({ active: 1 }, { partialFilterExpression: { active: true } }); 
 
 export default model("User", userSchema);
+// GeoJSON 
+// {
+//   "name": "Central Park",
+//   "location": {
+//       "type": "Point",
+//       "coordinates": [-73.97, 40.77]
+//   },
+//   "category": "Parks"
+// }
