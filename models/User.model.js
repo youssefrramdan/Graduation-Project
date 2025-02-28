@@ -61,7 +61,6 @@ const userSchema = new Schema(
       default: false,
     },
     active: {
-      
       type: Boolean,
       default: false,
     },
@@ -101,33 +100,20 @@ const userSchema = new Schema(
       type: {
         type: String,
         enum: ["Point"],
+        default: "Point",
       },
       coordinates: {
         type: [Number],
+        default: [0, 0],
         validate: {
           validator: function (val) {
             return val.length === 2;
           },
-          message: "Location coordinates must contain exactly [longitude, latitude].",
+          message:
+            "Location coordinates must contain exactly [longitude, latitude].",
         },
       },
-    },    
-    // location: {
-    //   type: {
-    //     type: String,
-    //     enum: ["Point"],
-    //   },
-    //   coordinates: {
-    //     type: [Number],
-    //     validate: {
-    //       validator: function (val) {
-    //         return val.length === 2;
-    //       },
-    //       message:
-    //         "Location coordinates must contain exactly [longitude, latitude].",
-    //     },
-    //   },
-    // },
+    },
   },
   { timestamps: true }
 );

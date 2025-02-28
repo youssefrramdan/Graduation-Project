@@ -115,18 +115,12 @@ userRouter
     createUser
   );
 
-
-
-
 userRouter.route("/getMe").get(protectedRoutes, getMe, getSpecificUser);
 userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
 userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
 userRouter.route("/deactivateMe").patch(protectedRoutes, deactivateMe);
 userRouter.route("/activateMe").patch(protectedRoutes, activateMe);
-
-
-userRouter.route("/nearest-inventories").get(getNearestInventories);
-
+userRouter.route("/inventories").get(protectedRoutes, getNearestInventories);
 
 /**
  * @swagger
@@ -222,7 +216,9 @@ userRouter.route("/:id").put(protectedRoutes, updateUserValidator, updateUser);
  *       404:
  *         description: User not found.
  */
-userRouter.route("/:id").delete(protectedRoutes, deleteUserValidator, deleteUser);
+userRouter
+  .route("/:id")
+  .delete(protectedRoutes, deleteUserValidator, deleteUser);
 
 /**
  * @swagger
@@ -262,7 +258,9 @@ userRouter.route("/:id").delete(protectedRoutes, deleteUserValidator, deleteUser
  *       404:
  *         description: User not found.
  */
-userRouter.route("/changePassword/:id").patch(protectedRoutes, changeUserPassword);
+userRouter
+  .route("/changePassword/:id")
+  .patch(protectedRoutes, changeUserPassword);
 
 /**
  * @swagger
@@ -284,9 +282,8 @@ userRouter.route("/changePassword/:id").patch(protectedRoutes, changeUserPasswor
  *       404:
  *         description: User not found.
  */
-userRouter.route("/activate/:id").patch(protectedRoutes, activeValidator, activateSpecificUser);
-
-
-
+userRouter
+  .route("/activate/:id")
+  .patch(protectedRoutes, activeValidator, activateSpecificUser);
 
 export default userRouter;

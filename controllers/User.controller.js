@@ -303,24 +303,18 @@ const activateMe = asyncHandler(async (req, res, next) => {
 
 
 const getNearestInventories = asyncHandler(async (req, res, next) => {
-  const { latitude, longitude } = req.query;
-  if (!latitude || !longitude) {
-    return next(new ApiError("Latitude and Longitude are required!", 400));
-  }
-
+  const userCoordinates = req.user.location.coordinates;
   const inventories = await UserModel.find({
     role: "inventory",
     location: {
       $near: {
         $geometry: {
           type: "Point",
-          coordinates: [parseFloat(longitude), parseFloat(latitude)],
+          coordinates: userCoordinates, 
         },
-        $maxDistance: 10000,
       },
     },
-  }).select("name location phone");
-
+  })
   res.status(200).json({ message: "success", inventories });
 });
 
