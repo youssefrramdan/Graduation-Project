@@ -11,6 +11,7 @@ import {
   formatDrugData,
 } from "../utils/excelUtils.js";
 import UserModel from "../models/User.model.js";
+import { query } from "express";
 
 /**
  * @desc    Get all drugs with advanced filtering, sorting, pagination, and searching.
@@ -30,6 +31,9 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
         near: { type: "Point", coordinates: pharmacyLocation },
         spherical: true,
         distanceField: "calcDistance",
+        query: {
+          role: "inventory",
+        },
       },
     },
     {
@@ -41,6 +45,15 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
       },
     },
     { $unwind: "$drugs" },
+
+    {
+      $lookup: {
+        from: "users", // اسم الـ collection الخاص بالمستخدمين
+        localField: "drugs.createdBy",
+        foreignField: "_id",
+        as: "createdBy",
+      },
+    },
   ];
 
   // Create API features instance with aggregation support
@@ -79,7 +92,6 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
     data: drugs,
   });
 });
-
 /**
  * @desc    Get a specific drug by its ID.
  * @route   GET /api/v1/drugs/:id
@@ -100,14 +112,35 @@ const getSpecificDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrug = asyncHandler(async (req, res, next) => {
+  // 1. تأكد إن المستخدم مخزن
+  if (req.user.role !== "inventory") {
+    return next(new ApiError("Only inventories can add drugs", 403));
+  }
+
   let imageCoverUrl = req.file?.path || "";
   const drugData = {
     ...req.body,
     createdBy: req.user._id,
     imageCover: imageCoverUrl,
   };
+
+  // 2. أنشئ الدواء
   const drug = await DrugModel.create(drugData);
-  res.status(201).json({ message: "success", data: drug });
+
+  // 3. أضف الدواء للمخزن
+  await UserModel.findByIdAndUpdate(
+    req.user._id,
+    {
+      $push: { drugs: drug._id },
+    },
+    { new: true }
+  );
+
+  res.status(201).json({
+    status: "success",
+    message: "Drug added successfully to your inventory",
+    data: drug,
+  });
 });
 
 /**
@@ -151,9 +184,14 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
 /**
  * @desc    Add drugs from an Excel file.
  * @route   POST /api/v1/drugs/from-excel
- * @access  Private (Authenticated users only)
+ * @access  Private (Inventory only)
  */
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
+  // 1. تأكد إن المستخدم مخزن
+  if (req.user.role !== "inventory") {
+    return next(new ApiError("Only inventories can add drugs", 403));
+  }
+
   let filePath = req.selectedFilePath;
 
   if (!filePath && req.file?.path) {
@@ -175,7 +213,8 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
       new ApiError("Please provide a fileId or upload a new Excel file.", 400)
     );
   }
-  // Process the file and insert data
+
+  // 2. اقرأ وتحقق من الملف
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
   const endRow = Number(req.body.endRow) || 40;
@@ -185,12 +224,30 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   const slicedData = data.slice(startRow, endRow);
   const formattedData = formatDrugData(slicedData, req.user._id);
 
-  await DrugModel.insertMany(formattedData);
+  // 3. أنشئ الأدوية
+  const drugs = await DrugModel.insertMany(formattedData);
+
+  // 4. أضف كل الأدوية للمخزن
+  await UserModel.findByIdAndUpdate(
+    req.user._id,
+    {
+      $push: {
+        drugs: {
+          $each: drugs.map((drug) => drug._id),
+        },
+      },
+    },
+    { new: true }
+  );
 
   res.status(200).json({
     status: "success",
-    message: `Drugs added successfully from row ${startRow} to ${endRow}! Rows added: ${formattedData.length}`,
-    filePath,
+    message: `${drugs.length} drugs added successfully to your inventory!`,
+    data: {
+      drugsCount: drugs.length,
+      drugs: drugs,
+      filePath,
+    },
   });
 });
 
