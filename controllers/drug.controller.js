@@ -37,23 +37,24 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
         },
       },
       {
-        $lookup: {
-          from: "Drug",
-          localField: "createdBy",
-          foreignField: "_id",
-          as: "Drug"
-        }
+      $lookup: {
+        from: "drugs",
+        localField: "_id",  
+        foreignField: "createdBy",
+        as: "drugs"
+      }
       },
-      { $unwind: "$Drug" }, 
-      { $match: { name: name } }, 
+      { $unwind: "$drugs" }, 
+      { $match: { "drugs.name": name } },
       {
         $project: {
-          "Drug.name": 1,
-          "Drug.price": 1,
-          "Drug.stock": 1,
-          "Drug.manufacturer": 1,
-          "Drug.expirationDate": 1,
-          DistanceInKm: { $divide: ["$calcDistance", 1000] }, 
+          "drugs.name": 1,
+          "drugs.price": 1,
+          "drugs.stock": 1,
+          "drugs.manufacturer": 1,
+          "drugs.expirationDate": 1,
+          "drugs.createdBy": 1,
+        DistanceInKm: { $divide: ["$calcDistance", 1000] },
         }
       }
     ]);
@@ -70,6 +71,9 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
     mongooseQuery = apiFeatures.mongooseQuery;
     paginationResult = apiFeatures.paginationResult;
   }
+
+  
+
   const drugs = await mongooseQuery;
 
   res.status(200).json({
