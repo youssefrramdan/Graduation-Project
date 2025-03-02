@@ -130,6 +130,7 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
+
 userSchema.index({ email: 1 }, { unique: true }); 
 userSchema.index({ phone: 1 }); 
 userSchema.index({ city: 1, governorate: 1 });

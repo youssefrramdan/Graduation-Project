@@ -154,7 +154,7 @@ drugRouter
 drugRouter
   .route("/")
   .post(protectedRoutes, uploadimg.single("imageCover"), addDrugValidator, addDrug)
-  .get(getAllDrugs);
+  .get(protectedRoutes,getAllDrugs);
 
 
 

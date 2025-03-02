@@ -18,7 +18,47 @@ import UserModel from "../models/User.model.js";
  * @access  Public
  */
 const getAllDrugs = asyncHandler(async (req, res, next) => {
-  const countDocuments = await DrugModel.countDocuments();
+  const { name } = req.query;
+
+  if (!req.user || !req.user.location || !req.user.location.coordinates) {
+    return next(new Error("Pharmacy location not found"));
+  }
+  const pharmacyLocation = req.user.location.coordinates;
+  let mongooseQuery;
+  let paginationResult = null;
+
+  if (name) {
+    mongooseQuery = UserModel.aggregate([
+      {
+        $geoNear: {
+          near: { type: "Point", coordinates: pharmacyLocation },
+          spherical: true,
+          distanceField: "calcDistance",
+        },
+      },
+      {
+        $lookup: {
+          from: "Drug",
+          localField: "createdBy",
+          foreignField: "_id",
+          as: "Drug"
+        }
+      },
+      { $unwind: "$Drug" }, 
+      { $match: { name: name } }, 
+      {
+        $project: {
+          "Drug.name": 1,
+          "Drug.price": 1,
+          "Drug.stock": 1,
+          "Drug.manufacturer": 1,
+          "Drug.expirationDate": 1,
+          DistanceInKm: { $divide: ["$calcDistance", 1000] }, 
+        }
+      }
+    ]);
+  }else{
+    const countDocuments = await DrugModel.countDocuments();
   const apiFeatures = new ApiFeatures(DrugModel.find(), req.query)
     .paginate(countDocuments)
     .filter()
@@ -27,7 +67,9 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
     .search()
     .limitFields();
 
-  const { mongooseQuery, paginationResult } = apiFeatures;
+    mongooseQuery = apiFeatures.mongooseQuery;
+    paginationResult = apiFeatures.paginationResult;
+  }
   const drugs = await mongooseQuery;
 
   res.status(200).json({
