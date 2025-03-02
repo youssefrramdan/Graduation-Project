@@ -269,18 +269,24 @@ const updateMe = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const allowedUpdates = {
-    name: req.body.name,
-    email: req.body.email,
-    phone: req.body.phone,
-  };
+  // const allowedUpdates = {
+  //   name: req.body.name,
+  //   email: req.body.email,
+  //   phone: req.body.phone,
+  // };
 
-  await UserModel.findByIdAndUpdate(req.user._id, allowedUpdates, {}).select(
-    "-password -__v"
-  );
+  const user = await UserModel.findByIdAndUpdate(
+    req.user._id,
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+    }
+  ).select("-password -__v");
 
   res.status(200).json({
     message: "success",
+    user,
   });
 });
 
@@ -318,8 +324,8 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
       $project: {
         name: 1,
         location: 1,
-        role : 1,
-        DistanceInKm: { $divide: ["$calcDistance", 1000] } // تحويل المسافة إلى كم
+        role: 1,
+        DistanceInKm: { $divide: ["$calcDistance", 1000] }, // تحويل المسافة إلى كم
       },
     },
   ]);
