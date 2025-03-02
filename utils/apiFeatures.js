@@ -69,13 +69,24 @@ export class ApiFeatures {
     if (this.isAggregation) {
       const projectStage = {
         name: "$drugs.name",
-        price: "$drugs.price",
-        stock: "$drugs.stock",
         manufacturer: "$drugs.manufacturer",
+        description: "$drugs.description",
+        originType: "$drugs.originType",
+        productionDate: "$drugs.productionDate",
         expirationDate: "$drugs.expirationDate",
+        price: "$drugs.price",
+        discount: "$drugs.discount",
+        discountedPrice: "$drugs.discountedPrice",
+        stock: "$drugs.stock",
+        sold: "$drugs.sold",
+        isVisible: "$drugs.isVisible",
+        imageCover: "$drugs.imageCover",
         createdBy: "$drugs.createdBy",
+        createdAt: "$drugs.createdAt",
+        updatedAt: "$drugs.updatedAt",  
         distanceInKm: { $divide: ["$calcDistance", 1000] },
       };
+      
 
       if (this.queryStr.fields) {
         const fields = this.queryStr.fields.split(",");
