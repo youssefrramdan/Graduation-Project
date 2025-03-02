@@ -18,67 +18,63 @@ import UserModel from "../models/User.model.js";
  * @access  Public
  */
 const getAllDrugs = asyncHandler(async (req, res, next) => {
-  const { name } = req.query;
-
   if (!req.user || !req.user.location || !req.user.location.coordinates) {
     return next(new Error("Pharmacy location not found"));
   }
   const pharmacyLocation = req.user.location.coordinates;
-  let mongooseQuery;
-  let paginationResult = null;
 
-  if (name) {
-    mongooseQuery = UserModel.aggregate([
-      {
-        $geoNear: {
-          near: { type: "Point", coordinates: pharmacyLocation },
-          spherical: true,
-          distanceField: "calcDistance",
-        },
+  // Base aggregation pipeline for geospatial search
+  const baseQuery = [
+    {
+      $geoNear: {
+        near: { type: "Point", coordinates: pharmacyLocation },
+        spherical: true,
+        distanceField: "calcDistance",
       },
-      {
+    },
+    {
       $lookup: {
         from: "drugs",
-        localField: "_id",  
+        localField: "_id",
         foreignField: "createdBy",
-        as: "drugs"
-      }
+        as: "drugs",
       },
-      { $unwind: "$drugs" }, 
-      { $match: { "drugs.name": name } },
-      {
-        $project: {
-          "drugs.name": 1,
-          "drugs.price": 1,
-          "drugs.stock": 1,
-          "drugs.manufacturer": 1,
-          "drugs.expirationDate": 1,
-          "drugs.createdBy": 1,
-        DistanceInKm: { $divide: ["$calcDistance", 1000] },
-        }
-      }
-    ]);
-  }else{
-    const countDocuments = await DrugModel.countDocuments();
-  const apiFeatures = new ApiFeatures(DrugModel.find(), req.query)
-    .paginate(countDocuments)
+    },
+    { $unwind: "$drugs" },
+  ];
+
+  // Create API features instance with aggregation support
+  const features = new ApiFeatures(
+    UserModel.aggregate(baseQuery),
+    req.query,
+    true
+  )
     .filter()
-    .dateFilters()
     .sort()
+    .limitFields()
     .search()
-    .limitFields();
+    .dateFilters();
 
-    mongooseQuery = apiFeatures.mongooseQuery;
-    paginationResult = apiFeatures.paginationResult;
-  }
+  // Get pipeline stages from features
+  const pipeline = [...baseQuery, ...features.getPipeline()];
 
-  
+  // Get total count before pagination
+  const countPipeline = [...pipeline];
+  const totalCount = (await UserModel.aggregate(countPipeline)).length;
 
-  const drugs = await mongooseQuery;
+  // Apply pagination and get final pipeline
+  features.paginate(totalCount);
+  const finalPipeline = [
+    ...pipeline,
+    ...features.getPipeline().slice(pipeline.length),
+  ];
+
+  // Execute final query
+  const drugs = await UserModel.aggregate(finalPipeline);
 
   res.status(200).json({
     status: "success",
-    paginationResult,
+    paginationResult: features.paginationResult,
     results: drugs.length,
     data: drugs,
   });
@@ -105,7 +101,7 @@ const getSpecificDrug = asyncHandler(async (req, res, next) => {
  */
 const addDrug = asyncHandler(async (req, res, next) => {
   let imageCoverUrl = req.file?.path || "";
-  const drugData = { 
+  const drugData = {
     ...req.body,
     createdBy: req.user._id,
     imageCover: imageCoverUrl,
@@ -158,7 +154,7 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
-  let filePath = req.selectedFilePath;  
+  let filePath = req.selectedFilePath;
 
   if (!filePath && req.file?.path) {
     filePath = req.file.path;
@@ -175,7 +171,9 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   }
 
   if (!filePath) {
-    return next(new ApiError("Please provide a fileId or upload a new Excel file.", 400));
+    return next(
+      new ApiError("Please provide a fileId or upload a new Excel file.", 400)
+    );
   }
   // Process the file and insert data
   const data = await readExcelFile(filePath);
