@@ -265,7 +265,7 @@ userRouter
   .patch(protectedRoutes, changeUserPassword);
 
 userRouter
-  .route("/image/:id")
+  .route("/image")
   .patch(protectedRoutes, upload.single("profileImage"), updateUserImage);
 /**
  * @swagger
