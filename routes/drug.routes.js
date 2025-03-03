@@ -6,6 +6,7 @@ import {
   getAllDrugs,
   getSpecificDrug,
   updateDrug,
+  updateDrugImage,
 } from "../controllers/drug.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -151,13 +152,11 @@ drugRouter
  *                   price:
  *                     type: number
  */
-// uploadimg.single("imageCover"), 
+// uploadimg.single("imageCover"),
 drugRouter
   .route("/")
-  .post(protectedRoutes,addDrugValidator, addDrug)
-  .get(protectedRoutes,getAllDrugs);
-
-
+  .post(protectedRoutes, addDrugValidator, addDrug)
+  .get(protectedRoutes, getAllDrugs);
 
 /**
  * @swagger
@@ -263,5 +262,8 @@ drugRouter
     updateDrug
   )
   .delete(protectedRoutes, deleteDrugValidator, deleteDrug);
+drugRouter
+  .route("/image/:id")
+  .put(uploadimg.single("imageCover"), updateDrugImage);
 
 export default drugRouter;

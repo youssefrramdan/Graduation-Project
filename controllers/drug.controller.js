@@ -166,6 +166,23 @@ const updateDrug = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", data: drug });
 });
 
+const updateDrugImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ApiError(`Please upload Drug image`, 404));
+  }
+  req.body.imageCover = req.file.path;
+
+  const { id } = req.params;
+  const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!drug) {
+    return next(new ApiError(`No drug found with ID ${id}`, 404));
+  }
+  res.status(200).json({ message: "success", data: drug });
+});
 /**
  * @desc    Delete a specific drug by its ID.
  * @route   DELETE /api/v1/drugs/:id
@@ -258,5 +275,6 @@ export {
   addDrugsFromExcel,
   getSpecificDrug,
   updateDrug,
+  updateDrugImage,
   deleteDrug,
 };
