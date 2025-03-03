@@ -207,13 +207,14 @@ const getUserFiles = asyncHandler(async (req, res) => {
 const getMe = asyncHandler(async (req, res, next) => {
   if (!req.user || !req.user._id) {
     return next(
-      new ApiError("User authentication failed. Please log in.", 401)
+      new ApiError("User authentication failed. Please log in...", 401)
     );
   }
-
-  req.params.id = req.user._id;
-
-  next();
+  const user = await UserModel.findById(req.user._id);
+  res.status(200).json({
+    status: "success",
+    user,
+  });
 });
 
 /**

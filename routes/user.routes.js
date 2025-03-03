@@ -42,7 +42,7 @@ userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
 // user routes
-userRouter.route("/getMe").get(protectedRoutes, getMe, getSpecificUser);
+userRouter.route("/getMe").get(protectedRoutes, getMe);
 userRouter.route("/files").get(protectedRoutes, getUserFiles);
 userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
 userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
