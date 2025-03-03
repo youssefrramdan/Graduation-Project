@@ -151,9 +151,10 @@ drugRouter
  *                   price:
  *                     type: number
  */
+// uploadimg.single("imageCover"), 
 drugRouter
   .route("/")
-  .post(protectedRoutes, uploadimg.single("imageCover"), addDrugValidator, addDrug)
+  .post(protectedRoutes,addDrugValidator, addDrug)
   .get(protectedRoutes,getAllDrugs);
 
 

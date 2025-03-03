@@ -117,11 +117,12 @@ const addDrug = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Only inventories can add drugs", 403));
   }
 
-  let imageCoverUrl = req.file?.path || "";
+  // let imageCoverUrl = req.file?.path || "";
+  // imageCover: imageCoverUrl,
+
   const drugData = {
     ...req.body,
     createdBy: req.user._id,
-    imageCover: imageCoverUrl,
   };
 
   // 2. أنشئ الدواء
@@ -150,9 +151,9 @@ const addDrug = asyncHandler(async (req, res, next) => {
  */
 const updateDrug = asyncHandler(async (req, res, next) => {
   let updatedData = { ...req.body };
-  if (req.file) {
-    updatedData.imageCover = req.file.path;
-  }
+  // if (req.file) {
+  //   updatedData.imageCover = req.file.path;
+  // }
   const { id } = req.params;
   const drug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
     new: true,
