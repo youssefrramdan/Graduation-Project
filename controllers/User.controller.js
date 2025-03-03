@@ -268,22 +268,26 @@ const updateMe = asyncHandler(async (req, res, next) => {
       );
     }
   }
+  const user = await UserModel.findByIdAndUpdate(req.user._id, req.body, {
+    new: true,
+    runValidators: true,
+  }).select("-password -__v");
 
-  // const allowedUpdates = {
-  //   name: req.body.name,
-  //   email: req.body.email,
-  //   phone: req.body.phone,
-  // };
+  res.status(200).json({
+    message: "success",
+    user,
+  });
+});
 
-  const user = await UserModel.findByIdAndUpdate(
-    req.user._id,
-    req.body,
-    {
-      new: true,
-      runValidators: true,
-    }
-  ).select("-password -__v");
-
+const updateUserImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ApiError("please upload imageCover", 404));
+  }
+  req.body.profileImage = req.file.path;
+  const user = await UserModel.findByIdAndUpdate(req.user._id, req.body, {
+    new: true,
+    runValidators: true,
+  });
   res.status(200).json({
     message: "success",
     user,
@@ -344,6 +348,7 @@ export {
   getMe,
   updateMyPassword,
   updateMe,
+  updateUserImage,
   deactivateMe,
   activateMe,
   getNearestInventories,

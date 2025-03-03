@@ -15,6 +15,7 @@ import {
   updateMe,
   updateMyPassword,
   updateUser,
+  updateUserImage,
 } from "../controllers/User.controller.js";
 import {
   activeValidator,
@@ -24,6 +25,7 @@ import {
   updateUserValidator,
 } from "../utils/validators/userValidator.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
+import { updateDrugImage } from "../controllers/drug.controller.js";
 
 const userRouter = express.Router();
 const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
@@ -262,6 +264,9 @@ userRouter
   .route("/changePassword/:id")
   .patch(protectedRoutes, changeUserPassword);
 
+userRouter
+  .route("/image/:id")
+  .patch(protectedRoutes, upload.single("profileImage"), updateUserImage);
 /**
  * @swagger
  * /api/v1/users/activate/{id}:
