@@ -35,10 +35,6 @@ userRouter.route("/files").get(protectedRoutes, getUserFiles);
 userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
 userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
 userRouter
-  .route("/changePassword/:id")
-  .patch(protectedRoutes, changeUserPassword);
-
-userRouter
   .route("/profileimage")
   .patch(protectedRoutes, upload.single("profileImage"), updateUserImage);
 userRouter.route("/deactivate").patch(protectedRoutes, deactivateMe);
@@ -54,6 +50,10 @@ userRouter.route("/:id").put(protectedRoutes, updateUserValidator, updateUser);
 userRouter
   .route("/:id")
   .delete(protectedRoutes, deleteUserValidator, deleteUser);
+userRouter
+  .route("/changePassword/:id")
+  .patch(protectedRoutes, changeUserPassword);
+
 userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
