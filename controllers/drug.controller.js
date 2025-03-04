@@ -240,23 +240,26 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   validateRowRange({ startRow, endRow }, data.length);
 
   const slicedData = data.slice(startRow, endRow);
-  const formattedData = formatDrugData(slicedData, req.user._id);
+  const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
 
-  // 3. أنشئ الأدوية
-  const drugs = await DrugModel.insertMany(formattedData);
+  // 3. أنشئ الأدوية الصالحة فقط
+  const drugs =
+    validDrugs.length > 0 ? await DrugModel.insertMany(validDrugs) : [];
 
   // 4. أضف كل الأدوية للمخزن
-  await UserModel.findByIdAndUpdate(
-    req.user._id,
-    {
-      $push: {
-        drugs: {
-          $each: drugs.map((drug) => drug._id),
+  if (drugs.length > 0) {
+    await UserModel.findByIdAndUpdate(
+      req.user._id,
+      {
+        $push: {
+          drugs: {
+            $each: drugs.map((drug) => drug._id),
+          },
         },
       },
-    },
-    { new: true }
-  );
+      { new: true }
+    );
+  }
 
   res.status(200).json({
     status: "success",
@@ -264,6 +267,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
     data: {
       drugsCount: drugs.length,
       drugs: drugs,
+      invalidDrugs: invalidDrugs.length > 0 ? invalidDrugs : undefined,
       filePath,
     },
   });

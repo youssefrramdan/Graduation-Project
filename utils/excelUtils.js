@@ -20,27 +20,93 @@ export const validateRowRange = ({ startRow, endRow }, dataLength) => {
 };
 
 export const formatDrugData = (data, userId) => {
-  return data.map((item) => ({
-    name: item.name,
-    manufacturer: item.manufacturer || "",
-    description: item.description || "",
-    originType: item.originType,
-    productionDate: new Date(item.productionDate),
-    expirationDate: new Date(item.expirationDate),
-    price: item.price,
-    discount: item.discount || 0,
-    discountedPrice:
-      item.discountedPrice ||
-      item.price - (item.price * (item.discount || 0)) / 100,
-    stock: item.stock,
-    sold: item.sold || 0,
-    isVisible: item.isVisible === "TRUE",
-    imageCover: item.imageCover ? item.imageCover.split(",") : [],
-    createdBy: userId,
-  }));
+  const validDrugs = [];
+  const invalidDrugs = [];
+
+  data.forEach((item, index) => {
+    try {
+      // التحقق من الحقول المطلوبة
+      if (
+        !item.name ||
+        !item.price ||
+        !item.stock ||
+        !item.originType ||
+        !item.productionDate ||
+        !item.expirationDate
+      ) {
+        throw new Error("Missing required fields");
+      }
+
+      // التحقق من صحة السعر
+      if (isNaN(item.price) || item.price <= 0) {
+        throw new Error("Invalid price");
+      }
+
+      // التحقق من صحة المخزون
+      if (isNaN(item.stock) || item.stock < 0) {
+        throw new Error("Invalid stock");
+      }
+
+      // التحقق من صحة الخصم
+      if (
+        item.discount &&
+        (isNaN(item.discount) || item.discount < 0 || item.discount > 100)
+      ) {
+        throw new Error("Invalid discount");
+      }
+
+      // التحقق من صحة التواريخ
+      const productionDate = new Date(item.productionDate);
+      const expirationDate = new Date(item.expirationDate);
+
+      if (isNaN(productionDate.getTime()) || isNaN(expirationDate.getTime())) {
+        throw new Error("Invalid dates");
+      }
+
+      if (expirationDate <= productionDate) {
+        throw new Error("Expiration date must be after production date");
+      }
+
+      // التحقق من نوع المنتج
+      if (!["Imported", "Local"].includes(item.originType)) {
+        throw new Error("Invalid origin type");
+      }
+
+      // إذا كل شيء تمام، نضيف الدواء للقائمة الصالحة
+      validDrugs.push({
+        name: item.name,
+        manufacturer: item.manufacturer || "",
+        description: item.description || "",
+        originType: item.originType,
+        productionDate,
+        expirationDate,
+        price: Number(item.price),
+        discount: item.discount ? Number(item.discount) : 0,
+        discountedPrice: item.discountedPrice
+          ? Number(item.discountedPrice)
+          : Number(item.price) -
+            (Number(item.price) * (Number(item.discount) || 0)) / 100,
+        stock: Number(item.stock),
+        sold: item.sold ? Number(item.sold) : 0,
+        isVisible: item.isVisible === "TRUE",
+        imageCover: item.imageCover ? item.imageCover.split(",") : [],
+        createdBy: userId,
+      });
+    } catch (error) {
+      // نضيف السطر غير الصالح مع سبب الخطأ
+      invalidDrugs.push({
+        row: index + 1,
+        data: item,
+        error: error.message,
+      });
+    }
+  });
+
+  return {
+    validDrugs,
+    invalidDrugs,
+  };
 };
-
-
 
 // Step 1: Fetch the file from the given filePath (it can be a local file or a URL).
 //  const response = await fetch(filePath);
