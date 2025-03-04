@@ -93,7 +93,6 @@ export const formatDrugData = (data, userId) => {
         createdBy: userId,
       });
     } catch (error) {
-      // نضيف السطر غير الصالح مع سبب الخطأ
       invalidDrugs.push({
         row: index + 1,
         data: item,

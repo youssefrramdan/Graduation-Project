@@ -112,23 +112,17 @@ const getSpecificDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrug = asyncHandler(async (req, res, next) => {
-  // 1. تأكد إن المستخدم مخزن
   if (req.user.role !== "inventory") {
     return next(new ApiError("Only inventories can add drugs", 403));
   }
-
-  // let imageCoverUrl = req.file?.path || "";
-  // imageCover: imageCoverUrl,
 
   const drugData = {
     ...req.body,
     createdBy: req.user._id,
   };
 
-  // 2. أنشئ الدواء
   const drug = await DrugModel.create(drugData);
 
-  // 3. أضف الدواء للمخزن
   await UserModel.findByIdAndUpdate(
     req.user._id,
     {
@@ -205,7 +199,6 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Inventory only)
  */
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
-  // 1. تأكد إن المستخدم مخزن
   if (req.user.role !== "inventory") {
     return next(new ApiError("Only inventories can add drugs", 403));
   }
@@ -232,7 +225,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // 2. اقرأ وتحقق من الملف
+  // 2. Read and validate the file
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
   const endRow = Number(req.body.endRow) || 40;
@@ -242,11 +235,11 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   const slicedData = data.slice(startRow, endRow);
   const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
 
-  // 3. أنشئ الأدوية الصالحة فقط
+  // 3. Create valid drugs only
   const drugs =
     validDrugs.length > 0 ? await DrugModel.insertMany(validDrugs) : [];
 
-  // 4. أضف كل الأدوية للمخزن
+  // 4. Add all drugs to the inventory
   if (drugs.length > 0) {
     await UserModel.findByIdAndUpdate(
       req.user._id,
