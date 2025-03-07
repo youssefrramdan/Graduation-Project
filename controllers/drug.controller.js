@@ -27,6 +27,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   // Build the aggregation pipeline
+  // adding isVisible 
   const pipeline = [
     // Find nearby inventories
     {
@@ -136,6 +137,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
 
   // Project only needed fields
   const projectStage = {
+    _id : "$drugs._id",
     name: "$drugs.name",
     manufacturer: "$drugs.manufacturer",
     description: "$drugs.description",
