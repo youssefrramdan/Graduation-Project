@@ -1,0 +1,9 @@
+import express from "express";
+import { protectedRoutes } from "../controllers/auth.controller.js";
+import { addDrugToCart } from "../controllers/cart.controller.js";
+
+const cartRouter = express.Router();
+
+cartRouter.route("/").post(protectedRoutes, addDrugToCart);
+
+export default cartRouter;

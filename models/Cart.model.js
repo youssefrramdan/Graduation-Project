@@ -9,7 +9,7 @@ const cartSchema = new Schema(
           ref: "User",
           required: true,
         },
-        products: [
+        drugs: [
           {
             drug: {
               type: Types.ObjectId,
@@ -27,6 +27,7 @@ const cartSchema = new Schema(
             },
           },
         ],
+        totalInventoryPrice: Number,
       },
     ],
     pharmacy: {
@@ -40,4 +41,3 @@ const cartSchema = new Schema(
   { timestamps: true }
 );
 export default model("Cart", cartSchema);
-

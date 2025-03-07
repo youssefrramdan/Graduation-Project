@@ -11,6 +11,7 @@ import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
 import authRouter from "./routes/auth.routes.js";
 import drugRouter from "./routes/drug.routes.js";
+import cartRouter from "./routes/cart.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -51,8 +52,8 @@ app.use("/apidocs", swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 const corsOptions = {
   origin: true,
-  credentials: true, 
-  optionsSuccessStatus: 200 
+  credentials: true,
+  optionsSuccessStatus: 200,
 };
 
 app.use(cors(corsOptions));
@@ -73,6 +74,7 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
+app.use("/api/v1/cart", cartRouter);
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });

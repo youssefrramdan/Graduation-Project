@@ -4,7 +4,6 @@ import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import { sendEmail } from "../middlewares/sendEmail.js";
-import { Aggregate } from "mongoose";
 
 /**
  * @desc    Get all users
@@ -39,7 +38,7 @@ const getAllUsers = asyncHandler(async (req, res) => {
   if (page > 1) pagination.previousPage = page - 1;
 
   let mongooseQuery = UserModel.find(filter).skip(skip).limit(limit).lean();
-
+  // const myDrugs =await drugModel.find({createdBy:req.user._id})
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
     mongooseQuery = mongooseQuery.sort(sortBy);

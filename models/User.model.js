@@ -89,7 +89,7 @@ const userSchema = new Schema(
         ref: "Cart",
       },
     ],
-
+    inventoryMinOrder :Number,
     role: {
       type: String,
       trim: true,
