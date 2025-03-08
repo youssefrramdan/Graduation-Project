@@ -160,9 +160,27 @@ const removeDrugFromCart = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Clear Logged User Shopping Cart
+ * @route   DELETE /api/v1/cart
+ * @access  Private/Pharmacy
+ */
+const clearUserCart = asyncHandler(async (req, res, next) => {
+  const pharmacyId = req.user._id;
+    await CartModel.findOneAndDelete(
+      { pharmacy: pharmacyId },
+      
+  );
+
+  res.status(200).json(
+    {status: "success",}
+  );
+});
+
 
 
 export { 
   addDrugToCart,
-  removeDrugFromCart 
+  removeDrugFromCart,
+  clearUserCart
 };
