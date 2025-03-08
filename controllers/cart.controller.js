@@ -21,6 +21,7 @@ const calcTotalCartPrice = (cart) => {
       inventoryPriceAfterDiscount += drugTotalAfterDiscount;
       totalPriceAfterDiscount += drugTotalAfterDiscount;
     });
+
     inventoryItem.totalInventoryPrice = inventoryPrice;
     inventoryItem.totalInventoryPriceAfterDiscount = inventoryPriceAfterDiscount;
   });
@@ -125,4 +126,30 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-export { addDrugToCart };
+/**
+ * @desc    get logged pharmacy's cart
+ * @route   POST /api/v1/cart
+ * @access  Private/Pharmacy
+ */
+
+const getLoggedUserCart = asyncHandler(async (req, res, next) => {
+  const cart = await CartModel.findOne({ pharmacy: req.user._id });
+
+  if (!cart) {
+    return next(new ApiError(`There is no cart for this user id: ${req.user._id}`, 404));
+  }
+
+  calcTotalCartPrice(cart);
+
+  const numOfCartItems = cart.items.reduce((acc, item) => acc + item.drugs.reduce((sum, d) => sum + d.quantity, 0), 0);
+
+  res.status(200).json({
+    status: "success",
+    message: "Cart retrieved successfully",
+    numOfCartItems: numOfCartItems,
+    data: cart,
+  });
+});
+export { 
+  addDrugToCart,
+  getLoggedUserCart, };
