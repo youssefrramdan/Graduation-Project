@@ -193,6 +193,11 @@ const removeDrugFromCart = asyncHandler(async (req, res, next) => {
  */
 const clearUserCart = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user._id;
+  const cart = await CartModel.findOne({ pharmacy: pharmacyId });
+  if (!cart) {
+    return res.status(404).json({ message: "No cart found for this user." });
+  }
+
   await CartModel.findOneAndDelete({ pharmacy: pharmacyId });
 
   res.status(200).json({ status: "success" });
@@ -213,6 +218,21 @@ const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
     return res.status(404).json({ message: "There is no cart for user" });
   }
 
+  if (quantity < 1) {
+    return res.status(400).json({ message: "Quantity must be at least 1." });
+  }
+
+  const Drug = await DrugModel.findById(drugId);
+  if (!Drug) {
+    return res.status(404).json({ message: "Drug not found." });
+  }
+
+  if (quantity > drug.stock) {
+    return res
+      .status(400)
+      .json({ message: `Only ${drug.stock} units available in stock.` });
+  }
+
   const itemIndex = cart.items.findIndex(
     (item) => item.inventory.toString() === inventoryId
   );
@@ -224,7 +244,7 @@ const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
   }
 
   const drugIndex = cart.items[itemIndex].drugs.findIndex(
-    (drug) => drug.drug.toString() === drugId
+    (drugs) => drugs.drug.toString() === drugId
   );
 
   if (drugIndex === -1) {
@@ -316,4 +336,11 @@ const removeInventoryFromCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-export { addDrugToCart, getLoggedUserCart, removeInventoryFromCart , removeDrugFromCart , clearUserCart , updateCartItemQuantity};
+export {
+  addDrugToCart,
+  getLoggedUserCart,
+  removeInventoryFromCart,
+  removeDrugFromCart,
+  clearUserCart,
+  updateCartItemQuantity,
+};
