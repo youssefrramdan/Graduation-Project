@@ -19,10 +19,10 @@ export const addToCartValidator = [
         throw new Error("Drug not found");
       }
 
-      // 2) Check drug status
-      if (drug.status !== "active") {
-        throw new Error("This drug is currently not available for purchase");
-      }
+      // // 2) Check drug status
+      // if (drug.status !== "active") {
+      //   throw new Error("This drug is currently not available for purchase");
+      // }
 
       // 3) Check if drug has stock
       if (!drug.stock || drug.stock === 0) {
@@ -64,10 +64,10 @@ export const addToCartValidator = [
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive number")
     .custom(async (quantity, { req }) => {
-      // 1) Check if drug validation happened
-      if (!req.drug) {
-        throw new Error("Drug validation must happen first");
-      }
+      // // 1) Check if drug validation happened
+      // if (!req.drug) {
+      //   throw new Error("Drug validation must happen first");
+      // }
 
       // 2) Check if quantity is available in stock
       if (quantity > req.drug.stock) {
@@ -117,10 +117,10 @@ export const updateCartQuantityValidator = [
         throw new Error("Drug not found");
       }
 
-      // 2) Check drug status
-      if (drug.status !== "active") {
-        throw new Error("This drug is currently not available for purchase");
-      }
+      // // 2) Check drug status
+      // if (drug.status !== "active") {
+      //   throw new Error("This drug is currently not available for purchase");
+      // }
 
       // 3) Check if drug has stock
       if (!drug.stock || drug.stock === 0) {
