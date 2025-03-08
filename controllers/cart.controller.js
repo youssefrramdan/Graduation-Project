@@ -116,4 +116,53 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
   });
 });
 
-export { addDrugToCart };
+
+/**
+ * @desc    Remove a specific drug from a specific inventory in the cart
+ * @route   DELETE /api/v1/cart/:inventoryId/:drugId
+ * @access  Private/Pharmacy
+ */
+const removeDrugFromCart = asyncHandler(async (req, res, next) => {
+  const { inventoryId, drugId } = req.params;
+
+  const pharmacyId = req.user._id;
+
+  const cart = await CartModel.findOneAndUpdate(
+      { 
+          pharmacy: pharmacyId,
+          "items.inventory": inventoryId
+      },
+      {
+          $pull: {
+              "items.$[item].drugs": { drug: drugId }
+          }
+      },
+      {
+          new: true,
+          arrayFilters: [{ "item.inventory": inventoryId }]
+      }
+  );
+
+  if (!cart) {
+      return res.status(404).json({ message: "Cart or inventory not found." });
+  }
+
+  calcTotalCartPrice(cart);
+  await cart.save();
+
+  return res.status(200).json({
+      status: "success",
+      numOfCartItems: cart.items.reduce(
+          (acc, item) => acc + item.drugs.length,
+          0
+      ),
+      data: cart,
+  });
+});
+
+
+
+export { 
+  addDrugToCart,
+  removeDrugFromCart 
+};
