@@ -178,9 +178,56 @@ const clearUserCart = asyncHandler(async (req, res, next) => {
 });
 
 
+/**
+ * @desc    Update Cart Item Quantity
+ * @route   PUT /api/v1/cart
+ * @access  Private/Pharmacy
+ */
+const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
+  const { inventoryId, drugId } = req.params;
+  const { quantity } = req.body;
+
+  const cart = await CartModel.findOne({ pharmacy: req.user._id });
+
+  if (!cart) {
+    return res.status(404).json({ message: "There is no cart for user" });
+  }
+
+
+  const itemIndex = cart.items.findIndex((item) => item.inventory.toString() === inventoryId);
+
+  if (itemIndex === -1) {
+    return res.status(404).json({ message: `There is no item for this id: ${inventoryId}` });
+      
+  }
+
+  
+  const drugIndex = cart.items[itemIndex].drugs.findIndex((drug) => drug.drug.toString() === drugId);
+
+  if (drugIndex === -1) {
+    return res.status(404).json({ message: `There is no drug for this id: ${drugId}` });
+  
+  } 
+
+  cart.items[itemIndex].drugs[drugIndex].quantity = quantity;
+
+  
+  calcTotalCartPrice(cart);
+
+  
+  await cart.save();
+
+  res.status(200).json({
+      status: "success",
+      data: cart
+  });
+});
+
+
 
 export { 
   addDrugToCart,
   removeDrugFromCart,
-  clearUserCart
+  clearUserCart,
+  updateCartItemQuantity
 };
