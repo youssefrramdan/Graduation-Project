@@ -1,6 +1,7 @@
 import asyncHandler from "express-async-handler";
 import DrugModel from "../models/Drug.model.js";
 import CartModel from "../models/Cart.model.js";
+import ApiError from "../utils/apiError.js";
 
 const calcTotalCartPrice = (cart) => {
   let totalCartPrice = 0;
@@ -141,15 +142,60 @@ const getLoggedUserCart = asyncHandler(async (req, res, next) => {
 
   calcTotalCartPrice(cart);
 
-  const numOfCartItems = cart.items.reduce((acc, item) => acc + item.drugs.reduce((sum, d) => sum + d.quantity, 0), 0);
-
   res.status(200).json({
     status: "success",
     message: "Cart retrieved successfully",
-    numOfCartItems: numOfCartItems,
+    numOfCartItems: cart.items.reduce(
+      (acc, item) => acc + item.drugs.length,
+      0
+    ),
     data: cart,
   });
 });
+
+/**
+ * @desc    remove inventory from cart
+ * @route   POST /api/v1/cart/:inventoryId
+ * @access  Private/Pharmacy
+ */
+
+const removeInventoryFromCart = asyncHandler(async (req, res, next) => {
+  const { inventoryId } = req.params;
+  if (!inventoryId) {
+    return next(new ApiError("Inventory ID is required.", 404));
+  }
+
+  const cart = await CartModel.findOne({ pharmacy: req.user._id });
+  if (!cart) {
+    return next(new ApiError("Cart not found for this user.", 404));
+  }
+
+  const inventoryExists = cart.items.some(item => item.inventory.toString() === inventoryId);
+  if (!inventoryExists) {
+    return next(new ApiError("Inventory not found in the cart.", 404));
+  }
+  
+  const updatedCart  = await CartModel.findOneAndUpdate(
+    { pharmacy: req.user._id },
+    { $pull: { items: { inventory: inventoryId } } },
+    { new: true },
+  );
+
+
+  calcTotalCartPrice(updatedCart);
+
+
+  res.status(200).json({
+    status: "success",
+    message: "Inventory removed from cart successfully",
+    numOfCartItems: updatedCart.items.reduce(
+      (acc, item) => acc + item.drugs.length,0),    
+    data: updatedCart,
+  });
+});
+
 export { 
   addDrugToCart,
-  getLoggedUserCart, };
+  getLoggedUserCart,
+  removeInventoryFromCart,
+};
