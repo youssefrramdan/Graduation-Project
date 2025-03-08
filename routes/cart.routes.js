@@ -8,10 +8,10 @@ import {
   getLoggedUserCart,
   removeInventoryFromCart,
 } from "../controllers/cart.controller.js";
+
 const cartRouter = express.Router();
 
 cartRouter.route("/").post(protectedRoutes, addDrugToCart);
-cartRouter.route("/:inventoryId/:drugId");
 cartRouter
   .route("/")
   .delete(protectedRoutes, clearUserCart)
@@ -20,7 +20,6 @@ cartRouter
   .route("/:inventoryId/:drugId")
   .put(protectedRoutes, updateCartItemQuantity)
   .delete(protectedRoutes, removeDrugFromCart);
-cartRouter.route("/");
 cartRouter
   .route("/:inventoryId")
   .delete(protectedRoutes, removeInventoryFromCart);
