@@ -133,7 +133,7 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
 
 /**
  * @desc    Remove a specific drug from a specific inventory in the cart
- * @route   DELETE /api/v1/cart/:inventoryId/:drugId
+ * @route   DELETE /api/v1/cart/:drugId
  * @access  Private/Pharmacy
  */
 const removeDrugFromCart = asyncHandler(async (req, res, next) => {
