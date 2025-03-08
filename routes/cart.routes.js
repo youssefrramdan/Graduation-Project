@@ -5,5 +5,6 @@ import { addDrugToCart } from "../controllers/cart.controller.js";
 const cartRouter = express.Router();
 
 cartRouter.route("/").post(protectedRoutes, addDrugToCart);
+// cartRouter.route("/").get(protectedRoutes, getLoggedUserCart);
 
 export default cartRouter;

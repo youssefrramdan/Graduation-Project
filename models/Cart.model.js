@@ -25,9 +25,20 @@ const cartSchema = new Schema(
               type: Number,
               required: true,
             },
+            discountedPrice: {
+              type: Number,
+              required: true,
+            },
           },
         ],
-        totalInventoryPrice: Number,
+        totalInventoryPrice: {
+          type: Number,
+          default: 0,
+        },
+        totalInventoryPriceAfterDiscount: {
+          type: Number,
+          default: 0, 
+        },
       },
     ],
     pharmacy: {
