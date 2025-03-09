@@ -4,6 +4,7 @@ import {
   addDrugsFromExcel,
   deleteDrug,
   getAllDrugs,
+  getAllDrugsForSpecificInventory,
   getSpecificDrug,
   updateDrug,
   updateDrugImage,
@@ -157,6 +158,9 @@ drugRouter
   .route("/")
   .post(protectedRoutes, addDrugValidator, addDrug)
   .get(protectedRoutes, getAllDrugs);
+  drugRouter
+  .route("/owndrugs")
+  .get(protectedRoutes, getAllDrugsForSpecificInventory);
 
 /**
  * @swagger
@@ -264,6 +268,6 @@ drugRouter
   .delete(protectedRoutes, deleteDrugValidator, deleteDrug);
 drugRouter
   .route("/image/:id")
-  .put(uploadimg.single("imageCover"), updateDrugImage);
+  .put(protectedRoutes, uploadimg.single("imageCover"), updateDrugImage);
 
 export default drugRouter;

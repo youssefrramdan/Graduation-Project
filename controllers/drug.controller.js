@@ -27,7 +27,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   // Build the aggregation pipeline
-  // adding isVisible 
+  // adding isVisible
   const pipeline = [
     // Find nearby inventories
     {
@@ -137,7 +137,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
 
   // Project only needed fields
   const projectStage = {
-    _id : "$drugs._id",
+    _id: "$drugs._id",
     name: "$drugs.name",
     manufacturer: "$drugs.manufacturer",
     description: "$drugs.description",
@@ -254,19 +254,22 @@ const addDrug = asyncHandler(async (req, res, next) => {
  */
 const updateDrug = asyncHandler(async (req, res, next) => {
   let updatedData = { ...req.body };
-  // if (req.file) {
-  //   updatedData.imageCover = req.file.path;
-  // }
   const { id } = req.params;
-  const drug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
+  const drug = await DrugModel.findById({ _id: id });
+
+  if (!drug.createdBy._id.equals(req.user._id)) {
+    return next(new ApiError("You are not allowed to update this drug", 403));
+  }
+
+  const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
     new: true,
     runValidators: true,
   });
 
-  if (!drug) {
+  if (!newDrug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
-  res.status(200).json({ message: "success", data: drug });
+  res.status(200).json({ message: "success", data: newDrug });
 });
 
 const updateDrugImage = asyncHandler(async (req, res, next) => {
@@ -276,15 +279,21 @@ const updateDrugImage = asyncHandler(async (req, res, next) => {
   req.body.imageCover = req.file.path;
 
   const { id } = req.params;
-  const drug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
+  const drug = await DrugModel.findById({ _id: id });
+
+  if (!drug.createdBy._id.equals(req.user._id)) {
+    return next(new ApiError("You are not allowed to update this drug", 403));
+  }
+
+  const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
     new: true,
     runValidators: true,
   });
 
-  if (!drug) {
+  if (!newDrug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
-  res.status(200).json({ message: "success", data: drug });
+  res.status(200).json({ message: "success", data: newDrug });
 });
 /**
  * @desc    Delete a specific drug by its ID.
@@ -375,6 +384,22 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   });
 });
 
+const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
+  const { _id } = req.user;
+  const drugs = await DrugModel.find({ createdBy: _id });
+  // 1) Filtering
+  // const query = { ...req.query };
+  // const excludeFields = [
+  //   "limit",
+  //   "skip",
+  //   "sort",
+  //   "keyword",
+  //   "filter",
+  //   "limitfields",
+  // ];
+  // excludeFields.filter((field) => delete query[field]);
+  res.json({ message: "success", drugs });
+});
 export {
   addDrug,
   getAllDrugs,
@@ -383,4 +408,5 @@ export {
   updateDrug,
   updateDrugImage,
   deleteDrug,
+  getAllDrugsForSpecificInventory,
 };
