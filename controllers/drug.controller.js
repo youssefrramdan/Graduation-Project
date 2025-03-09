@@ -386,20 +386,57 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
 
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
   const { _id } = req.user;
-  const drugs = await DrugModel.find({ createdBy: _id });
-  // 1) Filtering
-  // const query = { ...req.query };
-  // const excludeFields = [
-  //   "limit",
-  //   "skip",
-  //   "sort",
-  //   "keyword",
-  //   "filter",
-  //   "limitfields",
-  // ];
-  // excludeFields.filter((field) => delete query[field]);
-  res.json({ message: "success", drugs });
+  const filter = { createdBy: _id };
+
+  if (req.query.keyword) {
+    filter.$or = [
+      { name: { $regex: req.query.keyword, $options: "i" } },
+      { manufacturer: { $regex: req.query.keyword, $options: "i" } },
+      { description: { $regex: req.query.keyword, $options: "i" } },
+      { originType: { $regex: req.query.keyword, $options: "i" } },
+    ];
+  }
+
+  const countDocuments = await DrugModel.countDocuments(filter);
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const pagination = {
+    currentPage: page,
+    resultsPerPage: limit,
+    totalPages: Math.ceil(countDocuments / limit),
+  };
+
+  if (page * limit < countDocuments) pagination.nextPage = page + 1;
+  if (page > 1) pagination.previousPage = page - 1;
+
+
+  let mongooseQuery = DrugModel.find(filter).skip(skip).limit(limit).lean();
+
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    mongooseQuery = mongooseQuery.sort(sortBy);
+  } else {
+    mongooseQuery = mongooseQuery.sort("-createdAt");
+  }
+
+  if (req.query.fields) {
+    const fields = req.query.fields.split(",").join(" ");
+    mongooseQuery = mongooseQuery.select(fields);
+  }
+
+  const drugs = await mongooseQuery;
+
+  res.status(200).json({
+    message: "success",
+    pagination,
+    result: drugs.length,
+    drugs,
+  });
 });
+
 export {
   addDrug,
   getAllDrugs,
