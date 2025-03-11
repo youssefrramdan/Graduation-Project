@@ -90,7 +90,7 @@ drugSchema.index({ createdBy: 1 });
 drugSchema.pre(/^find/, function (next) {
   this.populate({
     path: "createdBy",
-    select: "name",
+    select: "name profileImage phone",
   });
   next();
 });
