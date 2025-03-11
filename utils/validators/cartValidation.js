@@ -71,7 +71,7 @@ export const addToCartValidator = [
 
       // 2) Check if quantity is available in stock
       if (quantity > req.drug.stock) {
-        throw new Error(`Only ${req.drug.stock} units available in stock`);
+        throw new Error(`no units available in stock`);
       }
 
       // 3) Check total quantity with existing cart items
