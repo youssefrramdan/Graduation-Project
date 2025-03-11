@@ -385,8 +385,8 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
 });
 
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
-  const { _id } = req.user;
-  const filter = { createdBy: _id };
+  const id = req.user?._id ? req.user._id : req.params.id;
+  const filter = { createdBy: id };
 
   if (req.query.keyword) {
     filter.$or = [
@@ -411,7 +411,6 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
 
   if (page * limit < countDocuments) pagination.nextPage = page + 1;
   if (page > 1) pagination.previousPage = page - 1;
-
 
   let mongooseQuery = DrugModel.find(filter).skip(skip).limit(limit).lean();
 
