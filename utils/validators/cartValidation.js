@@ -29,12 +29,12 @@ export const addToCartValidator = [
         throw new Error("Drug is out of stock");
       }
 
-      // 4) Check if pharmacy is trying to add their own drug
+      // 4) Check if inventory is trying to add their own drug
       if (req.user._id.equals(drug.createdBy._id)) {
         throw new Error("Cannot add your own drugs to cart");
       }
 
-      // 5) Check if pharmacy already has this drug in cart
+      // 5) Check if inventory already has this drug in cart
       const existingCart = await CartModel.findOne({
         pharmacy: req.user._id,
         "items.drugs.drug": drugId,
@@ -64,10 +64,10 @@ export const addToCartValidator = [
     .isInt({ min: 1 })
     .withMessage("Quantity must be a positive number")
     .custom(async (quantity, { req }) => {
-      // // 1) Check if drug validation happened
-      // if (!req.drug) {
-      //   throw new Error("Drug validation must happen first");
-      // }
+      // 1) Check if drug validation happened
+      if (!req.drug) {
+        throw new Error("Drug validation must happen first");
+      }
 
       // 2) Check if quantity is available in stock
       if (quantity > req.drug.stock) {

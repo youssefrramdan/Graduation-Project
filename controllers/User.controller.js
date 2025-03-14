@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
 import { sendEmail } from "../middlewares/sendEmail.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 
 /**
  * @desc    Get all users
@@ -11,53 +12,22 @@ import { sendEmail } from "../middlewares/sendEmail.js";
  * @access  Private
  */
 const getAllUsers = asyncHandler(async (req, res) => {
-  const filter = {};
+  const features = new ApiFeatures(UserModel.find(), req.query)
+    .filter()
+    .search(["name", "ownerName", "city", "governorate"])
+    .sort()
+    .limitFields();
 
-  if (req.query.keyword) {
-    filter.$or = [
-      { name: { $regex: req.query.keyword, $options: "i" } },
-      { ownerName: { $regex: req.query.keyword, $options: "i" } },
-      { city: { $regex: req.query.keyword, $options: "i" } },
-      { governorate: { $regex: req.query.keyword, $options: "i" } },
-    ];
-  }
+  await features.paginate();
 
-  const countDocuments = await UserModel.countDocuments(filter);
-
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
-  const pagination = {
-    currentPage: page,
-    resultsPerPage: limit,
-    totalPages: Math.ceil(countDocuments / limit),
-  };
-
-  if (page * limit < countDocuments) pagination.nextPage = page + 1;
-  if (page > 1) pagination.previousPage = page - 1;
-
-  let mongooseQuery = UserModel.find(filter).skip(skip).limit(limit).lean();
-  // const myDrugs =await drugModel.find({createdBy:req.user._id})
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join(" ");
-    mongooseQuery = mongooseQuery.sort(sortBy);
-  } else {
-    mongooseQuery = mongooseQuery.sort("-createdAt");
-  }
-
-  if (req.query.fields) {
-    const fields = req.query.fields.split(",").join(" ");
-    mongooseQuery = mongooseQuery.select(fields);
-  }
-
-  const users = await mongooseQuery;
+  const users = await features.mongooseQuery;
+  const paginationResult = features.getPaginationResult();
 
   res.status(200).json({
-    message: "success",
-    pagination,
-    result: users.length,
-    users: users,
+    status: "success",
+    pagination: paginationResult,
+    results: users.length,
+    data: users,
   });
 });
 
