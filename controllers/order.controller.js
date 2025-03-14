@@ -1,7 +1,7 @@
 import asyncHandler from "express-async-handler";
 import CartModel from "../models/Cart.model.js";
 import UserModel from "../models/User.model.js";
-import OrderModel from "../models/Order.model.js";
+import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import DrugModel from "../models/Drug.model.js";
 
