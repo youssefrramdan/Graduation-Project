@@ -5,6 +5,11 @@ import OrderModel from "../models/Order.model.js";
 import ApiError from "../utils/apiError.js";
 import DrugModel from "../models/Drug.model.js";
 
+/**
+ * @desc    Create cash order
+ * @route   POST /api/v1/orders/cardId
+ * @access  Protected/User
+ */
 const createCashOrder = asyncHandler(async (req, res, next) => {
   const { cartId } = req.params;
   const { inventoryId } = req.body;
@@ -39,7 +44,7 @@ const createCashOrder = asyncHandler(async (req, res, next) => {
   // Validate stock availability before creating order
   const drugsAvailability = await DrugModel.find(
     { _id: { $in: inventoryItems.drugs.map((d) => d.drug) } },
-    "quantity"
+    "quantity sold"
   );
 
   const insufficientDrugs = inventoryItems.drugs.filter((cartDrug) => {
@@ -98,14 +103,15 @@ const createCashOrder = asyncHandler(async (req, res, next) => {
         filter: { _id: drug.drug },
         update: {
           $inc: {
-            quantity: -drug.quantity,
-            sold: drug.quantity,
+            stock: -drug.quantity,
+            sold: +drug.quantity,
           },
         },
       },
     }));
-
+    JSON.stringify(bulkOptions, null, 2);
     await DrugModel.bulkWrite(bulkOptions);
+    //await DrugModel.bulkWrite(bulkOptions);
 
     // 5) Remove inventory items from cart and update totals
     const updatedCart = await CartModel.findOneAndUpdate(
