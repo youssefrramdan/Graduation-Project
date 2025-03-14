@@ -88,12 +88,12 @@ drugSchema.index(
 );
 drugSchema.index({ createdBy: 1 });
 
-// drugSchema.pre(/^find/, function (next) {
-//   this.populate({
-//     path: "createdBy",
-//     select:
-//       "-identificationNumber -registrationNumber -drugs -isVerified -files -role -orders -active -createdAt -updatedAt -__v -cart -password",
-//   });
-//   next();
-// });
+drugSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "createdBy",
+    select:
+      "-identificationNumber -registrationNumber -drugs -isVerified -files -role -orders -active -createdAt -updatedAt -__v -cart -password",
+  });
+  next();
+});
 export default model("Drug", drugSchema);

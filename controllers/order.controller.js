@@ -17,13 +17,11 @@ const transformOrder = (order) => ({
   inventory: order.inventory && {
     _id: order.inventory._id,
     name: order.inventory.name,
-    location: order.inventory.location,
   },
   pharmacy: order.pharmacy && {
     _id: order.pharmacy._id,
     name: order.pharmacy.name,
     phone: order.pharmacy.phone,
-    location: order.pharmacy.location,
   },
   pricing: {
     subtotal: order.pricing.subtotal,
@@ -62,7 +60,6 @@ const transformOrder = (order) => ({
 const createOrder = asyncHandler(async (req, res, next) => {
   const { cartId } = req.params;
   const { inventoryId } = req.body;
-
   // Step 1: Find cart and validate ownership
   const cart = await CartModel.findOne({
     _id: cartId,
@@ -82,7 +79,6 @@ const createOrder = asyncHandler(async (req, res, next) => {
   if (!cart) {
     return next(new ApiError("Cart not found or inventory not in cart", 404));
   }
-
   // Step 2: Extract inventory items from cart
   const inventoryItems = cart.items.find(
     (item) => item.inventory._id.toString() === inventoryId
@@ -91,7 +87,6 @@ const createOrder = asyncHandler(async (req, res, next) => {
   if (!inventoryItems) {
     return next(new ApiError("Inventory not found in cart", 404));
   }
-
   // Calculate cart totals before creating order
   calcTotalCartPrice(cart);
 
@@ -119,7 +114,6 @@ const createOrder = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
   // Step 4: Create the order with all necessary information
   const order = await OrderModel.create({
     pharmacy: req.user._id,
@@ -169,7 +163,6 @@ const createOrder = asyncHandler(async (req, res, next) => {
   } else if (updatedCart) {
     await CartModel.findByIdAndDelete(cartId);
   }
-
   // Return populated order with all necessary details
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
@@ -205,22 +198,19 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
   // Apply pagination after other operations
   await features.paginate(documentCount);
-
-  // Get orders with populated data
+  // Get orders with populated data - include all necessary fields
   const orders = await features.mongooseQuery
-    .select(
-      "orderNumber status.current payment.status pricing delivery.contactPhone createdAt"
-    )
+    .select("orderNumber status payment pricing delivery drugs createdAt")
     .populate({
       path: "inventory",
-      select: "name",
+      select: "name location",
     })
     .populate({
       path: "drugs.drug",
       select: "name price discountedPrice",
     })
     .lean();
-
+  // Use shared transform function
   const transformedOrders = orders.map(transformOrder);
 
   const paginationResult = features.getPaginationResult();
@@ -249,14 +239,6 @@ const getOrder = asyncHandler(async (req, res, next) => {
   if (!order) {
     return next(new ApiError("Order not found", 404));
   }
-
-  // Verify authorization
-  if (
-    (req.user.role === "pharmacy" &&
-      order.pharmacy.toString() !== req.user._id.toString()) ) {
-    return next(new ApiError("Not authorized to access this order", 403));
-  }
-
   res.status(200).json({
     status: "success",
     data: transformOrder(order),
@@ -281,13 +263,6 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Order not found", 404));
   }
 
-  // Verify authorization
-  if (
-    (req.user.role === "pharmacy" &&
-      order.pharmacy.toString() !== req.user._id.toString())) {
-    return next(new ApiError("Not authorized to update this order", 403));
-  }
-
   // Validate status transition
   if (!order.canTransitionTo(status)) {
     return next(
@@ -297,7 +272,6 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
   // Update order status and handle related changes
   order.updateStatus(status, note, req.user._id);
 
@@ -308,9 +282,7 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
       order.payment.paidAt = new Date();
     }
   }
-
   await order.save();
-
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
@@ -333,14 +305,12 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
 const cancelOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
-
   // Find order that can be cancelled
   const order = await OrderModel.findOne({
     _id: id,
     pharmacy: req.user._id,
     "status.current": { $in: ["pending", "confirmed"] },
   });
-
   if (!order) {
     return next(
       new ApiError(
@@ -349,7 +319,6 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
       )
     );
   }
-
   // Update order status to cancelled
   order.updateStatus("cancelled", reason, req.user._id);
 
@@ -362,9 +331,7 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
       )
     )
   );
-
   await order.save();
-
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
