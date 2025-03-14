@@ -1,22 +1,32 @@
 import express from "express";
-import { protectedRoutes } from "../controllers/auth.controller.js";
-import { createCashOrder, getAllOrders, getOrdersByPharmacy, getSpecificOrder, updateOrderToDelivered, updateOrderToPaid} from "../controllers/order.controller.js";
+import { protectedRoutes, allowTo } from "../controllers/auth.controller.js";
+import {
+  createOrder,
+  getMyOrders,
+  getOrder,
+  updateOrderStatus,
+  cancelOrder,
+} from "../controllers/order.controller.js";
 
 const orderRouter = express.Router();
 
-// Create cash order
-orderRouter.route("/:cartId").post(protectedRoutes, createCashOrder);
-orderRouter.route("/").get(protectedRoutes, getAllOrders);
-orderRouter.route("/:id").get(protectedRoutes, getSpecificOrder);
-//orderRouter.route("/:orderId/status").patch(protectedRoutes, updateOrderStatus);
-orderRouter.route("/:orderId/pay").patch(protectedRoutes,updateOrderToPaid);
-orderRouter.route("/:orderId/delive").patch(protectedRoutes,updateOrderToDelivered);
-orderRouter.route("/pharmacy/:pharmacyId").get(getOrdersByPharmacy);
+// حماية جميع الطرق
+orderRouter.use(protectedRoutes);
 
-// TODO: Add more routes like:
-// Get all orders
-// Get specific order
-// Get pharmacy orders
-// Cancel order
+// طرق الطلبات للصيدلية
+orderRouter.route("/cart/:cartId").post(allowTo("pharmacy"), createOrder);
+
+orderRouter.route("/my-orders").get(allowTo("pharmacy"), getMyOrders);
+
+// طرق الطلب المحدد
+orderRouter.route("/:id").get(allowTo("pharmacy", "inventory"), getOrder);
+
+// تحديث حالة الطلب
+orderRouter
+  .route("/:id/status")
+  .patch(allowTo("inventory"), updateOrderStatus);
+
+// إلغاء الطلب
+orderRouter.route("/:id/cancel").patch(allowTo("pharmacy"), cancelOrder);
 
 export default orderRouter;

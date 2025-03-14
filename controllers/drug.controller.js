@@ -10,6 +10,7 @@ import {
   formatDrugData,
 } from "../utils/excelUtils.js";
 import UserModel from "../models/User.model.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 
 /**
  * @desc    Get all drugs with filtering, sorting, and pagination
@@ -386,53 +387,25 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
 
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
   const id = req.user?._id ? req.user._id : req.params.id;
-  const filter = { createdBy: id };
+  const baseQuery = { createdBy: id };
 
-  if (req.query.keyword) {
-    filter.$or = [
-      { name: { $regex: req.query.keyword, $options: "i" } },
-      { manufacturer: { $regex: req.query.keyword, $options: "i" } },
-      { description: { $regex: req.query.keyword, $options: "i" } },
-      { originType: { $regex: req.query.keyword, $options: "i" } },
-    ];
-  }
+  // Create API Features instance
+  const features = new ApiFeatures(DrugModel.find(baseQuery), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .search(["name", "manufacturer", "description", "originType"]);
 
-  const countDocuments = await DrugModel.countDocuments(filter);
+  await features.paginate();
 
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 60;
-  const skip = (page - 1) * limit;
-
-  const pagination = {
-    currentPage: page,
-    resultsPerPage: limit,
-    totalPages: Math.ceil(countDocuments / limit),
-  };
-
-  if (page * limit < countDocuments) pagination.nextPage = page + 1;
-  if (page > 1) pagination.previousPage = page - 1;
-
-  let mongooseQuery = DrugModel.find(filter).skip(skip).limit(limit).lean();
-
-  if (req.query.sort) {
-    const sortBy = req.query.sort.split(",").join(" ");
-    mongooseQuery = mongooseQuery.sort(sortBy);
-  } else {
-    mongooseQuery = mongooseQuery.sort("-createdAt");
-  }
-
-  if (req.query.fields) {
-    const fields = req.query.fields.split(",").join(" ");
-    mongooseQuery = mongooseQuery.select(fields);
-  }
-
-  const drugs = await mongooseQuery;
+  const drugs = await features.mongooseQuery;
+  const paginationResult = features.getPaginationResult();
 
   res.status(200).json({
-    message: "success",
-    pagination,
-    result: drugs.length,
-    drugs,
+    status: "success",
+    pagination: paginationResult,
+    results: drugs.length,
+    data: drugs,
   });
 });
 

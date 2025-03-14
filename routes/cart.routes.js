@@ -20,11 +20,11 @@ const cartRouter = express.Router();
 cartRouter.route("/").post(protectedRoutes,addToCartValidator, addDrugToCart);
 cartRouter.route("/").delete(protectedRoutes,clearUserCart).get(protectedRoutes,getLoggedUserCart);
 cartRouter
-  .route("/:drugId")
+  .route("/drug/:drugId")
   .put(protectedRoutes,updateCartQuantityValidator, updateCartItemQuantity)
   .delete(protectedRoutes,removeDrugValidator, removeDrugFromCart);
 cartRouter
-  .route("/:inventoryId")
+  .route("/inventory/:inventoryId")
   .delete(protectedRoutes,removeInventoryValidator, removeInventoryFromCart);
 
 export default cartRouter;
