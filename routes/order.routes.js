@@ -12,21 +12,19 @@ const orderRouter = express.Router();
 
 // حماية جميع الطرق
 orderRouter.use(protectedRoutes);
-
+// allowTo("pharmacy")
 // طرق الطلبات للصيدلية
-orderRouter.route("/cart/:cartId").post(allowTo("pharmacy"), createOrder);
-
-orderRouter.route("/my-orders").get(allowTo("pharmacy"), getMyOrders);
-
+orderRouter.route("/cart/:cartId").post(createOrder);
+// allowTo("pharmacy")
+orderRouter.route("/my-orders").get(getMyOrders);
+// allowTo("pharmacy", "inventory"),
 // طرق الطلب المحدد
-orderRouter.route("/:id").get(allowTo("pharmacy", "inventory"), getOrder);
-
+orderRouter.route("/:id").get(getOrder);
+// allowTo("pharmacy")
 // تحديث حالة الطلب
-orderRouter
-  .route("/:id/status")
-  .patch(allowTo("inventory"), updateOrderStatus);
-
+orderRouter.route("/:id/status").patch(updateOrderStatus);
+// allowTo("pharmacy"),
 // إلغاء الطلب
-orderRouter.route("/:id/cancel").patch(allowTo("pharmacy"), cancelOrder);
+orderRouter.route("/:id/cancel").patch(cancelOrder);
 
 export default orderRouter;

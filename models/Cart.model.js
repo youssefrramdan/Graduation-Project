@@ -47,7 +47,7 @@ const cartSchema = new Schema(
       required: true,
     },
     totalCartPrice: Number,
-    totalPriceAfterDiscount: Number,
+    totalCartAfterDiscount: Number,
   },
   { timestamps: true }
 );

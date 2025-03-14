@@ -10,7 +10,7 @@ import ApiError from "../utils/apiError.js";
 
 const calcTotalCartPrice = (cart) => {
   let totalCartPrice = 0;
-  let totalPriceAfterDiscount = 0;
+  let totalCartAfterDiscount = 0;
 
   // Iterate over each inventory in the cart
   cart.items.forEach((inventoryItem) => {
@@ -26,7 +26,7 @@ const calcTotalCartPrice = (cart) => {
       const drugTotalAfterDiscount =
         (drug.discountedPrice || 0) * (drug.quantity || 0);
       inventoryPriceAfterDiscount += drugTotalAfterDiscount;
-      totalPriceAfterDiscount += drugTotalAfterDiscount;
+      totalCartAfterDiscount += drugTotalAfterDiscount;
     });
 
     inventoryItem.totalInventoryPrice = inventoryPrice;
@@ -36,7 +36,7 @@ const calcTotalCartPrice = (cart) => {
 
   // Update cart prices
   cart.totalCartPrice = totalCartPrice;
-  cart.totalPriceAfterDiscount = totalPriceAfterDiscount || 0;
+  cart.totalCartAfterDiscount = totalCartAfterDiscount;
 };
 
 /**
@@ -47,14 +47,12 @@ const calcTotalCartPrice = (cart) => {
 const addDrugToCart = asyncHandler(async (req, res, next) => {
   const { drugId, quantity } = req.body;
   const pharmacyId = req.user._id;
-  const { drug } = req; // Drug is already validated and added by validator
+  const { drug } = req;
   const inventoryId = drug.createdBy._id;
 
-  // Check if the pharmacy already has a cart
   let cart = await CartModel.findOne({ pharmacy: pharmacyId });
 
   if (!cart) {
-    // Create a new cart if not found and add the first drug
     cart = await CartModel.create({
       pharmacy: pharmacyId,
       items: [
@@ -70,29 +68,23 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
           ],
         },
       ],
-      totalCartPrice: 0,
-      totalPriceAfterDiscount: 0,
     });
   } else {
-    // Check if the inventory already exists in the cart
     const inventoryIndex = cart.items.findIndex((item) =>
       item.inventory.equals(inventoryId)
     );
 
     if (inventoryIndex > -1) {
-      // If inventory exists, check if the drug already exists
       const drugIndex = cart.items[inventoryIndex].drugs.findIndex((d) =>
         d.drug.equals(drugId)
       );
 
       if (drugIndex > -1) {
-        // If the drug exists, update the quantity
         cart.items[inventoryIndex].drugs[drugIndex].quantity += quantity;
         cart.items[inventoryIndex].drugs[drugIndex].price = drug.price;
         cart.items[inventoryIndex].drugs[drugIndex].discountedPrice =
           drug.discountedPrice;
       } else {
-        // If the drug does not exist, add it
         cart.items[inventoryIndex].drugs.push({
           drug: drugId,
           quantity,
@@ -101,7 +93,6 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
         });
       }
     } else {
-      // If the inventory does not exist, add it with the new drug
       cart.items.push({
         inventory: inventoryId,
         drugs: [
@@ -116,9 +107,20 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Calculate and update total cart price
   calcTotalCartPrice(cart);
   await cart.save();
+
+  // Populate cart before sending response
+  cart = await cart.populate([
+    {
+      path: "items.inventory",
+      select: "name shippingPrice",
+    },
+    {
+      path: "items.drugs.drug",
+      select: "name quantity price discountedPrice",
+    },
+  ]);
 
   return res.status(200).json({
     status: "success",
@@ -231,7 +233,16 @@ const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
  */
 
 const getLoggedUserCart = asyncHandler(async (req, res, next) => {
-  const cart = await CartModel.findOne({ pharmacy: req.user._id });
+  let cart = await CartModel.findOne({ pharmacy: req.user._id }).populate([
+    {
+      path: "items.inventory",
+      select: "name shippingPrice",
+    },
+    {
+      path: "items.drugs.drug",
+      select: "name quantity price discountedPrice",
+    },
+  ]);
 
   if (!cart) {
     return next(
@@ -240,6 +251,7 @@ const getLoggedUserCart = asyncHandler(async (req, res, next) => {
   }
 
   calcTotalCartPrice(cart);
+  await cart.save();
 
   res.status(200).json({
     status: "success",
@@ -260,7 +272,7 @@ const getLoggedUserCart = asyncHandler(async (req, res, next) => {
 
 const removeInventoryFromCart = asyncHandler(async (req, res, next) => {
   const { inventoryId } = req.params;
-// Cart is already validated and available from validator
+  // Cart is already validated and available from validator
 
   // Remove the inventory from cart
   const updatedCart = await CartModel.findOneAndUpdate(
@@ -289,4 +301,5 @@ export {
   removeDrugFromCart,
   clearUserCart,
   updateCartItemQuantity,
+  calcTotalCartPrice,
 };

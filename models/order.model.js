@@ -4,7 +4,6 @@ const orderSchema = new Schema(
   {
     orderNumber: {
       type: String,
-      required: true,
     },
     pharmacy: {
       type: Types.ObjectId,
@@ -21,40 +20,31 @@ const orderSchema = new Schema(
         drug: {
           type: Types.ObjectId,
           ref: "Drug",
-          required: true,
         },
         quantity: {
           type: Number,
-          required: true,
           min: [1, "Quantity must be at least 1"],
         },
         price: {
           type: Number,
-          required: true,
         },
         discountedPrice: {
           type: Number,
-          required: true,
         },
       },
     ],
     pricing: {
       subtotal: {
         type: Number,
-        required: true,
       },
       shippingCost: {
         type: Number,
-        required: true,
         default: 0,
       },
       total: {
         type: Number,
-        required: true,
       },
     },
-
-    // 4. معلومات الدفع
     payment: {
       method: {
         type: String,
@@ -63,13 +53,11 @@ const orderSchema = new Schema(
       },
       status: {
         type: String,
-        enum: ["pending", "paid", "failed", "refunded"],
+        enum: ["pending", "paid"],
         default: "pending",
       },
       paidAt: Date,
-      transactionId: String,
     },
-    // 5. معلومات الحالة
     status: {
       current: {
         type: String,
@@ -88,7 +76,15 @@ const orderSchema = new Schema(
         {
           status: {
             type: String,
-            enum: ["pending", "paid", "failed", "refunded"],
+            enum: [
+              "pending",
+              "confirmed",
+              "processing",
+              "shipped",
+              "delivered",
+              "cancelled",
+              "rejected",
+            ],
             required: true,
           },
           note: String,
@@ -104,34 +100,30 @@ const orderSchema = new Schema(
         },
       ],
     },
-
     delivery: {
       address: {
         street: String,
         city: String,
         governorate: String,
         details: String,
-        location: {
-          type: {
-            type: String,
-            enum: ["Point"],
-            default: "Point",
-          },
-          coordinates: {
-            type: [Number],
-            required: true,
-          },
+      },
+      location: {
+        type: {
+          type: String,
+          enum: ["Point"],
+          default: "Point",
+        },
+        coordinates: {
+          type: [Number],
+          required: true,
         },
       },
       contactPhone: String,
-      expectedDate: Date,
       actualDeliveryDate: Date,
     },
   },
   {
     timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
   }
 );
 
@@ -140,12 +132,10 @@ orderSchema.index({ pharmacy: 1, createdAt: -1 });
 orderSchema.index({ inventory: 1, createdAt: -1 });
 orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ "status.current": 1 });
-orderSchema.index({ "payment.status": 1 });
 
 // Generate order number before saving
 orderSchema.pre("save", async function (next) {
   if (!this.orderNumber) {
-    // Generate order number: INV-{inventoryId last 4}-{timestamp}-{random 4 digits}
     const randomPart = Math.floor(1000 + Math.random() * 9000);
     const timestampPart = Date.now().toString().slice(-8);
     const inventoryPart = this.inventory.toString().slice(-4);
@@ -157,12 +147,10 @@ orderSchema.pre("save", async function (next) {
 // Calculate totals before saving
 orderSchema.pre("save", function (next) {
   if (this.isModified("drugs") || this.isNew) {
-    // Calculate subtotal
     this.pricing.subtotal = this.drugs.reduce(
       (total, item) => total + item.discountedPrice * item.quantity,
       0
     );
-    // Calculate total
     this.pricing.total = this.pricing.subtotal + this.pricing.shippingCost;
   }
   next();
@@ -177,7 +165,7 @@ orderSchema.pre("save", function (next) {
     this.status.history.push({
       status: this.status.current,
       timestamp: new Date(),
-      changedBy: this.status.changedBy || this.pharmacy, // Default to pharmacy if not specified
+      changedBy: this.status.changedBy || this.pharmacy,
     });
   }
   next();
