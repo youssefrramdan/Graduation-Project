@@ -4,7 +4,6 @@ const orderSchema = new Schema(
   {
     orderNumber: {
       type: String,
-      unique: true,
       required: true,
     },
     pharmacy: {
@@ -74,7 +73,15 @@ const orderSchema = new Schema(
     status: {
       current: {
         type: String,
-        enum: ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled", "rejected"],
+        enum: [
+          "pending",
+          "confirmed",
+          "processing",
+          "shipped",
+          "delivered",
+          "cancelled",
+          "rejected",
+        ],
         default: "pending",
       },
       history: [
@@ -131,7 +138,7 @@ const orderSchema = new Schema(
 // Indexes
 orderSchema.index({ pharmacy: 1, createdAt: -1 });
 orderSchema.index({ inventory: 1, createdAt: -1 });
-// orderSchema.index({ orderNumber: 1 });
+orderSchema.index({ orderNumber: 1 });
 orderSchema.index({ "status.current": 1 });
 orderSchema.index({ "payment.status": 1 });
 
