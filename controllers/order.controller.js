@@ -147,6 +147,94 @@ const createCashOrder = asyncHandler(async (req, res, next) => {
   }
 });
 
+/**
+ * @desc    Get all orders
+ * @route   GET /api/v1/orders
+ * @access  Protected/User-Admin
+ */
+const getAllOrders = asyncHandler(async (req, res) => {
+  const filter = { pharmacy: req.user._id };
+
+  if (req.query.keyword) {
+    filter.$or = [
+      { orderStatus: { $regex: req.query.keyword, $options: "i" } },
+      { "drugs.drug.name": { $regex: req.query.keyword, $options: "i" } },
+    ];
+  }
+
+  const countDocuments = await OrderModel.countDocuments(filter);
+
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const pagination = {
+    currentPage: page,
+    resultsPerPage: limit,
+    totalPages: Math.ceil(countDocuments / limit),
+  };
+
+  if (page * limit < countDocuments) pagination.nextPage = page + 1;
+  if (page > 1) pagination.previousPage = page - 1;
+
+  let mongooseQuery = OrderModel.find(filter)
+    .skip(skip)
+    .limit(limit)
+    .lean();
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    mongooseQuery = mongooseQuery.sort(sortBy);
+  } else {
+    mongooseQuery = mongooseQuery.sort("-createdAt");
+  }
+
+  if (req.query.fields) {
+    const fields = req.query.fields.split(",").join(" ");
+    mongooseQuery = mongooseQuery.select(fields);
+
+    if (fields.includes("pharmacy")) {
+      mongooseQuery = mongooseQuery.populate("pharmacy", "name city governorate");
+    }
+    if (fields.includes("inventory")) {
+      mongooseQuery = mongooseQuery.populate("inventory", "name location");
+    }
+    if (fields.includes("drugs")) {
+      mongooseQuery = mongooseQuery.populate("drugs.drug", "name price");
+    }
+  } else {
+      mongooseQuery = mongooseQuery
+      .populate("pharmacy", "name city governorate")
+      .populate("inventory", "name location")
+      .populate("drugs.drug", "name price");
+  }
+
+  const orders  = await mongooseQuery;
+
+  res.status(200).json({
+    message: "success",
+    pagination,
+    result: orders.length,
+    users: orders,
+  });
+});
+
+const getSpecificOrder = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const order = await OrderModel.findById(id)
+  .populate("pharmacy", "name city governorate") 
+  .populate("inventory", "name location") 
+  .populate({
+    path: "drugs.drug",
+    model: "Drug",
+    select: "name price stock",
+  }); 
+
+  if (!order) {
+    return next(new ApiError(`TThere isn't an order for this ID: ${id}`, 404));
+  }
+
+  res.status(200).json({ message: "success", order});
+});
 /*
 const updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { orderId } = req.params;
@@ -263,4 +351,10 @@ const updateOrderToDelivered = asyncHandler(async (req, res, next) => {
     updatedata
   });
 });
-export { createCashOrder,updateOrderToPaid,updateOrderToDelivered };
+export {
+  createCashOrder,
+  updateOrderToPaid,
+  updateOrderToDelivered,
+  getAllOrders,
+  getSpecificOrder,
+}
