@@ -141,7 +141,7 @@ const createCashOrder = asyncHandler(async (req, res, next) => {
   }
 });
 
-
+/*
 const updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { orderId } = req.params;
   const { status, note } = req.body;
@@ -216,5 +216,45 @@ const getDefaultNote = (status) => {
 
   return defaultNotes[status];
 };
+*/
+const updateOrderToPaid = asyncHandler(async (req, res, next) => {
+  const { orderId } = req.params;
 
-export { createCashOrder, updateOrderStatus };
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    return next(new ApiError("Order not found", 404));
+  }
+
+  order.isPaid = true;
+  order.paidAt = new Date();
+  order.orderStatus = "accepted";
+
+  const updatedata =await order.save();
+
+  res.status(200).json({
+    status: "success",
+    updatedata
+  });
+});
+
+
+const updateOrderToDelivered = asyncHandler(async (req, res, next) => {
+  const { orderId } = req.params;
+
+  const order = await OrderModel.findById(orderId);
+  if (!order) {
+    return next(new ApiError("Order not found", 404));
+  }
+
+  order.isDelivered = true;
+  order.deliveredAt = new Date();
+  order.orderStatus = "delivered";
+
+  const updatedata =await order.save();
+
+  res.status(200).json({
+    status: "success",
+    updatedata
+  });
+});
+export { createCashOrder,updateOrderToPaid,updateOrderToDelivered };
