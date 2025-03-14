@@ -76,7 +76,15 @@ const userSchema = new Schema(
         uploadedAt: { type: Date, default: Date.now },
       },
     ],
-
+    minimumOrderValue: Number,
+    shippingPrice: {
+      type: Number,
+      default: 0,
+    },
+    taxRate: {
+      type: Number,
+      default: 0, // percentage
+    },
     orders: [
       {
         type: Types.ObjectId,
@@ -89,7 +97,6 @@ const userSchema = new Schema(
         ref: "Cart",
       },
     ],
-    inventoryMinOrder :Number,
     role: {
       type: String,
       trim: true,
@@ -130,16 +137,15 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
-userSchema.index({ email: 1 }, { unique: true }); 
-userSchema.index({ phone: 1 }); 
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ phone: 1 });
 userSchema.index({ city: 1, governorate: 1 });
 userSchema.index({ role: 1 });
 userSchema.index({ location: "2dsphere" });
-userSchema.index({ active: 1 }, { partialFilterExpression: { active: true } }); 
+userSchema.index({ active: 1 }, { partialFilterExpression: { active: true } });
 
 export default model("User", userSchema);
-// GeoJSON 
+// GeoJSON
 // {
 //   "name": "Central Park",
 //   "location": {
