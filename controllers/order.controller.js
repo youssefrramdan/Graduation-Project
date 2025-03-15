@@ -14,6 +14,7 @@ const transformOrder = (order) => ({
   statusHistory: order.status.history,
   paymentStatus: order.payment?.status,
   paymentMethod: order.payment?.method,
+  paymentPaidAt: order.payment?.paidAt,
   inventory: order.inventory && {
     _id: order.inventory._id,
     name: order.inventory.name,
