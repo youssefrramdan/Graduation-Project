@@ -344,4 +344,62 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+/**
+ * @desc    Reject an order
+ * @route   PATCH /api/v1/orders/:id/reject
+ * @access  Private/Inventory
+ * @param   {string} id - Order ID
+ * @param   {string} reason - Rejection reason
+ * @returns {Object} Updated order
+ */
+/*
+const rejectOrder = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { reason } = req.body;
+
+  // العثور على الطلب الذي يمكن رفضه
+  const order = await OrderModel.findOne({
+    _id: id,
+    inventory: req.user._id, // تغيير التحقق ليكون خاص بالمخزن
+    "status.current": { $in: ["pending", "confirmed"] }, 
+  });
+
+  if (!order) {
+    return next(
+      new ApiError(
+        "Order not found or cannot be rejected at current status",
+        404
+      )
+    );
+  }
+
+  // تحديث حالة الطلب إلى مرفوض (rejected)
+  order.updateStatus("rejected", reason, req.user._id);
+
+  // استعادة الكمية في المخزون
+  await Promise.all(
+    order.drugs.map((item) =>
+      DrugModel.updateOne(
+        { _id: item.drug },
+        { $inc: { stock: item.quantity } }  // استرجاع الكمية
+      )
+    )
+  );
+
+  await order.save();
+
+  // جلب الطلب بعد تحديثه مع البيانات المرتبطة
+  const populatedOrder = await OrderModel.findById(order._id)
+    .populate("inventory", "name location")
+    .populate("pharmacy", "name phone location")
+    .populate("drugs.drug", "name price discountedPrice");
+
+  res.status(200).json({
+    status: "success",
+    data: transformOrder(populatedOrder),
+  });
+});
+*/
+
 export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder };

@@ -6,6 +6,7 @@ import {
   getOrder,
   updateOrderStatus,
   cancelOrder,
+  
 } from "../controllers/order.controller.js";
 
 const orderRouter = express.Router();
@@ -25,5 +26,8 @@ orderRouter.route("/:id/status").patch(updateOrderStatus);
 
 // Cancel order
 orderRouter.route("/:id/cancel").patch(cancelOrder);
+
+// reject order
+//orderRouter.route("/:id/reject").patch(rejectOrder);
 
 export default orderRouter;
