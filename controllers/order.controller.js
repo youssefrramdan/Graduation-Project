@@ -353,21 +353,20 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
  * @route   PATCH /api/v1/orders/:id/reject
  * @access  Private/Inventory
  * @param   {string} id - Order ID
- * @param   {string} reason - Rejection reason
+ * @body   {string} reason - Rejection reason
  * @returns {Object} Updated order
  */
-/*
+
 const rejectOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
 
-  // العثور على الطلب الذي يمكن رفضه
   const order = await OrderModel.findOne({
     _id: id,
-    inventory: req.user._id, // تغيير التحقق ليكون خاص بالمخزن
-    "status.current": { $in: ["pending", "confirmed"] }, 
+    
+    "status.current": { $in: ["pending","confirmed"] }, 
   });
-
+  console.log("Order ID:", id,);
   if (!order) {
     return next(
       new ApiError(
@@ -377,22 +376,22 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // تحديث حالة الطلب إلى مرفوض (rejected)
+  // 
   order.updateStatus("rejected", reason, req.user._id);
 
-  // استعادة الكمية في المخزون
+  
   await Promise.all(
     order.drugs.map((item) =>
       DrugModel.updateOne(
         { _id: item.drug },
-        { $inc: { stock: item.quantity } }  // استرجاع الكمية
+        { $inc: { stock: item.quantity } }  
       )
     )
   );
 
   await order.save();
 
-  // جلب الطلب بعد تحديثه مع البيانات المرتبطة
+  
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
@@ -403,7 +402,7 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     data: transformOrder(populatedOrder),
   });
 });
-*/
+
 
 /**
  * @desc    Get checkout session from stripe and send it as response
@@ -450,4 +449,4 @@ const checkoutSession = asyncHandler(async (req, res, next) => {
   });
 
 });
-export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession };
+export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession ,rejectOrder };

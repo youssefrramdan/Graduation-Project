@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
   cancelOrder,
   checkoutSession,
+  rejectOrder,
   
 } from "../controllers/order.controller.js";
 
@@ -30,6 +31,6 @@ orderRouter.route("/:id/status").patch(updateOrderStatus);
 orderRouter.route("/:id/cancel").patch(cancelOrder);
 
 // reject order
-//orderRouter.route("/:id/reject").patch(rejectOrder);
+orderRouter.route("/:id/reject").patch(rejectOrder);
 
 export default orderRouter;
