@@ -6,6 +6,9 @@ import DrugModel from "../models/Drug.model.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 import { calcTotalCartPrice } from "./cart.controller.js";
 
+import Stripe from "stripe";
+const stripe = new Stripe("sk_test_51R3f6tFPDv2cgTSdmron4H5v02fkkLi1Bz2gXM14kAPBOeKsEz5SQEFNAlfMJuavSi4Ohu0ikZlGX49fu8ijsxnp00jrymXkBn");
+
 // Shared transform function for order responses
 const transformOrder = (order) => ({
   _id: order._id,
@@ -344,4 +347,49 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
-export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder };
+/**
+ * @desc    Get checkout session from stripe and send it as response
+ * @route   GET /api/v1/orders/checkout-session/cardId
+ * @access  Private/Pharmacy
+ */
+
+const checkoutSession = asyncHandler(async (req, res, next) => {
+  const { inventoryId } = req.body;
+  // 1) Get cart depend on cartId
+  const cart = await CartModel.findById(req.params.cartId);
+  if(!cart){
+    return next(new ApiError("Cart not found or inventory not in cart", 404));
+  }
+  const inventoryItems = cart.items.find(
+    (item) => item.inventory._id.toString() === inventoryId
+  );
+  const shippingCost = inventoryItems.inventory.shippingPrice || 0;
+  const totalAmount = inventoryItems.totalInventoryPriceAfterDiscount + shippingCost;
+
+  // 2) Create stripe checkout session
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    line_items: [{
+      price_data: {
+        currency: "egp",
+        product_data: {
+          name: "Product Name",
+        },
+        unit_amount: Math.round(totalAmount * 100), 
+      },
+      quantity: 1,
+    }],
+    mode: "payment",
+    success_url: `${req.protocol}://${req.get('host')}/orders`,
+    cancel_url: `${req.protocol}://${req.get('host')}/cart`,
+    customer_email: req.user.email,
+    client_reference_id: req.params.cartId,
+  });
+
+  res.status(200).json({
+    status: "success",
+    session,
+  });
+
+});
+export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession };
