@@ -13,6 +13,7 @@ import authRouter from "./routes/auth.routes.js";
 import drugRouter from "./routes/drug.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
+import { webhookCheckout } from "./controllers/order.controller.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -61,6 +62,13 @@ app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(compression());
 // middlewares
+
+// Checkout webhook
+app.post(
+  "/webhook-checkout",
+  express.raw({ type: "application/json" }),
+  webhookCheckout
+);
 
 app.use(express.json());
 app.use(cookieParser());

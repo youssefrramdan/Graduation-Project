@@ -450,4 +450,24 @@ const checkoutSession = asyncHandler(async (req, res, next) => {
   });
 
 });
-export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession ,rejectOrder };
+
+
+const webhookCheckout = asyncHandler(async (req, res, next) => {
+  const sig = req.headers['stripe-signature'];
+  let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        whsec_vXNGhPeea1xMC5Ba7dwFAlFgQ2Nceo6w
+      );
+    } catch (err) {
+      return next(new ApiError(`Webhook Error: ${err.message}`, 400));
+    }
+    if(event.type === "checkout.session.completed"){
+      console.log('Create Order Here......');
+    }
+  }
+);
+
+export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession ,rejectOrder,webhookCheckout };
