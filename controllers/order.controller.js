@@ -430,7 +430,7 @@ const checkoutSession = asyncHandler(async (req, res, next) => {
       price_data: {
         currency: "egp",
         product_data: {
-          name: "Product Name",
+          name: req.user.name,
         },
         unit_amount: Math.round(totalAmount * 100), 
       },
@@ -441,6 +441,9 @@ const checkoutSession = asyncHandler(async (req, res, next) => {
     cancel_url: `${req.protocol}://${req.get('host')}/cart`,
     customer_email: req.user.email,
     client_reference_id: req.params.cartId,
+
+    metadata: {
+    }
   });
 
   res.status(200).json({
