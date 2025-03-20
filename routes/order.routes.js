@@ -16,7 +16,7 @@ const orderRouter = express.Router();
 // Protect all routes
 orderRouter.use(protectedRoutes);
 
-orderRouter.route("/checkout-session/:cartId").get(checkoutSession);
+orderRouter.route("/checkout-session/:cartId").post(checkoutSession);
 // Pharmacy order routes
 orderRouter.route("/cart/:cartId").post(createOrder);
 orderRouter.route("/my-orders").get(getMyOrders);
