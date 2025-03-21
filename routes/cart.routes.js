@@ -2,12 +2,13 @@ import express from "express";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 import {
   addDrugToCart,
-  clearUserCart,
-  removeDrugFromCart,
-  updateCartItemQuantity,
   getLoggedUserCart,
   removeInventoryFromCart,
+  removeDrugFromCart,
+  clearUserCart,
+  updateCartItemQuantity,
 } from "../controllers/cart.controller.js";
+
 import {
   addToCartValidator,
   updateCartQuantityValidator,
@@ -17,14 +18,22 @@ import {
 
 const cartRouter = express.Router();
 
-cartRouter.route("/").post(protectedRoutes,addToCartValidator, addDrugToCart);
-cartRouter.route("/").delete(protectedRoutes,clearUserCart).get(protectedRoutes,getLoggedUserCart);
+// Apply authentication for all routes
+cartRouter.use(protectedRoutes);
+
+cartRouter
+  .route("/")
+  .get(getLoggedUserCart)
+  .post(addToCartValidator, addDrugToCart)
+  .delete(clearUserCart);
+
 cartRouter
   .route("/drug/:drugId")
-  .put(protectedRoutes,updateCartQuantityValidator, updateCartItemQuantity)
-  .delete(protectedRoutes,removeDrugValidator, removeDrugFromCart);
+  .put(updateCartQuantityValidator, updateCartItemQuantity)
+  .delete(removeDrugValidator, removeDrugFromCart);
+
 cartRouter
   .route("/inventory/:inventoryId")
-  .delete(protectedRoutes,removeInventoryValidator, removeInventoryFromCart);
+  .delete(removeInventoryValidator, removeInventoryFromCart);
 
 export default cartRouter;

@@ -209,7 +209,11 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
  */
 const getSpecificDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const drug = await DrugModel.findById(id);
+  const drug = await DrugModel.findById(id).populate({
+    path: "createdBy",
+    select: "name shippingPrice profileImage",
+  });
+
   if (!drug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
@@ -232,6 +236,12 @@ const addDrug = asyncHandler(async (req, res, next) => {
   };
 
   const drug = await DrugModel.create(drugData);
+
+  // Populate after creation
+  await drug.populate({
+    path: "createdBy",
+    select: "name location shippingPrice profileImage",
+  });
 
   await UserModel.findByIdAndUpdate(
     req.user._id,
@@ -256,7 +266,10 @@ const addDrug = asyncHandler(async (req, res, next) => {
 const updateDrug = asyncHandler(async (req, res, next) => {
   let updatedData = { ...req.body };
   const { id } = req.params;
-  const drug = await DrugModel.findById({ _id: id });
+  const drug = await DrugModel.findById({ _id: id }).populate({
+    path: "createdBy",
+    select: "name location shippingPrice profileImage",
+  });
 
   if (!drug.createdBy._id.equals(req.user._id)) {
     return next(new ApiError("You are not allowed to update this drug", 403));
@@ -265,6 +278,9 @@ const updateDrug = asyncHandler(async (req, res, next) => {
   const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
     new: true,
     runValidators: true,
+  }).populate({
+    path: "createdBy",
+    select: "name location shippingPrice profileImage",
   });
 
   if (!newDrug) {
@@ -280,7 +296,10 @@ const updateDrugImage = asyncHandler(async (req, res, next) => {
   req.body.imageCover = req.file.path;
 
   const { id } = req.params;
-  const drug = await DrugModel.findById({ _id: id });
+  const drug = await DrugModel.findById({ _id: id }).populate({
+    path: "createdBy",
+    select: "name shippingPrice profileImage",
+  });
 
   if (!drug.createdBy._id.equals(req.user._id)) {
     return next(new ApiError("You are not allowed to update this drug", 403));
@@ -289,6 +308,9 @@ const updateDrugImage = asyncHandler(async (req, res, next) => {
   const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
     new: true,
     runValidators: true,
+  }).populate({
+    path: "createdBy",
+    select: "name location shippingPrice taxRate profileImage",
   });
 
   if (!newDrug) {

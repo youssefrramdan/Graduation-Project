@@ -4,7 +4,7 @@ import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import DrugModel from "../models/Drug.model.js";
 import ApiFeatures from "../utils/apiFeatures.js";
-import { calcTotalCartPrice } from "./cart.controller.js";
+// import { calcTotalCartPrice } from "./cart.controller.js";
 
 import Stripe from "stripe";
 const stripe = new Stripe("sk_test_51R3f6tFPDv2cgTSdmron4H5v02fkkLi1Bz2gXM14kAPBOeKsEz5SQEFNAlfMJuavSi4Ohu0ikZlGX49fu8ijsxnp00jrymXkBn");
@@ -92,7 +92,7 @@ const createOrder = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Inventory not found in cart", 404));
   }
   // Calculate cart totals before creating order
-  calcTotalCartPrice(cart);
+//   calcTotalCartPrice(cart);
 
   // Step 3: Validate stock availability for all drugs
   const stockCheck = await Promise.all(
@@ -363,8 +363,8 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
 
   const order = await OrderModel.findOne({
     _id: id,
-    
-    "status.current": { $in: ["pending","confirmed"] }, 
+
+    "status.current": { $in: ["pending","confirmed"] },
   });
   console.log("Order ID:", id,);
   if (!order) {
@@ -376,22 +376,22 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // 
+  //
   order.updateStatus("rejected", reason, req.user._id);
 
-  
+
   await Promise.all(
     order.drugs.map((item) =>
       DrugModel.updateOne(
         { _id: item.drug },
-        { $inc: { stock: item.quantity } }  
+        { $inc: { stock: item.quantity } }
       )
     )
   );
 
   await order.save();
 
-  
+
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
@@ -404,70 +404,5 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
 });
 
 
-/**
- * @desc    Get checkout session from stripe and send it as response
- * @route   GET /api/v1/orders/checkout-session/cardId
- * @access  Private/Pharmacy
- */
 
-const checkoutSession = asyncHandler(async (req, res, next) => {
-  const { inventoryId } = req.body;
-  // 1) Get cart depend on cartId
-  const cart = await CartModel.findById(req.params.cartId);
-  if(!cart){
-    return next(new ApiError("Cart not found or inventory not in cart", 404));
-  }
-  const inventoryItems = cart.items.find(
-    (item) => item.inventory._id.toString() === inventoryId
-  );
-  const shippingCost = inventoryItems.inventory.shippingPrice || 0;
-  const totalAmount = inventoryItems.totalInventoryPriceAfterDiscount + shippingCost;
-
-  // 2) Create stripe checkout session
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: [{
-      price_data: {
-        currency: "egp",
-        unit_amount: Math.round(totalAmount * 100), 
-        product_data: {
-          name: req.user.name,
-        },
-      },
-      quantity: 1,
-    }],
-    mode: "payment",
-    success_url: `${req.protocol}://${req.get('host')}/orders`,
-    cancel_url: `${req.protocol}://${req.get('host')}/cart`,
-    customer_email: req.user.email,
-    client_reference_id: req.params.cartId,
-    //metadata
-  });
-
-  res.status(200).json({
-    status: "success",
-    session,
-  });
-
-});
-
-
-const webhookCheckout = asyncHandler(async (req, res, next) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        whsec_vXNGhPeea1xMC5Ba7dwFAlFgQ2Nceo6w
-      );
-    } catch (err) {
-      return next(new ApiError(`Webhook Error: ${err.message}`, 400));
-    }
-    if(event.type === "checkout.session.completed"){
-      console.log('Create Order Here......');
-    }
-  }
-);
-
-export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession ,rejectOrder,webhookCheckout };
+export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder ,rejectOrder };

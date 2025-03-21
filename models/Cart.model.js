@@ -2,7 +2,7 @@ import { model, Schema, Types } from "mongoose";
 
 const cartSchema = new Schema(
   {
-    items: [
+    inventories: [
       {
         inventory: {
           type: Types.ObjectId,
@@ -21,21 +21,17 @@ const cartSchema = new Schema(
               required: true,
               min: [1, "Quantity must be at least 1"],
             },
-            price: {
+            Price: {
               type: Number,
               required: true,
             },
-            discountedPrice: {
+            totalDrugPrice: {
               type: Number,
-              required: true,
+              default: 0,
             },
           },
         ],
         totalInventoryPrice: {
-          type: Number,
-          default: 0,
-        },
-        totalInventoryPriceAfterDiscount: {
           type: Number,
           default: 0,
         },
@@ -46,11 +42,25 @@ const cartSchema = new Schema(
       ref: "User",
       required: true,
     },
-    totalCartPrice: Number,
-    totalCartAfterDiscount: Number,
   },
   { timestamps: true }
 );
 
+// Calculate totalDrugPrice and totalInventoryPrice before saving
+cartSchema.pre("save", function (next) {
+  this.inventories.forEach((inventory) => {
+    // Calculate totalDrugPrice for each drug
+    inventory.drugs.forEach((drug) => {
+      drug.totalDrugPrice = drug.Price * drug.quantity;
+    });
+
+    // Calculate totalInventoryPrice
+    inventory.totalInventoryPrice = inventory.drugs.reduce(
+      (total, drug) => total + drug.totalDrugPrice,
+      0
+    );
+  });
+  next();
+});
 
 export default model("Cart", cartSchema);
