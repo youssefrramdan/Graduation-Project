@@ -38,7 +38,10 @@ const addDrugToCart = asyncHandler(async (req, res) => {
     const inventoryIndex = cart.inventories.findIndex((item) =>
       item.inventory.equals(inventoryId)
     );
-
+// aya 1 inventory
+// aya 2 inventory
+// youssef 3 inventory
+// drugs [drug1]
     if (inventoryIndex > -1) {
       // Check if drug exists in this inventory
       const drugIndex = cart.inventories[inventoryIndex].drugs.findIndex((d) =>
@@ -110,6 +113,7 @@ const removeDrugFromCart = asyncHandler(async (req, res) => {
 
   // Remove drug and filter out empty inventories
   cart.inventories = cart.inventories.filter((inventory) => {
+    
     inventory.drugs = inventory.drugs.filter(
       (d) => d.drug.toString() !== drugId
     );

@@ -2,9 +2,6 @@ import { model, Schema, Types } from "mongoose";
 
 const orderSchema = new Schema(
   {
-    orderNumber: {
-      type: String,
-    },
     pharmacy: {
       type: Types.ObjectId,
       ref: "User",
@@ -43,11 +40,6 @@ const orderSchema = new Schema(
       },
     },
     payment: {
-      method: {
-        type: String,
-        enum: ["cash"],
-        default: "cash",
-      },
       status: {
         type: String,
         enum: ["pending", "paid"],
@@ -143,7 +135,7 @@ orderSchema.pre("save", async function (next) {
 orderSchema.pre("save", function (next) {
   if (this.isModified("drugs") || this.isNew) {
     this.pricing.subtotal = this.drugs.reduce(
-      (total, item) => total + item.discountedPrice * item.quantity,
+      (total, item) => total + item.Price * item.quantity,
       0
     );
     this.pricing.total = this.pricing.subtotal + this.pricing.shippingCost;

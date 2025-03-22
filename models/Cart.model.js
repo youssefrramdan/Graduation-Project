@@ -21,10 +21,12 @@ const cartSchema = new Schema(
               required: true,
               min: [1, "Quantity must be at least 1"],
             },
+             // discountedPrice
             Price: {
               type: Number,
               required: true,
             },
+            // totalDrugPrice = quantity * Price
             totalDrugPrice: {
               type: Number,
               default: 0,
