@@ -77,6 +77,9 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+  });
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });
