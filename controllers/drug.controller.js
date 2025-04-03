@@ -5,7 +5,7 @@ import asyncHandler from "express-async-handler";
 import DrugModel from "../models/Drug.model.js";
 import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
-import ApiFeatures from "../utils/ApiFeatures.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 import {
   readExcelFile,
   validateRowRange,
@@ -401,17 +401,21 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
 
   let drugs = [];
-  let batchSize = 100;
+  const batchSize = 500;
 
   if (validDrugs.length > 0) {
+    const insertOptions = { ordered: false };
     if (validDrugs.length > batchSize) {
+      const batches = [];
       for (let i = 0; i < validDrugs.length; i += batchSize) {
-        const batch = validDrugs.slice(i, i + batchSize);
-        const batchDrugs = await DrugModel.insertMany(batch);
-        drugs = [...drugs, ...batchDrugs];
+        batches.push(validDrugs.slice(i, i + batchSize));
       }
+      drugs = await Promise.all(
+        batches.map((batch) => DrugModel.insertMany(batch, insertOptions))
+      );
+      drugs = drugs.flat();
     } else {
-      drugs = await DrugModel.insertMany(validDrugs);
+      drugs = await DrugModel.insertMany(validDrugs, insertOptions);
     }
 
     await UserModel.findByIdAndUpdate(req.user._id, {
