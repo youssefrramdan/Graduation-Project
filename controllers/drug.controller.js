@@ -161,7 +161,7 @@ const executeAggregationPipeline = async (pipeline, skip, limit) => {
 const getAllDrugs = asyncHandler(async (req, res, next) => {
   const pharmacyLocation = req.user.location.coordinates;
   const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 30;
+  const limit = Number(req.query.limit) || 15;
   const skip = (page - 1) * limit;
 
   const pipeline = [
