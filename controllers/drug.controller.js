@@ -3,141 +3,70 @@
 /* eslint-disable node/no-unsupported-features/es-syntax */
 import asyncHandler from "express-async-handler";
 import DrugModel from "../models/Drug.model.js";
+import UserModel from "../models/User.model.js";
 import ApiError from "../utils/apiError.js";
+import ApiFeatures from "../utils/ApiFeatures.js";
 import {
   readExcelFile,
   validateRowRange,
   formatDrugData,
 } from "../utils/excelUtils.js";
-import UserModel from "../models/User.model.js";
-import ApiFeatures from "../utils/apiFeatures.js";
+
+// ======== Helper Functions ========
 
 /**
- * @desc    Get all drugs with filtering, sorting, and pagination
- * @route   GET /api/v1/drugs
- * @access  Public
+ * Create filter stages for queries
  */
-const getAllDrugs = asyncHandler(async (req, res, next) => {
-  if (!req.user || !req.user.location || !req.user.location.coordinates) {
-    return next(new Error("Pharmacy location not found"));
-  }
-
-  const pharmacyLocation = req.user.location.coordinates;
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 30;
-  const skip = (page - 1) * limit;
-
-  // Build the aggregation pipeline
-  // adding isVisible
-  const pipeline = [
-    // Find nearby inventories
-    {
-      $geoNear: {
-        near: { type: "Point", coordinates: pharmacyLocation },
-        spherical: true,
-        distanceField: "calcDistance",
-        // query: { role: "inventory" },
-      },
-    },
-    // Get drugs from each inventory
-    {
-      $lookup: {
-        from: "drugs",
-        localField: "_id",
-        foreignField: "createdBy",
-        as: "drugs",
-      },
-    },
-    // Unwind drugs array to get individual drugs
-    { $unwind: "$drugs" },
-    // Get inventory details
-    {
-      $lookup: {
-        from: "users",
-        localField: "drugs.createdBy",
-        foreignField: "_id",
-        as: "inventory",
-      },
-    },
-    // Unwind inventory array
-    { $unwind: "$inventory" },
-  ];
-
-  // Add filters if they exist
+const createFilterStages = (query) => {
   const filters = {};
-  if (req.query.keyword) {
+
+  // Add search filters
+  if (query.keyword) {
     filters.$or = [
-      { "drugs.name": { $regex: req.query.keyword, $options: "i" } },
-      { "drugs.description": { $regex: req.query.keyword, $options: "i" } },
+      { "drugs.name": { $regex: query.keyword, $options: "i" } },
+      { "drugs.description": { $regex: query.keyword, $options: "i" } },
     ];
   }
 
   // Add price filter
-  if (req.query.price) {
+  if (query.price) {
     filters["drugs.price"] = {};
-    if (req.query.price.gte)
-      filters["drugs.price"].$gte = Number(req.query.price.gte);
-    if (req.query.price.lte)
-      filters["drugs.price"].$lte = Number(req.query.price.lte);
+    if (query.price.gte) filters["drugs.price"].$gte = Number(query.price.gte);
+    if (query.price.lte) filters["drugs.price"].$lte = Number(query.price.lte);
   }
 
   // Add stock filter
-  if (req.query.stock) {
+  if (query.stock) {
     filters["drugs.stock"] = {};
-    if (req.query.stock.gte)
-      filters["drugs.stock"].$gte = Number(req.query.stock.gte);
-    if (req.query.stock.lte)
-      filters["drugs.stock"].$lte = Number(req.query.stock.lte);
+    if (query.stock.gte) filters["drugs.stock"].$gte = Number(query.stock.gte);
+    if (query.stock.lte) filters["drugs.stock"].$lte = Number(query.stock.lte);
   }
 
   // Add date filters
-  if (req.query.productionDate) {
+  if (query.productionDate) {
     filters["drugs.productionDate"] = {};
-    if (req.query.productionDate.gte)
-      filters["drugs.productionDate"].$gte = new Date(
-        req.query.productionDate.gte
-      );
-    if (req.query.productionDate.lte)
-      filters["drugs.productionDate"].$lte = new Date(
-        req.query.productionDate.lte
-      );
+    if (query.productionDate.gte)
+      filters["drugs.productionDate"].$gte = new Date(query.productionDate.gte);
+    if (query.productionDate.lte)
+      filters["drugs.productionDate"].$lte = new Date(query.productionDate.lte);
   }
 
-  if (req.query.expirationDate) {
+  if (query.expirationDate) {
     filters["drugs.expirationDate"] = {};
-    if (req.query.expirationDate.gte)
-      filters["drugs.expirationDate"].$gte = new Date(
-        req.query.expirationDate.gte
-      );
-    if (req.query.expirationDate.lte)
-      filters["drugs.expirationDate"].$lte = new Date(
-        req.query.expirationDate.lte
-      );
+    if (query.expirationDate.gte)
+      filters["drugs.expirationDate"].$gte = new Date(query.expirationDate.gte);
+    if (query.expirationDate.lte)
+      filters["drugs.expirationDate"].$lte = new Date(query.expirationDate.lte);
   }
 
-  // Add filters to pipeline if they exist
-  if (Object.keys(filters).length > 0) {
-    pipeline.push({ $match: filters });
-  }
+  return filters;
+};
 
-  // Add sorting
-  const sortStage = {};
-  if (req.query.sort) {
-    const sortFields = req.query.sort.split(",");
-    sortFields.forEach((field) => {
-      if (field.startsWith("-")) {
-        sortStage[`drugs.${field.slice(1)}`] = -1;
-      } else {
-        sortStage[`drugs.${field}`] = 1;
-      }
-    });
-  } else {
-    sortStage.calcDistance = 1; // Default sort by distance
-  }
-  pipeline.push({ $sort: sortStage });
-
-  // Project only needed fields
-  const projectStage = {
+/**
+ * Create projection stage for queries
+ */
+const createProjectStage = (query) => {
+  const defaultProjection = {
     _id: "$drugs._id",
     name: "$drugs.name",
     manufacturer: "$drugs.manufacturer",
@@ -157,34 +86,136 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
     },
   };
 
-  if (req.query.fields) {
-    const fields = req.query.fields.split(",");
-    const projection = {};
-    fields.forEach((field) => {
-      if (projectStage[field]) {
-        projection[field] = projectStage[field];
-      }
-    });
-    // Always include inventory info and distance
-    projection.inventory = projectStage.inventory;
-    projection.distanceInKm = projectStage.distanceInKm;
-    pipeline.push({ $project: projection });
-  } else {
-    pipeline.push({ $project: projectStage });
+  if (!query.fields) return defaultProjection;
+
+  const fields = query.fields.split(",");
+  const projection = {};
+
+  // Optimization: More efficient way to add only required fields
+  for (const field of fields) {
+    if (defaultProjection[field]) {
+      projection[field] = defaultProjection[field];
+    }
   }
 
-  // Get total count
-  const countPipeline = [...pipeline];
-  const totalCount = (await UserModel.aggregate(countPipeline)).length;
+  // Always include inventory and distance information
+  projection.inventory = defaultProjection.inventory;
+  projection.distanceInKm = defaultProjection.distanceInKm;
 
-  // Add pagination
+  return projection;
+};
+
+/**
+ * Create sort stage
+ */
+const createSortStage = (query) => {
+  const sortStage = {};
+  if (query.sort) {
+    const sortFields = query.sort.split(",");
+    for (const field of sortFields) {
+      if (field.startsWith("-")) {
+        sortStage[`drugs.${field.slice(1)}`] = -1;
+      } else {
+        sortStage[`drugs.${field}`] = 1;
+      }
+    }
+  } else {
+    sortStage.calcDistance = 1;
+  }
+  return sortStage;
+};
+
+/**
+ * Execute aggregation pipeline
+ */
+const executeAggregationPipeline = async (pipeline, skip, limit) => {
+  // Copy pipeline for count
+  const countPipeline = [...pipeline];
+
+  // Add count aggregation - more efficient than re-running full query
+  countPipeline.push({ $count: "totalCount" });
+
+  // Add pagination to original query
   pipeline.push({ $skip: skip });
   pipeline.push({ $limit: limit });
 
-  // Execute query
-  const drugs = await UserModel.aggregate(pipeline);
+  // Execute queries in parallel
+  const [countResult, drugs] = await Promise.all([
+    UserModel.aggregate(countPipeline),
+    UserModel.aggregate(pipeline),
+  ]);
 
-  // Prepare response
+  const totalCount =
+    countResult[0] && countResult[0].totalCount ? countResult[0].totalCount : 0;
+
+  return { totalCount, drugs };
+};
+
+// ======== Controller Functions ========
+
+/**
+ * @desc    Get all drugs with filtering, sorting and pagination - Performance optimized
+ * @route   GET /api/v1/drugs
+ * @access  Public
+ */
+const getAllDrugs = asyncHandler(async (req, res, next) => {
+  const pharmacyLocation = req.user.location.coordinates;
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 30;
+  const skip = (page - 1) * limit;
+
+  const pipeline = [
+    {
+      $geoNear: {
+        near: { type: "Point", coordinates: pharmacyLocation },
+        spherical: true,
+        distanceField: "calcDistance",
+        query: {},
+        distanceMultiplier: 0.001,
+      },
+    },
+    {
+      $lookup: {
+        from: "drugs",
+        let: { inventoryId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$createdBy", "$$inventoryId"] } } },
+        ],
+        as: "drugs",
+      },
+    },
+    { $unwind: { path: "$drugs", preserveNullAndEmptyArrays: false } },
+    {
+      $lookup: {
+        from: "users",
+        let: { creatorId: "$drugs.createdBy" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$creatorId"] } } },
+          { $project: { name: 1, profileImage: 1 } },
+        ],
+        as: "inventory",
+      },
+    },
+    { $unwind: "$inventory" },
+  ];
+
+  const filters = createFilterStages(req.query);
+  if (Object.keys(filters).length > 0) {
+    pipeline.push({ $match: filters });
+  }
+
+  const sortStage = createSortStage(req.query);
+  pipeline.push({ $sort: sortStage });
+
+  const projectStage = createProjectStage(req.query);
+  pipeline.push({ $project: projectStage });
+
+  const { totalCount, drugs } = await executeAggregationPipeline(
+    pipeline,
+    skip,
+    limit
+  );
+
   const paginationResult = {
     currentPage: page,
     limit,
@@ -194,162 +225,155 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
   if (skip + limit < totalCount) paginationResult.next = page + 1;
   if (skip > 0) paginationResult.prev = page - 1;
 
-  res.status(200).json({
+  const responseData = {
     status: "success",
     paginationResult,
     results: drugs.length,
     data: drugs,
-  });
+  };
+
+  res.status(200).json(responseData);
 });
 
 /**
- * @desc    Get a specific drug by its ID.
+ * @desc    Get specific drug by ID - Performance optimized
  * @route   GET /api/v1/drugs/:id
  * @access  Public
  */
 const getSpecificDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const drug = await DrugModel.findById(id).populate({
-    path: "createdBy",
-    select: "name shippingPrice profileImage",
-  });
+
+  const drug = await DrugModel.findById(id)
+    .populate({
+      path: "createdBy",
+      select: "name shippingPrice profileImage",
+      options: { lean: true },
+    })
+    .lean();
 
   if (!drug) {
     return next(new ApiError(`No drug found with ID ${id}`, 404));
   }
-  res.status(200).json({ message: "success", data: drug });
+
+  const responseData = { message: "success", data: drug };
+
+  res.status(200).json(responseData);
 });
 
 /**
- * @desc    Add a new drug.
+ * @desc    Add new drug - Performance optimized
  * @route   POST /api/v1/drugs
  * @access  Private (Authenticated users only)
  */
 const addDrug = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== "inventory") {
-    return next(new ApiError("Only inventories can add drugs", 403));
-  }
-
   const drugData = {
     ...req.body,
     createdBy: req.user._id,
   };
-
   const drug = await DrugModel.create(drugData);
 
-  // Populate after creation
-  await drug.populate({
-    path: "createdBy",
-    select: "name location shippingPrice profileImage",
-  });
-
-  await UserModel.findByIdAndUpdate(
-    req.user._id,
-    {
+  const [populatedDrug, _] = await Promise.all([
+    DrugModel.findById(drug._id).populate({
+      path: "createdBy",
+      select: "name location shippingPrice profileImage",
+    }),
+    UserModel.findByIdAndUpdate(req.user._id, {
       $push: { drugs: drug._id },
-    },
-    { new: true }
-  );
+    }),
+  ]);
 
   res.status(201).json({
     status: "success",
     message: "Drug added successfully to your inventory",
-    data: drug,
+    data: populatedDrug,
   });
 });
 
 /**
- * @desc    Update a specific drug by its ID.
+ * @desc    Update specific drug by ID - Performance optimized
  * @route   PUT /api/v1/drugs/:id
  * @access  Private (Authenticated users only)
  */
 const updateDrug = asyncHandler(async (req, res, next) => {
-  let updatedData = { ...req.body };
   const { id } = req.params;
-  const drug = await DrugModel.findById({ _id: id }).populate({
-    path: "createdBy",
-    select: "name location shippingPrice profileImage",
-  });
 
-  if (!drug.createdBy._id.equals(req.user._id)) {
-    return next(new ApiError("You are not allowed to update this drug", 403));
-  }
+  const updatedDrug = await DrugModel.findOneAndUpdate(
+    { _id: id },
+    { ...req.body },
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
+    .populate({
+      path: "createdBy",
+      select: "name location shippingPrice profileImage",
+      options: { lean: true },
+    })
+    .lean();
 
-  const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, updatedData, {
-    new: true,
-    runValidators: true,
-  }).populate({
-    path: "createdBy",
-    select: "name location shippingPrice profileImage",
-  });
-
-  if (!newDrug) {
-    return next(new ApiError(`No drug found with ID ${id}`, 404));
-  }
-  res.status(200).json({ message: "success", data: newDrug });
+  res.status(200).json({ message: "success", data: updatedDrug });
 });
 
+/**
+ * @desc    Update drug image - Performance optimized
+ * @route   PUT /api/v1/drugs/:id/image
+ * @access  Private (Authenticated users only)
+ */
 const updateDrugImage = asyncHandler(async (req, res, next) => {
   if (!req.file) {
-    return next(new ApiError(`Please upload Drug image`, 404));
+    return next(new ApiError(`Please upload Drug image`, 400));
   }
-  req.body.imageCover = req.file.path;
 
   const { id } = req.params;
-  const drug = await DrugModel.findById({ _id: id }).populate({
-    path: "createdBy",
-    select: "name shippingPrice profileImage",
-  });
 
-  if (!drug.createdBy._id.equals(req.user._id)) {
-    return next(new ApiError("You are not allowed to update this drug", 403));
-  }
+  const updatedDrug = await DrugModel.findOneAndUpdate(
+    { _id: id },
+    { imageCover: req.file.path },
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
+    .populate({
+      path: "createdBy",
+      select: "name location shippingPrice profileImage",
+      options: { lean: true },
+    })
+    .lean();
 
-  const newDrug = await DrugModel.findOneAndUpdate({ _id: id }, req.body, {
-    new: true,
-    runValidators: true,
-  }).populate({
-    path: "createdBy",
-    select: "name location shippingPrice taxRate profileImage",
-  });
-
-  if (!newDrug) {
-    return next(new ApiError(`No drug found with ID ${id}`, 404));
-  }
-  res.status(200).json({ message: "success", data: newDrug });
+  res.status(200).json({ message: "success", data: updatedDrug });
 });
+
 /**
- * @desc    Delete a specific drug by its ID.
+ * @desc    Delete specific drug by ID - Performance optimized
  * @route   DELETE /api/v1/drugs/:id
  * @access  Private (Authenticated users only)
  */
 const deleteDrug = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const drug = await DrugModel.findByIdAndDelete(id);
 
-  if (!drug) {
-    return next(new ApiError(`No drug found with ID ${id}`, 404));
-  }
+  await Promise.all([
+    DrugModel.findByIdAndDelete(id),
+    UserModel.findByIdAndUpdate(req.user._id, {
+      $pull: { drugs: id },
+    }),
+  ]);
 
   res.status(200).json({ message: "success" });
 });
 
 /**
- * @desc    Add drugs from an Excel file.
+ * @desc    Add drugs from Excel file - Performance optimized
  * @route   POST /api/v1/drugs/from-excel
  * @access  Private (Inventory only)
  */
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
-  if (req.user.role !== "inventory") {
-    return next(new ApiError("Only inventories can add drugs", 403));
-  }
-
   let filePath = req.selectedFilePath;
 
   if (!filePath && req.file?.path) {
     filePath = req.file.path;
-    // Save the new file in the user's files array
-    await UserModel.findByIdAndUpdate(req.user._id, {
+    UserModel.findByIdAndUpdate(req.user._id, {
       $push: {
         files: {
           fileName: req.file.originalname,
@@ -357,7 +381,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
           uploadedAt: new Date(),
         },
       },
-    });
+    }).exec();
   }
 
   if (!filePath) {
@@ -366,7 +390,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // 2. Read and validate the file
+  // Read file and process data
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
   const endRow = Number(req.body.endRow) || 40;
@@ -376,23 +400,27 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   const slicedData = data.slice(startRow, endRow);
   const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
 
-  // 3. Create valid drugs only
-  const drugs =
-    validDrugs.length > 0 ? await DrugModel.insertMany(validDrugs) : [];
+  let drugs = [];
+  let batchSize = 100;
 
-  // 4. Add all drugs to the inventory
-  if (drugs.length > 0) {
-    await UserModel.findByIdAndUpdate(
-      req.user._id,
-      {
-        $push: {
-          drugs: {
-            $each: drugs.map((drug) => drug._id),
-          },
+  if (validDrugs.length > 0) {
+    if (validDrugs.length > batchSize) {
+      for (let i = 0; i < validDrugs.length; i += batchSize) {
+        const batch = validDrugs.slice(i, i + batchSize);
+        const batchDrugs = await DrugModel.insertMany(batch);
+        drugs = [...drugs, ...batchDrugs];
+      }
+    } else {
+      drugs = await DrugModel.insertMany(validDrugs);
+    }
+
+    await UserModel.findByIdAndUpdate(req.user._id, {
+      $push: {
+        drugs: {
+          $each: drugs.map((drug) => drug._id),
         },
       },
-      { new: true }
-    );
+    });
   }
 
   res.status(200).json({
@@ -407,12 +435,17 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Get all drugs for specific inventory - Performance optimized
+ * @route   GET /api/v1/drugs/inventory/:id?
+ * @access  Private/Public (Based on parameters)
+ */
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
-  const id = req.user?._id ? req.user._id : req.params.id;
+  const id = req.user._id;
+
   const baseQuery = { createdBy: id };
 
-  // Create API Features instance
-  const features = new ApiFeatures(DrugModel.find(baseQuery), req.query)
+  const features = new ApiFeatures(DrugModel.find(baseQuery).lean(), req.query)
     .filter()
     .sort()
     .limitFields()
@@ -423,12 +456,14 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
   const drugs = await features.mongooseQuery;
   const paginationResult = features.getPaginationResult();
 
-  res.status(200).json({
+  const responseData = {
     status: "success",
     pagination: paginationResult,
     results: drugs.length,
     data: drugs,
-  });
+  };
+
+  res.status(200).json(responseData);
 });
 
 export {

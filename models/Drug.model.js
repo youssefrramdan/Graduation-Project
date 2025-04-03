@@ -77,23 +77,16 @@ const drugSchema = new Schema(
   { timestamps: true }
 );
 
-drugSchema.index({ name: 1 });
-drugSchema.index({ manufacturer: 1 });
-drugSchema.index({ originType: 1, price: 1 });
-drugSchema.index({ expirationDate: 1 });
-drugSchema.index({ stock: 1 });
-drugSchema.index(
-  { isVisible: 1 },
-  { partialFilterExpression: { isVisible: true } }
-);
+// الفهارس المطلوبة لتسريع استعلام getAllDrugs
 drugSchema.index({ createdBy: 1 });
+drugSchema.index({ name: "text", description: "text" });
+drugSchema.index({ price: 1 });
+drugSchema.index({ stock: 1 });
+drugSchema.index({ productionDate: 1 });
+drugSchema.index({ expirationDate: 1 });
 
-// drugSchema.pre(/^find/, function (next) {
-//   this.populate({
-//     path: "createdBy",
-//     select:
-//       "-identificationNumber -registrationNumber -drugs -isVerified -files -role -orders -active -createdAt -updatedAt -__v -cart -password",
-//   });60
-//   next();
-// });
+// الفهارس المركبة للاستعلامات الشائعة
+drugSchema.index({ price: 1, stock: 1 });
+drugSchema.index({ productionDate: 1, expirationDate: 1 });
+
 export default model("Drug", drugSchema);
