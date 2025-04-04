@@ -371,9 +371,9 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   let filePath = req.selectedFilePath;
 
-  if (!filePath && req.file?.path) {
+  if (!filePath && req.file && req.file.path) {
     filePath = req.file.path;
-    UserModel.findByIdAndUpdate(req.user._id, {
+    await UserModel.findByIdAndUpdate(req.user._id, {
       $push: {
         files: {
           fileName: req.file.originalname,
@@ -381,7 +381,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
           uploadedAt: new Date(),
         },
       },
-    }).exec();
+    });
   }
 
   if (!filePath) {
@@ -400,23 +400,24 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   const slicedData = data.slice(startRow, endRow);
   const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
 
+  const MAX_BATCH_SIZE = 500;
+
+  const processBatches = async (items, batchSize = MAX_BATCH_SIZE) => {
+    const batches = [];
+    for (let i = 0; i < items.length; i += batchSize) {
+      batches.push(items.slice(i, i + batchSize));
+    }
+    return (
+      await Promise.all(
+        batches.map((batch) => DrugModel.insertMany(batch, { ordered: false }))
+      )
+    ).flat();
+  };
+
   let drugs = [];
-  const batchSize = 500;
 
   if (validDrugs.length > 0) {
-    const insertOptions = { ordered: false };
-    if (validDrugs.length > batchSize) {
-      const batches = [];
-      for (let i = 0; i < validDrugs.length; i += batchSize) {
-        batches.push(validDrugs.slice(i, i + batchSize));
-      }
-      drugs = await Promise.all(
-        batches.map((batch) => DrugModel.insertMany(batch, insertOptions))
-      );
-      drugs = drugs.flat();
-    } else {
-      drugs = await DrugModel.insertMany(validDrugs, insertOptions);
-    }
+    drugs = await processBatches(validDrugs);
 
     await UserModel.findByIdAndUpdate(req.user._id, {
       $push: {
