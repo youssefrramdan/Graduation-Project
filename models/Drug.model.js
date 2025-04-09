@@ -95,6 +95,8 @@ drugSchema.index({ price: 1 });
 drugSchema.index({ stock: 1 });
 drugSchema.index({ productionDate: 1 });
 drugSchema.index({ productionDate: 1, expirationDate: 1 });
+drugSchema.index({ location: "2dsphere" });
+
 drugSchema.index(
   { isVisible: 1 },
   { partialFilterExpression: { isVisible: true } }
