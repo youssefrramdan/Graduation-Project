@@ -7,6 +7,7 @@ import ApiFeatures from "../utils/apiFeatures.js";
 import { calcTotalCartPrice } from "./cart.controller.js";
 
 import Stripe from "stripe";
+import UserModel from "../models/User.model.js";
 const stripe = new Stripe("sk_test_51R3f6tFPDv2cgTSdmron4H5v02fkkLi1Bz2gXM14kAPBOeKsEz5SQEFNAlfMJuavSi4Ohu0ikZlGX49fu8ijsxnp00jrymXkBn");
 
 // Shared transform function for order responses
@@ -451,6 +452,67 @@ const checkoutSession = asyncHandler(async (req, res, next) => {
 
 });
 
+const createCartOrder = async(session)=>{
+  const cartId = session.client_reference_id;
+  const orderPrice = session.display_items[0].unit_amount / 100;
+
+  const cart = await CartModel.findById(cartId);
+  const user = await UserModel.findOne({email: session.customer_email});
+
+    // Create the order with all necessary information
+    const order = await OrderModel.create({
+      pharmacy: req.user._id,
+      inventory: inventoryId,
+      drugs: inventoryItems.drugs.map((drug) => ({
+        drug: drug.drug._id,
+        quantity: drug.quantity,
+        price: drug.price,
+        discountedPrice: drug.discountedPrice,
+      })),
+      pricing: {
+        subtotal: inventoryItems.totalInventoryPrice,
+        discountedSubtotal: inventoryItems.totalInventoryPriceAfterDiscount,
+        shippingCost: inventoryItems.inventory.shippingPrice || 0,
+        total:orderPrice
+      },
+      delivery: {
+        address: req.user.address,
+        location: req.user.location,
+        contactPhone: req.user.phone,
+      },
+      payment:{
+        method: "card",
+        status: "paid",
+        paidAt: Date.now()
+      },
+    });
+
+    // Step 5: Update inventory stock and cart in parallel
+  await Promise.all([
+    // Update drug stock levels
+    ...inventoryItems.drugs.map((item) =>
+      DrugModel.updateOne(
+        { _id: item.drug._id },
+        { $inc: { stock: -item.quantity } }
+      )
+    ),
+    // Remove ordered items from cart
+    CartModel.updateOne(
+      { _id: cartId },
+      { $pull: { items: { inventory: inventoryId } } }
+    ),
+  ]);
+
+  // Recalculate cart totals after removing items
+  const updatedCart = await CartModel.findById(cartId);
+  if (updatedCart && updatedCart.items.length > 0) {
+    calcTotalCartPrice(updatedCart);
+    await updatedCart.save();
+  } else if (updatedCart) {
+    await CartModel.findByIdAndDelete(cartId);
+  }
+
+}
 
 const webhookCheckout = asyncHandler(async (req, res, next) => {
   const sig = req.headers['stripe-signature'];
@@ -465,7 +527,8 @@ const webhookCheckout = asyncHandler(async (req, res, next) => {
       return next(new ApiError(`Webhook Error: ${err.message}`, 400));
     }
     if(event.type === "checkout.session.completed"){
-      console.log('Create Order Here......');
+      // Create order
+      createCartOrder(event.data.object);
     }
   }
 );

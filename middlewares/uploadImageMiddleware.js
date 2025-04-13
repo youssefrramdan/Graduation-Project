@@ -16,7 +16,7 @@ cloudinary.config({
 
 const createUploader = (
   folder,
-  allowedFormats = ["jpeg", "jpg", "png", "pdf", "xlsx"]
+  allowedFormats = ["jpeg", "jpg", "png", "pdf", "xlsx","csv"]
 ) => {
   const storage = new CloudinaryStorage({
     cloudinary,
@@ -43,6 +43,7 @@ const createUploader = (
         "image/png",
         "application/pdf",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // xlsx
+        "text/csv",
       ];
 
       if (allowedMimes.includes(file.mimetype)) {
