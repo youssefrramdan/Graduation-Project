@@ -20,7 +20,7 @@ import {
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 
 const drugRouter = express.Router();
-const upload = createUploader("excel-files", ["xlsx"]);
+const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
 drugRouter

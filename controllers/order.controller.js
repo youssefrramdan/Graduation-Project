@@ -4,7 +4,6 @@ import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import DrugModel from "../models/Drug.model.js";
 import ApiFeatures from "../utils/apiFeatures.js";
-
 // Shared transform function for order responses
 const transformOrder = (order) => ({
   _id: order._id,
@@ -393,6 +392,7 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     data: transformOrder(populatedOrder),
   });
 });
+
 
 export {
   createOrder,
