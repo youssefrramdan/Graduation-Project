@@ -23,8 +23,10 @@ const createFilterStages = (query) => {
   // Add search filters
   if (query.keyword) {
     filters.$or = [
-      { "drugs.name": { $regex: query.keyword, $options: "i" } },
-      { "drugs.description": { $regex: query.keyword, $options: "i" } },
+      { name: { $regex: query.keyword, $options: "i" } },
+      { description: { $regex: query.keyword, $options: "i" } },
+      { manufacturer: { $regex: query.keyword, $options: "i" } },
+      { originType: { $regex: query.keyword, $options: "i" } },
     ];
   }
 
@@ -152,7 +154,7 @@ const executeAggregationPipeline = async (pipeline, skip, limit) => {
 };
 
 // ======== Controller Functions ========
-
+// [list from ai]--> drugs ----> drugs with location
 /**
  * @desc    Get all drugs with filtering, sorting and pagination - Performance optimized
  * @route   GET /api/v1/drugs
