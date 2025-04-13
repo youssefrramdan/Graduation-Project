@@ -13,7 +13,6 @@ import authRouter from "./routes/auth.routes.js";
 import drugRouter from "./routes/drug.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
-import { webhookCheckout } from "./controllers/order.controller.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -63,13 +62,6 @@ app.options("*", cors(corsOptions));
 app.use(compression());
 // middlewares
 
-// Checkout webhook
-app.post(
-  "/webhook-checkout",
-  express.raw({ type: "application/json" }),
-  webhookCheckout
-);
-
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -85,6 +77,9 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
+app.get('/ping', (req, res) => {
+    res.status(200).send('pong');
+  });
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });

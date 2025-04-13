@@ -81,10 +81,6 @@ const userSchema = new Schema(
       type: Number,
       default: 0,
     },
-    taxRate: {
-      type: Number,
-      default: 0, // percentage
-    },
     orders: [
       {
         type: Types.ObjectId,

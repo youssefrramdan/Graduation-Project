@@ -4,12 +4,6 @@ import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import DrugModel from "../models/Drug.model.js";
 import ApiFeatures from "../utils/apiFeatures.js";
-import { calcTotalCartPrice } from "./cart.controller.js";
-
-import Stripe from "stripe";
-import UserModel from "../models/User.model.js";
-const stripe = new Stripe("sk_test_51R3f6tFPDv2cgTSdmron4H5v02fkkLi1Bz2gXM14kAPBOeKsEz5SQEFNAlfMJuavSi4Ohu0ikZlGX49fu8ijsxnp00jrymXkBn");
-
 // Shared transform function for order responses
 const transformOrder = (order) => ({
   _id: order._id,
@@ -17,7 +11,6 @@ const transformOrder = (order) => ({
   status: order.status.current,
   statusHistory: order.status.history,
   paymentStatus: order.payment?.status,
-  paymentMethod: order.payment?.method,
   paymentPaidAt: order.payment?.paidAt,
   inventory: order.inventory && {
     _id: order.inventory._id,
@@ -30,7 +23,6 @@ const transformOrder = (order) => ({
   },
   pricing: {
     subtotal: order.pricing.subtotal,
-    discountedSubtotal: order.pricing.discountedSubtotal,
     shippingCost: order.pricing.shippingCost,
     total: order.pricing.total,
   },
@@ -38,12 +30,10 @@ const transformOrder = (order) => ({
     drug: {
       _id: drug.drug._id,
       name: drug.drug.name,
-      price: drug.drug.price,
-      discountedPrice: drug.drug.discountedPrice,
+      price: drug.Price,
     },
     quantity: drug.quantity,
-    totalPrice: drug.quantity * drug.drug.price,
-    totalAfterDiscount: drug.quantity * drug.drug.discountedPrice,
+    totalPrice: drug.quantity * drug.Price,
   })),
   delivery: {
     address: order.delivery.address,
@@ -53,6 +43,7 @@ const transformOrder = (order) => ({
   },
   createdAt: order.createdAt,
 });
+
 
 /**
  * @desc    Create a new order from cart items for a specific inventory
@@ -65,35 +56,36 @@ const transformOrder = (order) => ({
 const createOrder = asyncHandler(async (req, res, next) => {
   const { cartId } = req.params;
   const { inventoryId } = req.body;
+
   // Step 1: Find cart and validate ownership
   const cart = await CartModel.findOne({
     _id: cartId,
     pharmacy: req.user._id,
-    "items.inventory": inventoryId,
+    "inventories.inventory": inventoryId,
   }).populate([
     {
-      path: "items.inventory",
-      select: "name shippingPrice location",
+      path: "inventories.inventory",
+      select: "name shippingPrice",
     },
     {
-      path: "items.drugs.drug",
-      select: "name price discountedPrice stock",
+      path: "inventories.drugs.drug",
+      select: "name price",
     },
   ]);
 
   if (!cart) {
     return next(new ApiError("Cart not found or inventory not in cart", 404));
   }
+
   // Step 2: Extract inventory items from cart
-  const inventoryItems = cart.items.find(
+  const inventoryItems = cart.inventories.find(
     (item) => item.inventory._id.toString() === inventoryId
   );
+
 
   if (!inventoryItems) {
     return next(new ApiError("Inventory not found in cart", 404));
   }
-  // Calculate cart totals before creating order
-  calcTotalCartPrice(cart);
 
   // Step 3: Validate stock availability for all drugs
   const stockCheck = await Promise.all(
@@ -119,6 +111,7 @@ const createOrder = asyncHandler(async (req, res, next) => {
       )
     );
   }
+
   // Step 4: Create the order with all necessary information
   const order = await OrderModel.create({
     pharmacy: req.user._id,
@@ -126,15 +119,13 @@ const createOrder = asyncHandler(async (req, res, next) => {
     drugs: inventoryItems.drugs.map((drug) => ({
       drug: drug.drug._id,
       quantity: drug.quantity,
-      price: drug.price,
-      discountedPrice: drug.discountedPrice,
+      Price: drug.Price,
     })),
     pricing: {
       subtotal: inventoryItems.totalInventoryPrice,
-      discountedSubtotal: inventoryItems.totalInventoryPriceAfterDiscount,
       shippingCost: inventoryItems.inventory.shippingPrice || 0,
       total:
-        inventoryItems.totalInventoryPriceAfterDiscount +
+        inventoryItems.totalInventoryPrice +
         (inventoryItems.inventory.shippingPrice || 0),
     },
     delivery: {
@@ -156,23 +147,24 @@ const createOrder = asyncHandler(async (req, res, next) => {
     // Remove ordered items from cart
     CartModel.updateOne(
       { _id: cartId },
-      { $pull: { items: { inventory: inventoryId } } }
+      { $pull: { inventories: { inventory: inventoryId } } }
     ),
   ]);
 
   // Recalculate cart totals after removing items
   const updatedCart = await CartModel.findById(cartId);
-  if (updatedCart && updatedCart.items.length > 0) {
-    calcTotalCartPrice(updatedCart);
+  if (updatedCart && updatedCart.inventories.length > 0) {
+    //calcToCart()
     await updatedCart.save();
   } else if (updatedCart) {
     await CartModel.findByIdAndDelete(cartId);
   }
+
   // Return populated order with all necessary details
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price discountedPrice");
+    .populate("drugs.drug", "name price");
 
   res.status(201).json({
     status: "success",
@@ -348,7 +340,6 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 /**
  * @desc    Reject an order
  * @route   PATCH /api/v1/orders/:id/reject
@@ -364,10 +355,10 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
 
   const order = await OrderModel.findOne({
     _id: id,
-    
-    "status.current": { $in: ["pending","confirmed"] }, 
+
+    "status.current": { $in: ["pending", "confirmed"] },
   });
-  console.log("Order ID:", id,);
+  console.log("Order ID:", id);
   if (!order) {
     return next(
       new ApiError(
@@ -377,22 +368,20 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  // 
+  //
   order.updateStatus("rejected", reason, req.user._id);
 
-  
   await Promise.all(
     order.drugs.map((item) =>
       DrugModel.updateOne(
         { _id: item.drug },
-        { $inc: { stock: item.quantity } }  
+        { $inc: { stock: item.quantity } }
       )
     )
   );
 
   await order.save();
 
-  
   const populatedOrder = await OrderModel.findById(order._id)
     .populate("inventory", "name location")
     .populate("pharmacy", "name phone location")
@@ -405,132 +394,11 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
 });
 
 
-/**
- * @desc    Get checkout session from stripe and send it as response
- * @route   GET /api/v1/orders/checkout-session/cardId
- * @access  Private/Pharmacy
- */
-
-const checkoutSession = asyncHandler(async (req, res, next) => {
-  const { inventoryId } = req.body;
-  // 1) Get cart depend on cartId
-  const cart = await CartModel.findById(req.params.cartId);
-  if(!cart){
-    return next(new ApiError("Cart not found or inventory not in cart", 404));
-  }
-  const inventoryItems = cart.items.find(
-    (item) => item.inventory._id.toString() === inventoryId
-  );
-  const shippingCost = inventoryItems.inventory.shippingPrice || 0;
-  const totalAmount = inventoryItems.totalInventoryPriceAfterDiscount + shippingCost;
-
-  // 2) Create stripe checkout session
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ["card"],
-    line_items: [{
-      price_data: {
-        currency: "egp",
-        unit_amount: Math.round(totalAmount * 100), 
-        product_data: {
-          name: req.user.name,
-        },
-      },
-      quantity: 1,
-    }],
-    mode: "payment",
-    success_url: `${req.protocol}://${req.get('host')}/orders`,
-    cancel_url: `${req.protocol}://${req.get('host')}/cart`,
-    customer_email: req.user.email,
-    client_reference_id: req.params.cartId,
-    //metadata
-  });
-
-  res.status(200).json({
-    status: "success",
-    session,
-  });
-
-});
-
-const createCartOrder = async(session)=>{
-  const cartId = session.client_reference_id;
-  const orderPrice = session.display_items[0].unit_amount / 100;
-
-  const cart = await CartModel.findById(cartId);
-  const user = await UserModel.findOne({email: session.customer_email});
-
-    // Create the order with all necessary information
-    const order = await OrderModel.create({
-      pharmacy: req.user._id,
-      inventory: inventoryId,
-      drugs: inventoryItems.drugs.map((drug) => ({
-        drug: drug.drug._id,
-        quantity: drug.quantity,
-        price: drug.price,
-        discountedPrice: drug.discountedPrice,
-      })),
-      pricing: {
-        subtotal: inventoryItems.totalInventoryPrice,
-        discountedSubtotal: inventoryItems.totalInventoryPriceAfterDiscount,
-        shippingCost: inventoryItems.inventory.shippingPrice || 0,
-        total:orderPrice
-      },
-      delivery: {
-        address: req.user.address,
-        location: req.user.location,
-        contactPhone: req.user.phone,
-      },
-      payment:{
-        method: "card",
-        status: "paid",
-        paidAt: Date.now()
-      },
-    });
-
-    // Step 5: Update inventory stock and cart in parallel
-  await Promise.all([
-    // Update drug stock levels
-    ...inventoryItems.drugs.map((item) =>
-      DrugModel.updateOne(
-        { _id: item.drug._id },
-        { $inc: { stock: -item.quantity } }
-      )
-    ),
-    // Remove ordered items from cart
-    CartModel.updateOne(
-      { _id: cartId },
-      { $pull: { items: { inventory: inventoryId } } }
-    ),
-  ]);
-
-  // Recalculate cart totals after removing items
-  const updatedCart = await CartModel.findById(cartId);
-  if (updatedCart && updatedCart.items.length > 0) {
-    calcTotalCartPrice(updatedCart);
-    await updatedCart.save();
-  } else if (updatedCart) {
-    await CartModel.findByIdAndDelete(cartId);
-  }
-
-}
-
-const webhookCheckout = asyncHandler(async (req, res, next) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        sig,
-        whsec_vXNGhPeea1xMC5Ba7dwFAlFgQ2Nceo6w
-      );
-    } catch (err) {
-      return next(new ApiError(`Webhook Error: ${err.message}`, 400));
-    }
-    if(event.type === "checkout.session.completed"){
-      // Create order
-      createCartOrder(event.data.object);
-    }
-  }
-);
-
-export { createOrder, getMyOrders, getOrder, updateOrderStatus, cancelOrder, checkoutSession ,rejectOrder,webhookCheckout };
+export {
+  createOrder,
+  getMyOrders,
+  getOrder,
+  updateOrderStatus,
+  cancelOrder,
+  rejectOrder,
+};

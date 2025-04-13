@@ -88,7 +88,7 @@ export const formatDrugData = (data, userId) => {
             (Number(item.price) * (Number(item.discount) || 0)) / 100,
         stock: Number(item.stock),
         sold: item.sold ? Number(item.sold) : 0,
-        isVisible: item.isVisible === "TRUE",
+        isVisible: item.isVisible === "true",
         imageCover: item.imageCover ? item.imageCover.split(",") : [],
         createdBy: userId,
       });

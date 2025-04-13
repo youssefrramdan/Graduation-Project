@@ -6,9 +6,7 @@ import {
   getOrder,
   updateOrderStatus,
   cancelOrder,
-  checkoutSession,
   rejectOrder,
-  
 } from "../controllers/order.controller.js";
 
 const orderRouter = express.Router();
@@ -16,7 +14,6 @@ const orderRouter = express.Router();
 // Protect all routes
 orderRouter.use(protectedRoutes);
 
-orderRouter.route("/checkout-session/:cartId").post(checkoutSession);
 // Pharmacy order routes
 orderRouter.route("/cart/:cartId").post(createOrder);
 orderRouter.route("/my-orders").get(getMyOrders);

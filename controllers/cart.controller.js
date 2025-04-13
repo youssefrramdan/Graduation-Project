@@ -1,132 +1,101 @@
 /* eslint-disable no-plusplus */
 import asyncHandler from "express-async-handler";
-import DrugModel from "../models/Drug.model.js";
 import CartModel from "../models/Cart.model.js";
 import ApiError from "../utils/apiError.js";
-
-/**
- * Function to calculate the total cart price and total price after discount
- */
-
-const calcTotalCartPrice = (cart) => {
-  let totalCartPrice = 0;
-  let totalCartAfterDiscount = 0;
-
-  // Iterate over each inventory in the cart
-  cart.items.forEach((inventoryItem) => {
-    let inventoryPrice = 0;
-    let inventoryPriceAfterDiscount = 0;
-
-    inventoryItem.drugs.forEach((drug) => {
-      // Calculate total price for the drug
-      const drugTotal = (drug.price || 0) * (drug.quantity || 0);
-      inventoryPrice += drugTotal;
-      totalCartPrice += drugTotal;
-      // Use the discounted price from the Drug model directly
-      const drugTotalAfterDiscount =
-        (drug.discountedPrice || 0) * (drug.quantity || 0);
-      inventoryPriceAfterDiscount += drugTotalAfterDiscount;
-      totalCartAfterDiscount += drugTotalAfterDiscount;
-    });
-
-    inventoryItem.totalInventoryPrice = inventoryPrice;
-    inventoryItem.totalInventoryPriceAfterDiscount =
-      inventoryPriceAfterDiscount;
-  });
-
-  // Update cart prices
-  cart.totalCartPrice = totalCartPrice;
-  cart.totalCartAfterDiscount = totalCartAfterDiscount;
-};
 
 /**
  * @desc    Add a drug to the pharmacy's cart
  * @route   POST /api/v1/cart
  * @access  Private/Pharmacy
  */
-const addDrugToCart = asyncHandler(async (req, res, next) => {
+const addDrugToCart = asyncHandler(async (req, res) => {
   const { drugId, quantity } = req.body;
-  const pharmacyId = req.user._id;
-  const { drug } = req;
+  const { drug } = req; // Validated and added by validator
   const inventoryId = drug.createdBy._id;
 
-  let cart = await CartModel.findOne({ pharmacy: pharmacyId });
+  // Find or create cart
+  let cart = await CartModel.findOne({ pharmacy: req.user._id });
 
   if (!cart) {
+    // Create new cart
     cart = await CartModel.create({
-      pharmacy: pharmacyId,
-      items: [
+      pharmacy: req.user._id,
+      inventories: [
         {
           inventory: inventoryId,
           drugs: [
             {
               drug: drugId,
               quantity,
-              price: drug.price,
-              discountedPrice: drug.discountedPrice,
+              Price: drug.discountedPrice || drug.price,
             },
           ],
         },
       ],
     });
   } else {
-    const inventoryIndex = cart.items.findIndex((item) =>
+    // Check if inventory exists
+    const inventoryIndex = cart.inventories.findIndex((item) =>
       item.inventory.equals(inventoryId)
     );
-
+// aya 1 inventory
+// aya 2 inventory
+// youssef 3 inventory
+// drugs [drug1]
     if (inventoryIndex > -1) {
-      const drugIndex = cart.items[inventoryIndex].drugs.findIndex((d) =>
+      // Check if drug exists in this inventory
+      const drugIndex = cart.inventories[inventoryIndex].drugs.findIndex((d) =>
         d.drug.equals(drugId)
       );
 
       if (drugIndex > -1) {
-        cart.items[inventoryIndex].drugs[drugIndex].quantity += quantity;
-        cart.items[inventoryIndex].drugs[drugIndex].price = drug.price;
-        cart.items[inventoryIndex].drugs[drugIndex].discountedPrice =
-          drug.discountedPrice;
+        // Update existing drug quantity
+        cart.inventories[inventoryIndex].drugs[drugIndex].quantity += quantity;
+        cart.inventories[inventoryIndex].drugs[drugIndex].Price =
+          drug.discountedPrice || drug.price;
       } else {
-        cart.items[inventoryIndex].drugs.push({
+        // Add new drug to existing inventory
+        cart.inventories[inventoryIndex].drugs.push({
           drug: drugId,
           quantity,
-          price: drug.price,
-          discountedPrice: drug.discountedPrice,
+          Price: drug.discountedPrice || drug.price,
         });
       }
     } else {
-      cart.items.push({
+      // Add new inventory with drug
+      cart.inventories.push({
         inventory: inventoryId,
         drugs: [
           {
             drug: drugId,
             quantity,
-            price: drug.price,
-            discountedPrice: drug.discountedPrice,
+            Price: drug.discountedPrice || drug.price,
           },
         ],
       });
     }
-  }
 
-  calcTotalCartPrice(cart);
-  await cart.save();
+    // Save the updated cart
+    await cart.save();
+  }
 
   // Populate cart before sending response
   cart = await cart.populate([
     {
-      path: "items.inventory",
+      path: "inventories.inventory",
       select: "name shippingPrice",
     },
     {
-      path: "items.drugs.drug",
-      select: "name quantity price discountedPrice",
+      path: "inventories.drugs.drug",
+      select: "name quantity",
     },
   ]);
 
-  return res.status(200).json({
+  res.status(200).json({
     status: "success",
     message: "Drug added to cart successfully",
-    numOfCartItems: cart.items.reduce(
-      (acc, item) => acc + item.drugs.length,
+    numOfCartItems: cart.inventories.reduce(
+      (acc, inventory) => acc + inventory.drugs.length,
       0
     ),
     data: cart,
@@ -134,130 +103,102 @@ const addDrugToCart = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Remove a specific drug from a specific inventory in the cart
+ * @desc    Remove a specific drug from cart
  * @route   DELETE /api/v1/cart/:drugId
  * @access  Private/Pharmacy
  */
-const removeDrugFromCart = asyncHandler(async (req, res, next) => {
+const removeDrugFromCart = asyncHandler(async (req, res) => {
   const { drugId } = req.params;
-  const pharmacyId = req.user._id;
+  const { cart } = req; // Validated and added by validator
 
-  const cart = await CartModel.findOne({ pharmacy: pharmacyId });
-
-  if (!cart) {
-    return next(new ApiError("Cart not found.", 404));
-  }
-
-  cart.items = cart.items.filter((item) => {
-    // Remove the specific drug
-    item.drugs = item.drugs.filter((d) => d.drug.toString() !== drugId);
-    // Keep the inventory only if it still has drugs
-    return item.drugs.length > 0;
+  // Remove drug and filter out empty inventories
+  cart.inventories = cart.inventories.filter((inventory) => {
+    
+    inventory.drugs = inventory.drugs.filter(
+      (d) => d.drug.toString() !== drugId
+    );
+    return inventory.drugs.length > 0;
   });
 
-  if (cart.items.length === 0) {
-    await CartModel.findOneAndDelete({ pharmacy: pharmacyId });
+  if (cart.inventories.length === 0) {
+    await CartModel.findOneAndDelete({ pharmacy: req.user._id });
     return res.status(200).json({
       status: "success",
-      message: "Cart emptied and deleted.",
+      message: "Cart emptied and deleted",
     });
   }
 
-  calcTotalCartPrice(cart);
   await cart.save();
 
-  return res.status(200).json({
+  res.status(200).json({
     status: "success",
-    numOfCartItems: cart.items.reduce(
-      (acc, item) => acc + item.drugs.length,
+    message: "Drug removed from cart successfully",
+    numOfCartItems: cart.inventories.reduce(
+      (acc, inventory) => acc + inventory.drugs.length,
       0
     ),
     data: cart,
   });
-});
-
-/**
- * @desc    Clear Logged User Shopping Cart
- * @route   DELETE /api/v1/cart
- * @access  Private/Pharmacy
- */
-const clearUserCart = asyncHandler(async (req, res, next) => {
-  const pharmacyId = req.user._id;
-  const cart = await CartModel.findOne({ pharmacy: pharmacyId });
-  if (!cart) {
-    return next(new ApiError("No cart found for this user.", 404));
-  }
-
-  await CartModel.findOneAndDelete({ pharmacy: pharmacyId });
-
-  res.status(200).json({ status: "success" });
 });
 
 /**
  * @desc    Update Cart Item Quantity
- * @route   PUT /api/v1/cart
+ * @route   PUT /api/v1/cart/:drugId
  * @access  Private/Pharmacy
  */
-const updateCartItemQuantity = asyncHandler(async (req, res, next) => {
+const updateCartItemQuantity = asyncHandler(async (req, res) => {
   const { drugId } = req.params;
   const { quantity } = req.body;
-  const { cart, drug } = req; // Already validated and available from validator
+  const { cart, drug } = req; // Validated and added by validator
 
-  // Find the drug in the cart and update its quantity
-  const cartItem = cart.items.find((item) =>
-    item.drugs.some((d) => d.drug.toString() === drugId)
+  // Find and update drug quantity
+  const cartInventory = cart.inventories.find((inventory) =>
+    inventory.drugs.some((d) => d.drug.toString() === drugId)
   );
 
-  cartItem.drugs = cartItem.drugs.map((d) => {
+  cartInventory.drugs = cartInventory.drugs.map((d) => {
     if (d.drug.toString() === drugId) {
       d.quantity = quantity;
-      d.price = drug.price;
-      d.discountedPrice = drug.discountedPrice;
+      d.Price = drug.discountedPrice || drug.price;
     }
     return d;
   });
 
-  calcTotalCartPrice(cart);
   await cart.save();
 
   res.status(200).json({
     status: "success",
+    message: "Cart updated successfully",
     data: cart,
   });
 });
 
 /**
- * @desc    get logged pharmacy's cart
- * @route   POST /api/v1/cart
+ * @desc    Get logged pharmacy's cart
+ * @route   GET /api/v1/cart
  * @access  Private/Pharmacy
  */
-
 const getLoggedUserCart = asyncHandler(async (req, res, next) => {
-  let cart = await CartModel.findOne({ pharmacy: req.user._id }).populate([
+  const cart = await CartModel.findOne({ pharmacy: req.user._id }).populate([
     {
-      path: "items.inventory",
+      path: "inventories.inventory",
       select: "name shippingPrice",
     },
     {
-      path: "items.drugs.drug",
-      select: "name quantity price discountedPrice",
+      path: "inventories.drugs.drug",
+      select: "name quantity",
     },
   ]);
 
   if (!cart) {
-    return next(
-      new ApiError(`There is no cart for this user id: ${req.user._id}`, 404)
-    );
+    return next(new ApiError("No cart found for this user", 404));
   }
-
-  calcTotalCartPrice(cart);
-  await cart.save();
 
   res.status(200).json({
     status: "success",
     message: "Cart retrieved successfully",
-    numOfCartItems: cart.items.reduce(
-      (acc, item) => acc + item.drugs.length,
+    numOfCartItems: cart.inventories.reduce(
+      (acc, inventory) => acc + inventory.drugs.length,
       0
     ),
     data: cart,
@@ -265,32 +206,50 @@ const getLoggedUserCart = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    remove inventory from cart
- * @route   POST /api/v1/cart/:inventoryId
+ * @desc    Remove inventory from cart
+ * @route   DELETE /api/v1/cart/inventory/:inventoryId
  * @access  Private/Pharmacy
  */
-
-const removeInventoryFromCart = asyncHandler(async (req, res, next) => {
+const removeInventoryFromCart = asyncHandler(async (req, res) => {
+  const { cart } = req; // Validated and added by validator
   const { inventoryId } = req.params;
-  // Cart is already validated and available from validator
 
-  // Remove the inventory from cart
-  const updatedCart = await CartModel.findOneAndUpdate(
-    { pharmacy: req.user._id },
-    { $pull: { items: { inventory: inventoryId } } },
-    { new: true }
+  cart.inventories = cart.inventories.filter(
+    (inventory) => !inventory.inventory.equals(inventoryId)
   );
 
-  calcTotalCartPrice(updatedCart);
+  if (cart.inventories.length === 0) {
+    await CartModel.findOneAndDelete({ pharmacy: req.user._id });
+    return res.status(200).json({
+      status: "success",
+      message: "Cart emptied and deleted",
+    });
+  }
+
+  await cart.save();
 
   res.status(200).json({
     status: "success",
     message: "Inventory removed from cart successfully",
-    numOfCartItems: updatedCart.items.reduce(
-      (acc, item) => acc + item.drugs.length,
+    numOfCartItems: cart.inventories.reduce(
+      (acc, inventory) => acc + inventory.drugs.length,
       0
     ),
-    data: updatedCart,
+    data: cart,
+  });
+});
+
+/**
+ * @desc    Clear User Cart
+ * @route   DELETE /api/v1/cart
+ * @access  Private/Pharmacy
+ */
+const clearUserCart = asyncHandler(async (req, res) => {
+  await CartModel.findOneAndDelete({ pharmacy: req.user._id });
+
+  res.status(200).json({
+    status: "success",
+    message: "Cart cleared successfully",
   });
 });
 
@@ -301,5 +260,4 @@ export {
   removeDrugFromCart,
   clearUserCart,
   updateCartItemQuantity,
-  calcTotalCartPrice,
 };
