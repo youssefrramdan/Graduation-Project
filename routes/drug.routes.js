@@ -5,6 +5,7 @@ import {
   deleteDrug,
   getAllDrugs,
   getAllDrugsForSpecificInventory,
+  getAlternativeDrugsFromAI,
   getSpecificDrug,
   updateDrug,
   updateDrugImage,
@@ -37,6 +38,8 @@ drugRouter
   .route("/")
   .post(protectedRoutes, addDrugValidator, addDrug)
   .get(protectedRoutes, getAllDrugs);
+
+drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 
 drugRouter
   .route("/owndrugs")

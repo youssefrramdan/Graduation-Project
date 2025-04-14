@@ -308,56 +308,6 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", inventories });
 });
 
-const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
-  const { medicine } = req.body;
-  try {
-    const response = await axios.post(
-      "https://mid-sosanna-youssef-ramadan-68a825b9.koyeb.app/recommend",
-      {
-        medicine: medicine,
-      }
-    );
-    const recommendedMedicines = response.data.recommended_medicines || [];
-
-    if (!recommendedMedicines.length) {
-      return res.status(404).json({ message: "No alternatives found from AI" });
-    }
-
-    const drugNames = recommendedMedicines.map((med) => med.trim());
-
-    const drugs = await DrugModel.find({
-      name: {
-        $in: drugNames.map((name) => new RegExp(`^${name.trim()}$`, "i")),
-      },
-    }).populate({
-      path: "createdBy",
-      select: "name",
-    });
-
-    const result = drugs.map((drug) => ({
-      inventory: {
-        id: drug.createdBy?._id,
-        name: drug.createdBy?.name,
-      },
-      id: drug._id,
-      name: drug.name,
-      manufacturer: drug.manufacturer,
-      description: drug.description,
-      price: drug.price,
-      discount: drug.discount,
-      discountedPrice: drug.discountedPrice,
-      stock: drug.stock,
-      productionDate: drug.productionDate,
-      expirationDate: drug.expirationDate,
-      imageCover: drug.imageCover,
-    }));
-
-    res.status(200).json({ message: "success", drugs: result });
-  } catch (error) {
-    console.error("Error fetching alternatives from AI:", error);
-    next(new Error("Failed to fetch alternatives from AI"));
-  }
-});
 
 export {
   getAllUsers,
@@ -375,7 +325,6 @@ export {
   deactivateMe,
   activateMe,
   getNearestInventories,
-  getAlternativeDrugsFromAI,
 };
 
 // 🔹 $geometry هو المشغل الذي يحدد نوع الشكل الجغرافي (Point, Polygon, LineString) وإحداثياته (coordinates).

@@ -8,7 +8,6 @@ import {
   deactivateMe,
   deleteUser,
   getAllUsers,
-  getAlternativeDrugsFromAI,
   getMe,
   getNearestInventories,
   getSpecificUser,
@@ -33,7 +32,6 @@ const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
 
 // user routes
 userRouter.route("/getMe").get(protectedRoutes, getMe);
-userRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 userRouter.route("/files").get(protectedRoutes, getUserFiles);
 userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
 userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
