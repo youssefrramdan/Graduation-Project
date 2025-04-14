@@ -125,12 +125,43 @@ const userSchema = new Schema(
   },
   { timestamps: true }
 );
+
 // Pre middleware For Hasing Password
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
   // Hasing User Password
   this.password = await bcrypt.hash(this.password, 12);
   next();
+});
+
+// Pre middleware to delete associated data when user is removed
+userSchema.pre("remove", async function (next) {
+  try {
+    console.log(`Attempting to delete user with ID: ${this._id}`);
+ 
+    const drugs = await model("Drug").find({ createdBy: this._id });
+    console.log("Drugs to be deleted:", drugs);
+
+
+    const carts = await model("Cart").find({ pharmacy: this._id });
+    console.log("Carts to be deleted:", carts);
+
+    
+    const orders = await model("Order").find({ pharmacy: this._id });
+    console.log("Orders to be deleted:", orders);
+
+    await Promise.all([
+      model("Drug").deleteMany({ createdBy: this._id }),
+      model("Cart").deleteMany({ pharmacy: this._id }),
+      model("Order").deleteMany({ pharmacy: this._id })
+    ]);
+
+    console.log("User-related data deleted successfully.");
+    next(); // إتمام العملية إذا تم الحذف بنجاح
+  } catch (error) {
+    console.error("Error while removing user-related data:", error);
+    next(error); // تمرير الخطأ في حال حدوث مشكلة
+  }
 });
 
 userSchema.index({ email: 1 }, { unique: true });
@@ -141,12 +172,3 @@ userSchema.index({ location: "2dsphere" });
 userSchema.index({ active: 1 }, { partialFilterExpression: { active: true } });
 
 export default model("User", userSchema);
-// GeoJSON
-// {
-//   "name": "Central Park",
-//   "location": {
-//       "type": "Point",
-//       "coordinates": [-73.97, 40.77]
-//   },
-//   "category": "Parks"
-// }

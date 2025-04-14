@@ -119,14 +119,27 @@ const updateUser = asyncHandler(async (req, res, next) => {
  */
 const deleteUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
+
+   
+  await DrugModel.deleteMany({ createdBy: id });
+
+ 
+  await OrderModel.deleteMany({ pharmacy: id }); 
+
+  
+  await UserModel.findByIdAndUpdate(id, { cart: [] });
+
+ 
   const user = await UserModel.findByIdAndDelete(id);
 
   if (!user) {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", user: user });
+  res.status(200).json({ message: "success", user });
 });
+
+
 
 /**
  * @desc    Change user password
