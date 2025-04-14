@@ -11,6 +11,7 @@ import {
   validateRowRange,
   formatDrugData,
 } from "../utils/excelUtils.js";
+import axios from "axios";
 
 // ======== Helper Functions ========
 
@@ -491,7 +492,7 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
       const drugNames = recommendedMedicines.map((med) => med.trim());
 
       const drugs = await DrugModel.find({
-        name: { 
+        name: {
           $in: drugNames.map((name) => new RegExp(`^${name.trim()}$`, "i")),
         },
       }).populate({
