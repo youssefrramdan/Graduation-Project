@@ -155,7 +155,7 @@ orderSchema.methods.canTransitionTo = function (newStatus) {
     rejected: [],
   };
 
-  return validTransitions[this.status.current] ? validTransitions[this.status.current].includes(newStatus) : false;
+  return validTransitions[this.status.current]?.includes(newStatus) || false;
 };
 
 // Use this method without pre-save

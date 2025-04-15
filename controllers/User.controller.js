@@ -5,6 +5,7 @@ import DrugModel from "../models/Drug.model.js";
 import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
+
 import { sendEmail } from "../middlewares/sendEmail.js";
 
 /**
@@ -118,16 +119,19 @@ const updateUser = asyncHandler(async (req, res, next) => {
  */
 const deleteUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  await DrugModel.deleteMany({ createdBy: id });
-  await OrderModel.deleteMany({ pharmacy: id });
-  await UserModel.findByIdAndUpdate(id, { cart: [] });
-  const user = await UserModel.findByIdAndDelete(id);
+  const [deletedDrugs, deletedOrders, updatedUser, deletedUser] =
+    await Promise.all([
+      DrugModel.deleteMany({ createdBy: id }),
+      OrderModel.deleteMany({ pharmacy: id }),
+      UserModel.findByIdAndUpdate(id, { cart: [] }),
+      UserModel.findByIdAndDelete(id),
+    ]);
 
-  if (!user) {
+  if (!deletedUser) {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", user });
+  res.status(200).json({ message: "success", user: deletedUser });
 });
 
 /**
