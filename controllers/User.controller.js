@@ -1,12 +1,11 @@
-/* eslint-disable import/no-extraneous-dependencies */
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
-import ApiError from "../utils/apiError.js";
-import { sendEmail } from "../middlewares/sendEmail.js";
-import ApiFeatures from "../utils/apiFeatures.js";
-import axios from "axios";
 import DrugModel from "../models/Drug.model.js";
+import OrderModel from "../models/order.model.js";
+import ApiError from "../utils/apiError.js";
+import ApiFeatures from "../utils/apiFeatures.js";
+import { sendEmail } from "../middlewares/sendEmail.js";
 
 /**
  * @desc    Get all users
@@ -77,7 +76,7 @@ const createUser = asyncHandler(async (req, res, next) => {
       parseFloat(coord)
     );
     // Check if every coordinate is a valid number
-    if (!coordinates.some(isNaN)) {
+    if (!coordinates.some(Number.isNaN)) {
       // If valid, assign the location as a GeoJSON Point object
       req.body.location = {
         type: "Point",
@@ -119,17 +118,9 @@ const updateUser = asyncHandler(async (req, res, next) => {
  */
 const deleteUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-
-   
   await DrugModel.deleteMany({ createdBy: id });
-
- 
-  await OrderModel.deleteMany({ pharmacy: id }); 
-
-  
+  await OrderModel.deleteMany({ pharmacy: id });
   await UserModel.findByIdAndUpdate(id, { cart: [] });
-
- 
   const user = await UserModel.findByIdAndDelete(id);
 
   if (!user) {
@@ -138,8 +129,6 @@ const deleteUser = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({ message: "success", user });
 });
-
-
 
 /**
  * @desc    Change user password
@@ -320,7 +309,6 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
   ]);
   res.status(200).json({ message: "success", inventories });
 });
-
 
 export {
   getAllUsers,

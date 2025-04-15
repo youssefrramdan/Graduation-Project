@@ -155,10 +155,10 @@ orderSchema.methods.canTransitionTo = function (newStatus) {
     rejected: [],
   };
 
-  return validTransitions[this.status.current]?.includes(newStatus) || false;
+  return validTransitions[this.status.current] ? validTransitions[this.status.current].includes(newStatus) : false;
 };
 
-// استخدم هذه الطريقة فقط بدون pre-save
+// Use this method without pre-save
 orderSchema.methods.updateStatus = function (newStatus, note, userId) {
   if (!this.canTransitionTo(newStatus)) {
     throw new Error(
@@ -170,7 +170,7 @@ orderSchema.methods.updateStatus = function (newStatus, note, userId) {
   this.status.history.push({
     status: newStatus,
     note,
-    updatedBy: this.status.updatedBy || this.pharmacy,
+    updatedBy: userId,
     timestamp: new Date(),
   });
 };
