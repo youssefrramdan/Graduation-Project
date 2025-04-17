@@ -23,12 +23,36 @@ const createFilterStages = (query) => {
 
   // Add search filters
   if (query.keyword) {
-    filters.$or = [
-      { "drugs.name": { $regex: query.keyword, $options: "i" } },
-      { "drugs.description": { $regex: query.keyword, $options: "i" } },
-      { "drugs.manufacturer": { $regex: query.keyword, $options: "i" } },
-      { "drugs.originType": { $regex: query.keyword, $options: "i" } },
-    ];
+    // Add search filters
+    if (query.keyword) {
+      // Split the keyword into individual words
+      const keywords = query.keyword
+        .split(/\s+/)
+        .filter((word) => word.length > 0);
+
+      if (keywords.length > 0) {
+        // Create an array of conditions for each field and each keyword
+        const conditions = [];
+
+        // For each field we want to search
+        const fieldsToSearch = [
+          "drugs.name",
+          "drugs.description",
+          "drugs.manufacturer",
+          "drugs.originType",
+        ];
+
+        fieldsToSearch.forEach((field) => {
+          // For each keyword, create a regex condition
+          keywords.forEach((keyword) => {
+            conditions.push({ [field]: { $regex: keyword, $options: "i" } });
+          });
+        });
+
+        // Add the OR conditions to the filter
+        filters.$or = conditions;
+      }
+    }
   }
 
   // Add price filter
