@@ -1,8 +1,6 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import UserModel from "../models/User.model.js";
-import DrugModel from "../models/Drug.model.js";
-import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
@@ -331,48 +329,3 @@ export {
   activateMe,
   getNearestInventories,
 };
-
-// 🔹 $geometry هو المشغل الذي يحدد نوع الشكل الجغرافي (Point, Polygon, LineString) وإحداثياته (coordinates).
-// 📌 بدون $geometry، لن يفهم MongoDB أن هذا كائن GeoJSON، وسيرفض الاستعلام.
-
-// const inventories = await UserModel.find({
-//   role: "inventory", // تصفية النتائج بناءً على الدور
-//   location: {
-//     $near: {
-//       $geometry: {
-//         type: "Point",
-//         coordinates: userCoordinates, // إحداثيات المستخدم
-//       },
-//       $maxDistance: 10000, // الحد الأقصى للمسافة (10 كم)
-//       $minDistance: 500  // الحد الأدنى للمسافة (500 متر)
-//     }
-//   }
-// });
-
-//! ده غلط
-// const inventories = await UserModel.find({
-//   location: {
-//     $geoNear: {
-//       near: { type: "Point", coordinates: userCoordinates },
-//       spherical: true,
-//       query: { role: "inventory" },
-//       distanceField: "calcDistance",
-//     },
-//   },
-// });
-
-//!! ده صح
-// $near مع find()
-//  إذا كنت تحتاج فقط إلى البحث عن أقرب الأماكن بدون ترتيب دقيق أو عمليات إضافية.
-
-// const inventories = await UserModel.aggregate([
-//   {
-//     $geoNear: {
-//       near: { type: "Point", coordinates: userCoordinates }, // ❌ `$geometry` غير مطلوب هنا
-//       spherical: true,
-//       query: { role: "inventory" },
-//       distanceField: "calcDistance",
-//       maxDistance: 10000
-//     }
-//   }
-// ]);
