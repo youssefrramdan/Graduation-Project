@@ -485,14 +485,27 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
 
   await features.paginate();
 
-  const drugs = await features.mongooseQuery;
+  const [drugs, user] = await Promise.all([
+    features.mongooseQuery,
+    UserModel.findById(id).select("name profileImage location shippingPrice"),
+  ]);
+
   const paginationResult = features.getPaginationResult();
 
   const responseData = {
     status: "success",
     pagination: paginationResult,
     results: drugs.length,
-    data: drugs,
+    data: {
+      user: {
+        id: user._id,
+        name: user.name,
+        profileImage: user.profileImage,
+        location: user.location,
+        shippingPrice: user.shippingPrice,
+      },
+      drugs: drugs,
+    },
   };
 
   res.status(200).json(responseData);
