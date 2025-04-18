@@ -25,7 +25,6 @@ import {
   updateUserValidator,
 } from "../utils/validators/userValidator.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
-import { getAllDrugsForSpecificInventory } from "../controllers/drug.controller.js";
 
 const userRouter = express.Router();
 const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
@@ -59,5 +58,4 @@ userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
 
-userRouter.route("/drugs/:id").get(getAllDrugsForSpecificInventory);
 export default userRouter;

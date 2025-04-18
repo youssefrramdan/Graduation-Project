@@ -42,8 +42,10 @@ drugRouter
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 
 drugRouter
-  .route("/owndrugs")
+  .route("/inventory")
   .get(protectedRoutes, getAllDrugsForSpecificInventory);
+
+drugRouter.route("/inventory/:id").get(getAllDrugsForSpecificInventory);
 
 drugRouter
   .route("/:id")

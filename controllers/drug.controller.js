@@ -473,7 +473,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
  * @access  Private/Public (Based on parameters)
  */
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
-  const id = req.user._id;
+  const id = req.params.id || req.user._id;
 
   const baseQuery = { createdBy: id };
 
