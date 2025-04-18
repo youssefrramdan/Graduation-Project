@@ -119,19 +119,19 @@ const updateUser = asyncHandler(async (req, res, next) => {
  */
 const deleteUser = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const [deletedDrugs, deletedOrders, updatedUser, deletedUser] =
-    await Promise.all([
-      DrugModel.deleteMany({ createdBy: id }),
-      OrderModel.deleteMany({ pharmacy: id }),
-      UserModel.findByIdAndUpdate(id, { cart: [] }),
-      UserModel.findByIdAndDelete(id),
-    ]);
 
-  if (!deletedUser) {
+  // Find user first to check if exists
+  const user = await UserModel.findById(id);
+  if (!user) {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  res.status(200).json({ message: "success", user: deletedUser });
+  await user.remove();
+
+  res.status(200).json({
+    status: "success",
+    message: "User and all associated data deleted successfully",
+  });
 });
 
 /**

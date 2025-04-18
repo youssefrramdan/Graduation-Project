@@ -137,28 +137,17 @@ userSchema.pre("save", async function (next) {
 // Pre middleware to delete associated data when user is removed
 userSchema.pre("remove", async function (next) {
   try {
-    console.log(`Attempting to delete user with ID: ${this._id}`);
-
-    const drugs = await model("Drug").find({ createdBy: this._id });
-    console.log("Drugs to be deleted:", drugs);
-
-    const carts = await model("Cart").find({ pharmacy: this._id });
-    console.log("Carts to be deleted:", carts);
-
-    const orders = await model("Order").find({ pharmacy: this._id });
-    console.log("Orders to be deleted:", orders);
-
     await Promise.all([
       model("Drug").deleteMany({ createdBy: this._id }),
       model("Cart").deleteMany({ pharmacy: this._id }),
       model("Order").deleteMany({ pharmacy: this._id }),
+      model("User").findByIdAndUpdate(this._id, { cart: [] }),
     ]);
 
-    console.log("User-related data deleted successfully.");
-    next(); // إتمام العملية إذا تم الحذف بنجاح
+    next();
   } catch (error) {
     console.error("Error while removing user-related data:", error);
-    next(error); // تمرير الخطأ في حال حدوث مشكلة
+    next(error);
   }
 });
 
