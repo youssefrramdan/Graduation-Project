@@ -16,7 +16,7 @@ const generateToken = (payload) =>
   });
 
 /**
- * @desc    User Signup - تسجيل المستخدم
+ * @desc    User Signup
  * @route   POST /api/v1/auth/signup
  * @access  Public
  */
@@ -28,9 +28,6 @@ const signup = asyncHandler(async (req, res, next) => {
     type: "Point",
     coordinates: coordinates,
   };
-  // if (!req.body.licenseDocument) {
-  //  return next(new ApiError("licenseDocument is required ...." , 404))
-  // }
   const user = await UserModel.create(req.body);
 
   sendEmail(user.email, "verification");
@@ -78,7 +75,7 @@ const login = asyncHandler(async (req, res, next) => {
   /*
   if (user.active== true) {
     return next(new ApiError(
-      "Your account is not activated.", 
+      "Your account is not activated.",
       401));
   }
       */

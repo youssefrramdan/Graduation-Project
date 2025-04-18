@@ -23,35 +23,32 @@ const createFilterStages = (query) => {
 
   // Add search filters
   if (query.keyword) {
-    // Add search filters
-    if (query.keyword) {
-      // Split the keyword into individual words
-      const keywords = query.keyword
-        .split(/\s+/)
-        .filter((word) => word.length > 0);
+    // Split the keyword into individual words
+    const keywords = query.keyword
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
 
-      if (keywords.length > 0) {
-        // Create an array of conditions for each field and each keyword
-        const conditions = [];
+    if (keywords.length > 0) {
+      // Create an array of conditions for each field and each keyword
+      const conditions = [];
 
-        // For each field we want to search
-        const fieldsToSearch = [
-          "drugs.name",
-          "drugs.description",
-          "drugs.manufacturer",
-          "drugs.originType",
-        ];
+      // For each field we want to search
+      const fieldsToSearch = [
+        "drugs.name",
+        "drugs.description",
+        "drugs.manufacturer",
+        "drugs.originType",
+      ];
 
-        fieldsToSearch.forEach((field) => {
-          // For each keyword, create a regex condition
-          keywords.forEach((keyword) => {
-            conditions.push({ [field]: { $regex: keyword, $options: "i" } });
-          });
+      fieldsToSearch.forEach((field) => {
+        // For each keyword, create a regex condition
+        keywords.forEach((keyword) => {
+          conditions.push({ [field]: { $regex: keyword, $options: "i" } });
         });
+      });
 
-        // Add the OR conditions to the filter
-        filters.$or = conditions;
-      }
+      // Add the OR conditions to the filter
+      filters.$or = conditions;
     }
   }
 
@@ -263,7 +260,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Get specific drug by ID - Performance optimized
+ * @desc    Get specific drug by ID
  * @route   GET /api/v1/drugs/:id
  * @access  Public
  */
@@ -468,7 +465,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Get all drugs for specific inventory - Performance optimized
+ * @desc    Get all drugs for specific inventory
  * @route   GET /api/v1/drugs/inventory/:id?
  * @access  Private/Public (Based on parameters)
  */

@@ -1,11 +1,11 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-// import swaggerJsDoc from "swagger-jsdoc";
-// import swaggerUi from "swagger-ui-express";
+import helmet from 'helmet';
 import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
@@ -27,8 +27,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(compression());
-// middlewares
+app.use(helmet())
 
+// middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -44,9 +45,12 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
+
 app.get('/ping', (req, res) => {
     res.status(200).send('pong');
   });
+
+  
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });

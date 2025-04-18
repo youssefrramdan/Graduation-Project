@@ -4,24 +4,47 @@ import databaseConnection from "./config/database.config.js";
 databaseConnection();
 
 const PORT = process.env.PORT || 8000;
+
 const server = app.listen(PORT, () => {
-  console.log(`server is running on port ${PORT} ...`);
+  console.log(`server is running ${PORT} ....`);
 });
 
-process.on("unhandledRejection", (err) => {
-  console.error(`unhandledRejection Error : ${err.name} | ${err.message}`);
-  server.close(() => {
-    console.error(`Shutting down ...`);
+/**
+ * Gracefully shutdown the server
+ * @param {string} signal - The signal that triggered the shutdown
+ */
+const gracefulShutdown = (signal) => {
+  console.log(`${signal} received. Shutting down gracefully...`);
+  if (server) {
+    server.close(() => {
+      console.log("Process terminated");
+      process.exit(0);
+    });
+  }
+};
+
+/**
+ * Handle unexpected errors
+ * @param {Error} error - The error that occurred
+ */
+const unexpectedErrorHandler = (error) => {
+  console.log(error);
+  if (server) {
+    console.log("Server is shutting down due to unexpected error...");
     process.exit(1);
-  });
-});
+  } else {
+    process.exit(1);
+  }
+};
 
-// What about errors that happen synchronously outside Express?
-// For example, if an error occurs before Express starts,
-//  it won't be caught by Express error handling middleware.
+// Handle errors that occur within promises but weren't caught
+process.on("unhandledRejection", unexpectedErrorHandler);
 
-process.on("uncaughtException", (err) => {
-  console.error(`Uncaught Exception: ${err.name} | ${err.message}`);
-  // Gracefully shutting down
-  process.exit(1); // Exit immediately with failure code
-});
+// Handle errors that happen synchronously outside Express
+process.on("uncaughtException", unexpectedErrorHandler);
+
+// Handle SIGTERM signal (used by container systems)
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+
+// Handle SIGINT signal (Ctrl+C)
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
