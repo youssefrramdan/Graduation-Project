@@ -138,22 +138,20 @@ userSchema.pre("save", async function (next) {
 userSchema.pre("remove", async function (next) {
   try {
     console.log(`Attempting to delete user with ID: ${this._id}`);
- 
+
     const drugs = await model("Drug").find({ createdBy: this._id });
     console.log("Drugs to be deleted:", drugs);
-
 
     const carts = await model("Cart").find({ pharmacy: this._id });
     console.log("Carts to be deleted:", carts);
 
-    
     const orders = await model("Order").find({ pharmacy: this._id });
     console.log("Orders to be deleted:", orders);
 
     await Promise.all([
       model("Drug").deleteMany({ createdBy: this._id }),
       model("Cart").deleteMany({ pharmacy: this._id }),
-      model("Order").deleteMany({ pharmacy: this._id })
+      model("Order").deleteMany({ pharmacy: this._id }),
     ]);
 
     console.log("User-related data deleted successfully.");

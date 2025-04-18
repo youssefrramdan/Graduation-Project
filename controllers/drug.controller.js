@@ -487,7 +487,7 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
 
   const [drugs, user] = await Promise.all([
     features.mongooseQuery,
-    UserModel.findById(id).select("name profileImage location shippingPrice"),
+    UserModel.findById(id),
   ]);
 
   const paginationResult = features.getPaginationResult();
@@ -501,6 +501,10 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
         id: user._id,
         name: user.name,
         profileImage: user.profileImage,
+        phone: user.phone,
+        email: user.email,
+        city: user.city,
+        governorate: user.governorate,
         location: user.location,
       },
       drugs: drugs,
