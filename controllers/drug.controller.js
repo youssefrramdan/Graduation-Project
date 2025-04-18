@@ -502,7 +502,6 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
         name: user.name,
         profileImage: user.profileImage,
         location: user.location,
-        shippingPrice: user.shippingPrice,
       },
       drugs: drugs,
     },
