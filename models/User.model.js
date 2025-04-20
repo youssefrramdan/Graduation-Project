@@ -135,13 +135,16 @@ userSchema.pre("save", async function (next) {
 });
 
 // Pre middleware to delete associated data when user is removed
-userSchema.pre("remove", async function (next) {
+userSchema.pre("findOneAndDelete", async function (next) {
   try {
+    const user = await this.model.findOne(this.getQuery());
+    if (!user) return next();
+
     await Promise.all([
-      model("Drug").deleteMany({ createdBy: this._id }),
-      model("Cart").deleteMany({ pharmacy: this._id }),
-      model("Order").deleteMany({ pharmacy: this._id }),
-      model("User").findByIdAndUpdate(this._id, { cart: [] }),
+      model("Drug").deleteMany({ createdBy: user._id }),
+      model("Cart").deleteMany({ pharmacy: user._id }),
+      model("Order").deleteMany({ pharmacy: user._id }),
+      model("User").findByIdAndUpdate(user._id, { cart: [] }),
     ]);
 
     next();

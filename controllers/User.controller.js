@@ -124,7 +124,7 @@ const deleteUser = asyncHandler(async (req, res, next) => {
     return next(new ApiError(`There isn't a user for this ${id}`, 404));
   }
 
-  await user.remove();
+  await UserModel.findByIdAndDelete(user._id);
 
   res.status(200).json({
     status: "success",
