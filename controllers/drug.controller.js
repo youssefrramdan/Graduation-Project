@@ -194,7 +194,7 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
         near: { type: "Point", coordinates: pharmacyLocation },
         spherical: true,
         distanceField: "calcDistance",
-        query: createFilterStages(req.query),
+        query: {},
         distanceMultiplier: 0.001,
       },
     },
@@ -221,9 +221,18 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
       },
     },
     { $unwind: "$inventory" },
-    { $sort: createSortStage(req.query) },
-    { $project: createProjectStage(req.query) },
   ];
+
+  const filters = createFilterStages(req.query);
+  if (Object.keys(filters).length > 0) {
+    pipeline.push({ $match: filters });
+  }
+
+  const sortStage = createSortStage(req.query);
+  pipeline.push({ $sort: sortStage });
+
+  const projectStage = createProjectStage(req.query);
+  pipeline.push({ $project: projectStage });
 
   const { totalCount, drugs } = await executeAggregationPipeline(
     pipeline,
