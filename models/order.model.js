@@ -2,6 +2,9 @@ import { model, Schema, Types } from "mongoose";
 
 const orderSchema = new Schema(
   {
+    orderNumber: {
+      type: String,
+    },
     pharmacy: {
       type: Types.ObjectId,
       ref: "User",

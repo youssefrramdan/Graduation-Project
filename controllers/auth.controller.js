@@ -79,6 +79,11 @@ const login = asyncHandler(async (req, res, next) => {
       401));
   }
       */
+  // Save FCM token if provided
+  if (req.body.fcmToken) {
+    await user.saveFCMToken(req.body.fcmToken);
+  }
+
   const token = generateToken(user._id);
   res.cookie("token", token, {
     httpOnly: true,

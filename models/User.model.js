@@ -98,6 +98,9 @@ const userSchema = new Schema(
       trim: true,
       enum: ["pharmacy", "inventory", "admin"],
     },
+    fcmToken: {
+      type: String,
+    },
     location: {
       type: {
         type: String,
@@ -133,6 +136,11 @@ userSchema.pre("save", async function (next) {
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
+
+userSchema.methods.saveFCMToken = async function (token) {
+  this.fcmToken = token;
+  await this.save();
+};
 
 // Pre middleware to delete associated data when user is removed
 userSchema.pre("findOneAndDelete", async function (next) {

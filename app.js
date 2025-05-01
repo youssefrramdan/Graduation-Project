@@ -50,7 +50,10 @@ app.get('/ping', (req, res) => {
     res.status(200).send('pong');
   });
 
-  
+app.post('/api/firebase' , async(req,res,next)=>{
+    
+})
+
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });
