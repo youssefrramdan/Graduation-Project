@@ -1,4 +1,4 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Schema, model } from "mongoose";
 
 const drugSchema = new Schema(
   {
@@ -16,7 +16,11 @@ const drugSchema = new Schema(
     description: {
       type: String,
     },
-
+    category: {
+      type: Schema.Types.ObjectId,
+      ref: "Category",
+      required: true,
+    },
     originType: {
       type: String,
       enum: ["Imported", "Local"],
@@ -73,7 +77,6 @@ drugSchema.pre("save", function (next) {
   this.discountedPrice = this.price - (this.price * this.discount) / 100;
   next();
 });
-
 
 drugSchema.index({ createdBy: 1 });
 drugSchema.index({ createdBy: 1, price: 1 });
