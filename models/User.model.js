@@ -60,6 +60,11 @@ const userSchema = new Schema(
         ref: "Drug",
       },
     ],
+    wishlist: [{
+      type: Types.ObjectId,
+      ref: 'User',
+      default: [],
+    }],   
     minimumOrderValue: {
       type: Number,
       default: 1000,

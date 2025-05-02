@@ -3,14 +3,17 @@ import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   activateMe,
   activateSpecificUser,
+  addToWishlist,
   changeUserPassword,
   createUser,
   deactivateMe,
   deleteUser,
   getAllUsers,
   getMe,
+  getMyWishlist,
   getNearestInventories,
   getSpecificUser,
+  removeFromWishlist,
   updateMe,
   updateMyPassword,
   updateUser,
@@ -37,6 +40,10 @@ userRouter
   .patch(protectedRoutes, upload.single("profileImage"), updateUserImage);
 userRouter.route("/deactivate").patch(protectedRoutes, deactivateMe);
 userRouter.route("/activate").patch(protectedRoutes, activateMe);
+
+userRouter.route("/wishlist/:inventoryId").post(protectedRoutes, addToWishlist);
+userRouter.route("/wishlist/:inventoryId").delete(protectedRoutes, removeFromWishlist);
+userRouter.route("/wishlist").get(protectedRoutes, getMyWishlist);
 
 // admin routes
 userRouter.route("/").get(getAllUsers);
