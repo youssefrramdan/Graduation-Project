@@ -399,7 +399,6 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
       profileImage: 1,
       city: 1,
       governorate: 1,
-      identificationNumber: 1,
       shippingPrice: 1,
       location: 1,
     }
