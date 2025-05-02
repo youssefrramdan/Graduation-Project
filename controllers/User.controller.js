@@ -305,6 +305,121 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", inventories });
 });
 
+/**
+ * @desc    Add inventory to pharmacy wishlist
+ * @route   POST /api/v1/users/wishlist/:inventoryId
+ * @access  Private
+ */
+const addToWishlist = asyncHandler(async (req, res, next) => {
+  const pharmacyId = req.user.id;
+  const { inventoryId } = req.params;
+
+  const pharmacy = await UserModel.findById(pharmacyId);
+  if (!pharmacy || pharmacy.role !== "pharmacy") {
+    return next(new ApiError("Pharmacy not found", 404));
+  }
+
+  const inventory = await UserModel.findById(inventoryId);
+  if (!inventory || inventory.role !== "inventory") {
+    return next(new ApiError("Inventory not found", 404));
+  }
+
+  if (!Array.isArray(pharmacy.wishlist)) {
+    pharmacy.wishlist = [];
+  }
+
+  if (pharmacy.wishlist.includes(inventoryId)) {
+    return next(new ApiError("Inventory already in wishlist", 400));
+  }
+
+  pharmacy.wishlist.push(inventoryId);
+  await pharmacy.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Inventory added to wishlist",
+    wishlist: pharmacy.wishlist,
+  });
+});
+
+/**
+ * @desc    Remove inventory from pharmacy wishlist
+ * @route   DELETE /api/v1/users/wishlist/:inventoryId
+ * @access  Private (Pharmacy)
+ */
+
+const removeFromWishlist = asyncHandler(async (req, res, next) => {
+  const pharmacyId = req.user.id; 
+  const { inventoryId } = req.params;
+
+  const pharmacy = await UserModel.findById(pharmacyId);
+  if (!pharmacy || pharmacy.role !== "pharmacy") {
+    return next(new ApiError("Pharmacy not found", 404));
+  }
+
+  if (!Array.isArray(pharmacy.wishlist)) {
+    return next(new ApiError("Invalid wishlist format", 400));
+  }
+
+  const index = pharmacy.wishlist.indexOf(inventoryId);
+  if (index === -1) {
+    return next(new ApiError("Inventory not found in wishlist", 404));
+  }
+
+  pharmacy.wishlist.splice(index, 1); 
+  await pharmacy.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Inventory removed from wishlist",
+    wishlist: pharmacy.wishlist,
+  });
+});
+
+/**
+ * @desc    Get all inventories in pharmacy wishlist
+ * @route   GET /api/v1/users/wishlist
+ * @access  Private (Pharmacy)
+ */
+
+const getMyWishlist = asyncHandler(async (req, res, next) => {
+  const pharmacyId = req.user.id;
+
+  const pharmacy = await UserModel.findById(pharmacyId);
+  if (!pharmacy || pharmacy.role !== "pharmacy") {
+    return next(new ApiError("Pharmacy not found", 404));
+  }
+
+  const inventories = await UserModel.find(
+    {
+      _id: { $in: pharmacy.wishlist },
+      role: "inventory",
+    },
+    {
+      _id: 1,
+      name: 1,
+      ownerName: 1,
+      phone: 1,
+      profileImage: 1,
+      city: 1,
+      governorate: 1,
+      identificationNumber: 1,
+      registrationNumber: 1,
+      minimumOrderValue: 1,
+      shippingPrice: 1,
+      location: 1,
+    }
+  );
+
+  res.status(200).json({
+    message: "success",
+    inventories,
+  });
+});
+
+
+
+
 export {
   getAllUsers,
   getSpecificUser,
@@ -320,4 +435,7 @@ export {
   deactivateMe,
   activateMe,
   getNearestInventories,
+  getMyWishlist,
+  addToWishlist,
+  removeFromWishlist,
 };
