@@ -294,6 +294,8 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         shippingPrice: 1,
         minimumOrderValue: 1,
         phone: 1,
+        identificationNumber: 1,
+        registrationNumber: 1,
         city: 1,
         governorate: 1,
         DistanceInKm: { $divide: ["$calcDistance", 1000] },
@@ -374,11 +376,7 @@ const removeFromWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Get all inventories in pharmacy wishlist
- * @route   GET /api/v1/users/wishlist
- * @access  Private (Pharmacy)
- */
+
 
 const getMyWishlist = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user.id;
@@ -402,8 +400,6 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
       city: 1,
       governorate: 1,
       identificationNumber: 1,
-      registrationNumber: 1,
-      minimumOrderValue: 1,
       shippingPrice: 1,
       location: 1,
     }
