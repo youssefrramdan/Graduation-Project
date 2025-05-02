@@ -311,23 +311,14 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 const addToWishlist = asyncHandler(async (req, res, next) => {
-  const pharmacyId = req.user.id;
+  const pharmacyId = req.user._id;
   const { inventoryId } = req.params;
-
   const pharmacy = await UserModel.findById(pharmacyId);
-  if (!pharmacy || pharmacy.role !== "pharmacy") {
-    return next(new ApiError("Pharmacy not found", 404));
-  }
-
   const inventory = await UserModel.findById(inventoryId);
+
   if (!inventory || inventory.role !== "inventory") {
     return next(new ApiError("Inventory not found", 404));
   }
-
-  if (!Array.isArray(pharmacy.wishlist)) {
-    pharmacy.wishlist = [];
-  }
-
   if (pharmacy.wishlist.includes(inventoryId)) {
     return next(new ApiError("Inventory already in wishlist", 400));
   }
@@ -349,18 +340,9 @@ const addToWishlist = asyncHandler(async (req, res, next) => {
  */
 
 const removeFromWishlist = asyncHandler(async (req, res, next) => {
-  const pharmacyId = req.user.id; 
+  const pharmacyId = req.user._id; 
   const { inventoryId } = req.params;
-
   const pharmacy = await UserModel.findById(pharmacyId);
-  if (!pharmacy || pharmacy.role !== "pharmacy") {
-    return next(new ApiError("Pharmacy not found", 404));
-  }
-
-  if (!Array.isArray(pharmacy.wishlist)) {
-    return next(new ApiError("Invalid wishlist format", 400));
-  }
-
   const index = pharmacy.wishlist.indexOf(inventoryId);
   if (index === -1) {
     return next(new ApiError("Inventory not found in wishlist", 404));
@@ -379,13 +361,8 @@ const removeFromWishlist = asyncHandler(async (req, res, next) => {
 
 
 const getMyWishlist = asyncHandler(async (req, res, next) => {
-  const pharmacyId = req.user.id;
-
+  const pharmacyId = req.user._id;
   const pharmacy = await UserModel.findById(pharmacyId);
-  if (!pharmacy || pharmacy.role !== "pharmacy") {
-    return next(new ApiError("Pharmacy not found", 404));
-  }
-
   const inventories = await UserModel.find(
     {
       _id: { $in: pharmacy.wishlist },
@@ -406,7 +383,7 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     message: "success",
-    inventories,
+    data:inventories,
   });
 });
 
