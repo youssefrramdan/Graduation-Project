@@ -159,20 +159,6 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", user: user });
 });
 
-const getUserFiles = asyncHandler(async (req, res) => {
-  console.log("Params:", req.params);
-  console.log("Body:", req.body);
-
-  const user = await UserModel.findById(req.user._id).select("files");
-  if (!user) {
-    return res.status(404).json({ message: "User not found." });
-  }
-
-  res.status(200).json({
-    status: "success",
-    files: user.files,
-  });
-});
 
 /**
  * @desc    Get Logged-in User Data
@@ -306,6 +292,7 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         location: 1,
         ownerName :1 ,
         shippingPrice :1,
+        minimumOrderValue :1,
         phone : 1,
         identificationNumber :1 ,
         registrationNumber :1,
@@ -324,7 +311,6 @@ export {
   createUser,
   updateUser,
   deleteUser,
-  getUserFiles,
   changeUserPassword,
   getMe,
   updateMyPassword,
