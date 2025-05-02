@@ -287,6 +287,7 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
     },
     {
       $project: {
+        profileImage: 1,
         name: 1,
         location: 1,
         ownerName: 1,
