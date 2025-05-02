@@ -304,7 +304,12 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
       $project: {
         name: 1,
         location: 1,
-        role: 1,
+        ownerName :1 ,
+        shippingPrice :1,
+        phone : 1,
+        identificationNumber :1 ,
+        registrationNumber :1,
+        city:1,
         DistanceInKm: { $divide: ["$calcDistance", 1000] }, // تحويل المسافة إلى كم
       },
     },
