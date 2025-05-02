@@ -159,7 +159,6 @@ const changeUserPassword = asyncHandler(async (req, res, next) => {
   res.status(200).json({ message: "success", user: user });
 });
 
-
 /**
  * @desc    Get Logged-in User Data
  * @route   GET /api/v1/users/getMe
@@ -290,13 +289,14 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
       $project: {
         name: 1,
         location: 1,
-        ownerName :1 ,
-        shippingPrice :1,
-        minimumOrderValue :1,
-        phone : 1,
-        identificationNumber :1 ,
-        registrationNumber :1,
-        city:1,
+        ownerName: 1,
+        shippingPrice: 1,
+        minimumOrderValue: 1,
+        phone: 1,
+        identificationNumber: 1,
+        registrationNumber: 1,
+        city: 1,
+        governorate: 1,
         DistanceInKm: { $divide: ["$calcDistance", 1000] }, // تحويل المسافة إلى كم
       },
     },
