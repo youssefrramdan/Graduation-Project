@@ -2,6 +2,7 @@ import express from "express";
 import {
   addDrug,
   addDrugsFromExcel,
+  createFilterObject,
   deleteDrug,
   getAllDrugs,
   getAllDrugsForSpecificInventory,
@@ -20,7 +21,7 @@ import {
 } from "../utils/validators/drugsValidator.js";
 import createUploader from "../middlewares/uploadImageMiddleware.js";
 
-const drugRouter = express.Router();
+const drugRouter = express.Router({ mergeParams: true });
 const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
@@ -33,11 +34,10 @@ drugRouter
     addDrugsFromExcel
   );
 
-// uploadimg.single("imageCover"),
 drugRouter
   .route("/")
   .post(protectedRoutes, addDrugValidator, addDrug)
-  .get(protectedRoutes, getAllDrugs);
+  .get(protectedRoutes, createFilterObject, getAllDrugs);
 
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 

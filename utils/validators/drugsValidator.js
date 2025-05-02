@@ -1,6 +1,6 @@
 import { check } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
-import UserModel from "../../models/User.model.js";
+import CategoryModel from "../../models/Category.model.js";
 
 const addDrugValidator = [
   check("name")
@@ -15,6 +15,16 @@ const addDrugValidator = [
     .trim(),
 
   check("originType").notEmpty().withMessage("Origin Type required'."),
+  check("category")
+    .notEmpty()
+    .withMessage("category required'.")
+    .custom(async (val, { req }) => {
+      const category = await CategoryModel.find({ val });
+      if (!category) {
+        throw new Error("Category not Found Please Enter Valid Category !!");
+      }
+      return true;
+    }),
 
   check("productionDate")
     .isISO8601()
@@ -96,6 +106,16 @@ export const addDrugsFromExcelValidator = [
     .optional()
     .isInt({ min: 1 })
     .withMessage("End row must be a positive integer greater than 0."),
+  check("category")
+    .notEmpty()
+    .withMessage("category required.")
+    .custom(async (val, { req }) => {
+      const category = await CategoryModel.find({ val });
+      if (!category) {
+        throw new Error("Category not Found Please Enter Valid Category !!");
+      }
+      return true;
+    }),
 
   validatorMiddleware,
 ];

@@ -7,19 +7,23 @@ import {
   getSpecificCategory,
   updateCategory,
 } from "../controllers/category.controller.js";
+import { protectedRoutes, allowTo } from "../controllers/auth.controller.js";
+import drugRouter from "./drug.routes.js";
 
 const categoryRouter = express.Router();
 const upload = createUploader("category-image");
 
 categoryRouter
   .route("/")
-  .post(upload.single("imageCover"), createCategory)
+  .post(protectedRoutes, upload.single("imageCover"), createCategory)
   .get(getAllCategories);
+
+categoryRouter.use("/:categoryId/drugs", drugRouter);
 
 categoryRouter
   .route("/:id")
   .get(getSpecificCategory)
-  .put(upload.single("imageCover"), updateCategory)
-  .delete(deleteCategory);
+  .put(protectedRoutes, upload.single("imageCover"), updateCategory)
+  .delete(protectedRoutes, deleteCategory);
 
 export default categoryRouter;

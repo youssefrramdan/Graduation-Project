@@ -12,8 +12,23 @@ import {
   formatDrugData,
 } from "../utils/excelUtils.js";
 import axios from "axios";
+import mongoose from "mongoose";
 
 // ======== Helper Functions ========
+
+const createFilterObject = (req, res, next) => {
+  const filterObject = {};
+
+  // If categoryId is present in params, filter by category
+  if (req.params.categoryId) {
+    filterObject["drugs.category"] = new mongoose.Types.ObjectId(
+      req.params.categoryId
+    );
+  }
+  // Store in req object for next middleware
+  req.filterObject = filterObject;
+  next();
+};
 
 /**
  * Create filter stages for queries
@@ -107,6 +122,11 @@ const createProjectStage = (query) => {
       _id: "$inventory._id",
       name: "$inventory.name",
       profileImage: "$inventory.profileImage",
+    },
+    category: {
+      _id: "$category._id",
+      name: "$category.name",
+      imageCover: "$category.imageCover",
     },
   };
 
@@ -204,6 +224,18 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
         let: { inventoryId: "$_id" },
         pipeline: [
           { $match: { $expr: { $eq: ["$createdBy", "$$inventoryId"] } } },
+          // Add category filter if present in params
+          ...(req.params.categoryId
+            ? [
+                {
+                  $match: {
+                    category: new mongoose.Types.ObjectId(
+                      req.params.categoryId
+                    ),
+                  },
+                },
+              ]
+            : []),
         ],
         as: "drugs",
       },
@@ -221,6 +253,18 @@ const getAllDrugs = asyncHandler(async (req, res, next) => {
       },
     },
     { $unwind: "$inventory" },
+    {
+      $lookup: {
+        from: "categories",
+        let: { categoryId: "$drugs.category" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$_id", "$$categoryId"] } } },
+          { $project: { name: 1, imageCover: 1 } },
+        ],
+        as: "category",
+      },
+    },
+    { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
   ];
 
   const filters = createFilterStages(req.query);
@@ -399,7 +443,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
     );
   }
   const filePath = req.file.path;
-
+  const categoryId = req.body.category
   // Read file and process data
   const data = await readExcelFile(filePath);
   const startRow = Number(req.body.startRow) || 0;
@@ -408,7 +452,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
   validateRowRange({ startRow, endRow }, data.length);
 
   const slicedData = data.slice(startRow, endRow);
-  const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id);
+  const { validDrugs, invalidDrugs } = formatDrugData(slicedData, req.user._id,categoryId);
 
   const MAX_BATCH_SIZE = 500;
 
@@ -549,6 +593,7 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  createFilterObject,
   addDrug,
   getAllDrugs,
   addDrugsFromExcel,

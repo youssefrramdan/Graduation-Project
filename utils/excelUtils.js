@@ -19,7 +19,7 @@ export const validateRowRange = ({ startRow, endRow }, dataLength) => {
   }
 };
 
-export const formatDrugData = (data, userId) => {
+export const formatDrugData = (data, userId, category) => {
   const validDrugs = [];
   const invalidDrugs = [];
 
@@ -78,6 +78,7 @@ export const formatDrugData = (data, userId) => {
         manufacturer: item.manufacturer || "",
         description: item.description || "",
         originType: item.originType,
+        category: category,
         productionDate,
         expirationDate,
         price: Number(item.price),
