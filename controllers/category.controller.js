@@ -1,6 +1,8 @@
 import asyncHandler from "express-async-handler";
 import ApiError from "../utils/apiError.js";
 import CategoryModel from "../models/Category.model.js";
+import DrugModel from "../models/Drug.model.js";
+import UserModel from "../models/User.model.js";
 
 const createCategory = asyncHandler(async (req, res, next) => {
   if (req.file) {
@@ -48,12 +50,26 @@ const deleteCategory = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const category = await CategoryModel.findByIdAndDelete(id);
   if (!category) {
-    next(new ApiError("Category Not Found", 500));
+    return next(new ApiError("Category Not Found", 404));
   }
-  res.status(201).json({
+
+  const drugsToDelete = await DrugModel.find({ category: id })
+    .select("_id")
+    .lean();
+  const drugIds = drugsToDelete.map((drug) => drug._id);
+  await DrugModel.deleteMany({ category: id });
+  if (drugIds.length > 0) {
+    await UserModel.updateMany(
+      { drugs: { $in: drugIds } },
+      { $pull: { drugs: { $in: drugIds } } }
+    );
+  }
+
+  res.status(200).json({
     message: "success",
   });
 });
+
 export {
   createCategory,
   getAllCategories,
