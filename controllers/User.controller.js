@@ -294,8 +294,6 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         shippingPrice: 1,
         minimumOrderValue: 1,
         phone: 1,
-        identificationNumber: 1,
-        registrationNumber: 1,
         city: 1,
         governorate: 1,
         DistanceInKm: { $divide: ["$calcDistance", 1000] },
