@@ -329,7 +329,7 @@ const addToWishlist = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "Inventory added to wishlist",
-    wishlist: pharmacy.wishlist,
+    data: pharmacy.wishlist,
   });
 });
 
@@ -340,7 +340,7 @@ const addToWishlist = asyncHandler(async (req, res, next) => {
  */
 
 const removeFromWishlist = asyncHandler(async (req, res, next) => {
-  const pharmacyId = req.user._id; 
+  const pharmacyId = req.user._id;
   const { inventoryId } = req.params;
   const pharmacy = await UserModel.findById(pharmacyId);
   const index = pharmacy.wishlist.indexOf(inventoryId);
@@ -348,13 +348,13 @@ const removeFromWishlist = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Inventory not found in wishlist", 404));
   }
 
-  pharmacy.wishlist.splice(index, 1); 
+  pharmacy.wishlist.splice(index, 1);
   await pharmacy.save();
 
   res.status(200).json({
     status: "success",
     message: "Inventory removed from wishlist",
-    wishlist: pharmacy.wishlist,
+    data : pharmacy.wishlist,
   });
 });
 
@@ -372,12 +372,12 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
       _id: 1,
       name: 1,
       ownerName: 1,
+      minimumOrderValue :1,
       phone: 1,
       profileImage: 1,
       city: 1,
       governorate: 1,
       shippingPrice: 1,
-      location: 1,
     }
   );
 
