@@ -5,7 +5,6 @@ import morgan from "morgan";
 import cors from "cors";
 import compression from "compression";
 import cookieParser from "cookie-parser";
-import helmet from 'helmet';
 import globalError from "./middlewares/errorMiddleware.js";
 import ApiError from "./utils/apiError.js";
 import userRouter from "./routes/user.routes.js";
@@ -13,6 +12,7 @@ import authRouter from "./routes/auth.routes.js";
 import drugRouter from "./routes/drug.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
+import categoryRouter from "./routes/category.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -27,7 +27,6 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 app.use(compression());
-app.use(helmet())
 
 // middlewares
 app.use(express.json());
@@ -43,22 +42,18 @@ if (process.env.NODE_ENV === "development") {
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
+app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
 
-app.get('/ping', (req, res) => {
-    res.status(200).send('pong');
-  });
-
-app.post('/api/firebase' , async(req,res,next)=>{
-    
-})
+app.get("/ping", (req, res) => {
+  res.status(200).send("pong");
+});
 
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });
 
 app.use(globalError);
-
 
 export default app;
