@@ -4,43 +4,32 @@ import bcrypt from "bcryptjs";
 
 const userSchema = new Schema(
   {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+    },
     email: {
       type: String,
       required: [true, "Email is required."],
       trim: true,
       lowercase: true,
     },
+    role: {
+      type: String,
+      trim: true,
+      enum: ["pharmacy", "inventory", "admin"],
+    },
     password: {
       type: String,
       required: [true, "Password is required."],
       minlength: [8, "Password must be at least 8 characters long."],
-    },
-    passwordResetExpires: Date,
-    passwordResetCode: String,
-    passwordResetVerified: Boolean,
-    passwordChangedAt: Date,
-    name: {
-      type: String,
-      required: true,
-      trim: true,
     },
     ownerName: {
       type: String,
       trim: true,
     },
     phone: {
-      type: String,
-      trim: true,
-    },
-    identificationNumber: {
-      type: String,
-      trim: true,
-    },
-    registrationNumber: {
-      type: String,
-      trim: true,
-    },
-    licenseDocument: {
       type: String,
       trim: true,
     },
@@ -55,13 +44,13 @@ const userSchema = new Schema(
       type: String,
       trim: true,
     },
-    isVerified: {
-      type: Boolean,
-      default: false,
+    identificationNumber: {
+      type: String,
+      trim: true,
     },
-    active: {
-      type: Boolean,
-      default: false,
+    registrationNumber: {
+      type: String,
+      trim: true,
     },
     drugs: [
       {
@@ -69,37 +58,13 @@ const userSchema = new Schema(
         ref: "Drug",
       },
     ],
-    files: [
-      {
-        fileName: { type: String, required: true },
-        fileUrl: { type: String, required: true },
-        uploadedAt: { type: Date, default: Date.now },
-      },
-    ],
-    minimumOrderValue: Number,
+    minimumOrderValue: {
+      type: Number,
+      default: 1000,
+    },
     shippingPrice: {
       type: Number,
       default: 0,
-    },
-    orders: [
-      {
-        type: Types.ObjectId,
-        ref: "Order",
-      },
-    ],
-    cart: [
-      {
-        type: Types.ObjectId,
-        ref: "Cart",
-      },
-    ],
-    role: {
-      type: String,
-      trim: true,
-      enum: ["pharmacy", "inventory", "admin"],
-    },
-    fcmToken: {
-      type: String,
     },
     location: {
       type: {
@@ -110,21 +75,23 @@ const userSchema = new Schema(
       coordinates: {
         type: [Number],
         default: [0, 0],
-        validate: {
-          validator: function (val) {
-            return (
-              val.length === 2 &&
-              val[0] >= -180 &&
-              val[0] <= 180 &&
-              val[1] >= -90 &&
-              val[1] <= 90
-            );
-          },
-          message:
-            "Location coordinates must contain exactly [longitude, latitude].",
-        },
       },
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    active: {
+      type: Boolean,
+      default: false,
+    },
+    fcmToken: {
+      type: String,
+    },
+    passwordResetExpires: Date,
+    passwordResetCode: String,
+    passwordResetVerified: Boolean,
+    passwordChangedAt: Date,
   },
   { timestamps: true }
 );
@@ -152,7 +119,7 @@ userSchema.pre("findOneAndDelete", async function (next) {
       model("Drug").deleteMany({ createdBy: user._id }),
       model("Cart").deleteMany({ pharmacy: user._id }),
       model("Order").deleteMany({ pharmacy: user._id }),
-      model("User").findByIdAndUpdate(user._id, { cart: [] }),
+      model("User").findByIdAndUpdate(user._id),
     ]);
 
     next();

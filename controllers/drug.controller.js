@@ -397,15 +397,6 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
 
   if (!filePath && req.file && req.file.path) {
     filePath = req.file.path;
-    await UserModel.findByIdAndUpdate(req.user._id, {
-      $push: {
-        files: {
-          fileName: req.file.originalname,
-          fileUrl: req.file.path,
-          uploadedAt: new Date(),
-        },
-      },
-    });
   }
 
   if (!filePath) {
