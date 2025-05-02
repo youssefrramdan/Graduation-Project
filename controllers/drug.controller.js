@@ -393,17 +393,12 @@ const deleteDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Inventory only)
  */
 const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
-  let filePath = req.selectedFilePath;
-
-  if (!filePath && req.file && req.file.path) {
-    filePath = req.file.path;
-  }
-
-  if (!filePath) {
+  if (!req.file) {
     return next(
       new ApiError("Please provide a fileId or upload a new Excel file.", 400)
     );
   }
+  const filePath = req.file.path;
 
   // Read file and process data
   const data = await readExcelFile(filePath);

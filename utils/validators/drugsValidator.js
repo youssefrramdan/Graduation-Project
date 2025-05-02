@@ -87,28 +87,6 @@ const deleteDrugValidator = [
 ];
 
 export const addDrugsFromExcelValidator = [
-  check("fileId")
-    .optional()
-    .isMongoId()
-    .withMessage("Invalid fileId format. It must be a valid MongoDB ObjectId")
-    .custom(async (fileId, { req }) => {
-      // Check if file exists in user's files
-      const user = await UserModel.findById(req.user._id).select("files");
-      if (!user || !user.files.length) {
-        throw new Error("No files found for this user.");
-      }
-    //id رجع الفايل اللي يطابق ال 
-    // body المبعوت في ال 
-      const selectedFile = user.files.find((file) => file._id.toString() === fileId);
-
-      if (!selectedFile) {
-        throw new Error("File not found in your files.");
-      }
-      // Attach the file path to the request for use in the controller
-      req.selectedFilePath = selectedFile.fileUrl;
-      return true;
-    }),
-
   check("startRow")
     .optional()
     .isInt({ min: 0 })
