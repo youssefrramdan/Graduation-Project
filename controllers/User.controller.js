@@ -5,6 +5,7 @@ import ApiError from "../utils/apiError.js";
 import ApiFeatures from "../utils/apiFeatures.js";
 
 import { sendEmail } from "../middlewares/sendEmail.js";
+import DrugModel from "../models/Drug.model.js";
 
 /**
  * @desc    Get all users
@@ -390,6 +391,57 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
 
 
 
+/**
+ * @desc    updateOffer
+ * @route   PUT /api/v1/users/updateOffer
+ * @access  Private
+ */
+
+const updateOffer = asyncHandler(async (req, res) => {
+  try {
+    const userId= req.user._id;
+    const  offer  =  req.body.offer; 
+
+    
+    if (offer === undefined || offer === null) {
+      return res.status(400).json({ success: false, message: "not vaild offer" });
+    }
+
+    const inventory = await UserModel.findById(userId);  
+
+    if (!inventory) {
+      return res.status(404).json({ success: false, message: "inventory not found" });
+    }
+
+  
+    inventory.offer = offer;
+    await inventory.save();
+
+
+    const drugs = await DrugModel.find({ createdBy: userId }); 
+    for (let drug of drugs) {
+ 
+      const baseDiscountedPrice = drug.price - (drug.price * drug.discount) / 100;
+      drug.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * offer) / 100;
+      await drug.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "offer is updated",
+      data: inventory,
+    });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+
+
+
+
+
+
 export {
   getAllUsers,
   getSpecificUser,
@@ -408,4 +460,5 @@ export {
   getMyWishlist,
   addToWishlist,
   removeFromWishlist,
+  updateOffer,
 };

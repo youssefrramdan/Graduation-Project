@@ -16,6 +16,7 @@ import {
   removeFromWishlist,
   updateMe,
   updateMyPassword,
+  updateOffer,
   updateUser,
   updateUserImage,
 } from "../controllers/User.controller.js";
@@ -32,6 +33,7 @@ const userRouter = express.Router();
 const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
 
 // user routes
+
 userRouter.route("/getMe").get(protectedRoutes, getMe);
 userRouter.route("/updateMe").patch(protectedRoutes, updateMe);
 userRouter.route("/updateMyPassword").patch(protectedRoutes, updateMyPassword);
@@ -62,5 +64,11 @@ userRouter
 userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
+
+  userRouter.route("/updateoffer").patch(protectedRoutes, updateOffer);
+
+
+
+
 
 export default userRouter;
