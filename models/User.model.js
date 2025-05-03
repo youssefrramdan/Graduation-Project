@@ -60,7 +60,7 @@ const userSchema = new Schema(
         ref: "Drug",
       },
     ],
-    wishlist: [{
+    favourite: [{
       type: Types.ObjectId,
       ref: 'User',
       default: [],
