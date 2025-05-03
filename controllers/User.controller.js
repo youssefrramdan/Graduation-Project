@@ -360,6 +360,11 @@ const removeFromFavourite = asyncHandler(async (req, res, next) => {
 });
 
 
+/**
+ * @desc    Get all inventories in pharmacy favourite
+ * @route   GET /api/v1/users/favourite
+ * @access  Private (Pharmacy)
+ */
 
 const getMyFavourite = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user._id;
