@@ -592,6 +592,40 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
   }
 });
 
+
+
+
+
+
+
+
+const updatePromotion = asyncHandler(async (req, res) => {
+  const { isActive, buyQuantity, freeQuantity } = req.body;
+  const drugId = req.params.id;
+  const userId = req.user._id;
+
+  const drug = await DrugModel.findById(drugId);
+
+  if (!drug) {
+    return res.status(404).json({ success: false, message: "Drug not found" });
+  }
+
+  
+
+  drug.promotion = {
+    isActive: isActive ?? false,
+    buyQuantity: buyQuantity ?? drug.promotion?.buyQuantity,
+    freeQuantity: freeQuantity ?? drug.promotion?.freeQuantity,
+  };
+
+  await drug.save();
+
+  res.status(200).json({ success: true, message: "Promotion updated", data: drug.promotion });
+});
+
+
+
+
 export {
   createFilterObject,
   addDrug,
@@ -603,4 +637,5 @@ export {
   deleteDrug,
   getAllDrugsForSpecificInventory,
   getAlternativeDrugsFromAI,
+  updatePromotion,
 };

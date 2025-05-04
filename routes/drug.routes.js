@@ -10,6 +10,7 @@ import {
   getSpecificDrug,
   updateDrug,
   updateDrugImage,
+  updatePromotion,
 } from "../controllers/drug.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -61,5 +62,8 @@ drugRouter
 drugRouter
   .route("/image/:id")
   .put(protectedRoutes, uploadimg.single("imageCover"), updateDrugImage);
+
+
+drugRouter.patch("/:id/promotion", protectedRoutes, updatePromotion);
 
 export default drugRouter;

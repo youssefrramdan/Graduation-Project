@@ -69,7 +69,24 @@ const drugSchema = new Schema(
       ref: "User",
       required: true,
     },
+    promotion: {
+  isActive: {
+    type: Boolean,
+    default: false,
   },
+  buyQuantity: {
+    type: Number,
+    min: [1, "Buy quantity must be at least 1"],
+  },
+  freeQuantity: {
+    type: Number,
+    min: [1, "Free quantity must be at least 1"],
+  },
+},
+
+  },
+  
+
   { timestamps: true }
 );
 /*
