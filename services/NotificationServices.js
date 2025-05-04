@@ -95,3 +95,5 @@ class NotificationService {
 }
 
 export default NotificationService;
+
+// controller ---> database 

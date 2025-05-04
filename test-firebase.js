@@ -4,7 +4,7 @@ import admin from "./firebase/firebase.js";
 dotenv.config({ path: "./config/config.env" });
 
 const testToken =
-  "dsmSn-as6ok1-fjY1Ak8Tq:APA91bHVvwO2qjKSBwYXgx_txuV73oIqbMlUpCC3gRAR8jYnOpVxLWkrCt6aiuat6xv423hhOZARsSLcP4WPE1sviyCrmOn2MZIIFyIq-wMrJ5WaSpSXtmg";
+  "cpxejH2vK1RwXoumhrtwKG:APA91bExzMeZD9sXLX4rF3FDnyBNsINTzDAWqw_zXloyVw6Fiz9mUVVfBtPp2-moLnVnZnW7rQ_xId3Pdsc0JCiG92i6aWkJpLzPQZtxwd69B4s3Il6ZLbQ";
 async function testFirebase() {
   try {
     console.log("starting Firebase...");
