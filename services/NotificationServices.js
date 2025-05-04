@@ -56,15 +56,15 @@ class NotificationService {
     data = {}
   ) {
     try {
-      if (!Array.isArray(deviceTokens) || deviceTokens.length === 0)
-        return null;
-      if (!data.userId) throw new Error("userId is required");
-
       // Save notifications to database
       const notifications = await Promise.all(
-        deviceTokens.map((token) =>
-          UserNotification.create({
-            userId: data.userId,
+        deviceTokens.map((token, index) => {
+          if (!data.userIds || !data.userIds[index]) {
+            console.warn(`No userId found for index ${index}`);
+            return null;
+          }
+          return UserNotification.create({
+            userId: data.userIds[index],
             title,
             body,
             imageUrl,
@@ -74,9 +74,12 @@ class NotificationService {
             isRead: false,
             sentAt: new Date(),
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          })
-        )
+          });
+        })
       );
+
+      // Filter out null notifications
+      const validNotifications = notifications.filter((n) => n !== null);
 
       // Prepare Firebase messages
       const messages = deviceTokens.map((token) => ({
@@ -86,7 +89,10 @@ class NotificationService {
 
       // Send push notifications
       const response = await admin.messaging().sendEach(messages);
-      return { ...response, notificationIds: notifications.map((n) => n._id) };
+      return {
+        ...response,
+        notificationIds: validNotifications.map((n) => n._id),
+      };
     } catch (error) {
       console.error("Error sending multiple notifications:", error);
       throw error;
@@ -96,4 +102,4 @@ class NotificationService {
 
 export default NotificationService;
 
-// controller ---> database 
+// controller ---> database
