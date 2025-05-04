@@ -277,6 +277,7 @@ const activateMe = asyncHandler(async (req, res, next) => {
 
 const getNearestInventories = asyncHandler(async (req, res, next) => {
   const userCoordinates = req.user.location.coordinates;
+  const keyword = req.query.keyword || "";
   const inventories = await UserModel.aggregate([
     {
       $geoNear: {
@@ -284,6 +285,11 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         spherical: true,
         query: { role: "inventory" },
         distanceField: "calcDistance",
+      },
+    },
+    {
+      $match: {
+        name: { $regex: keyword, $options: "i" },
       },
     },
     {
