@@ -44,7 +44,6 @@ const transformOrder = (order) => ({
   createdAt: order.createdAt,
 });
 
-
 /**
  * @desc    Create a new order from cart items for a specific inventory
  * @route   POST /api/v1/orders/cart/:cartId
@@ -81,7 +80,6 @@ const createOrder = asyncHandler(async (req, res, next) => {
   const inventoryItems = cart.inventories.find(
     (item) => item.inventory._id.toString() === inventoryId
   );
-
 
   if (!inventoryItems) {
     return next(new ApiError("Inventory not found in cart", 404));
@@ -180,14 +178,15 @@ const createOrder = asyncHandler(async (req, res, next) => {
  */
 const getMyOrders = asyncHandler(async (req, res) => {
   // Initialize API features for filtering, sorting, and pagination
-  const documentCount = await OrderModel.countDocuments({
-    pharmacy: req.user._id,
-  });
+  let query;
+  if (req.user.role === "inventory") {
+    query = OrderModel.find({ inventory: req.user._id });
+  } else {
+    query = OrderModel.find({ pharmacy: req.user._id });
+  }
 
-  const features = new ApiFeatures(
-    OrderModel.find({ pharmacy: req.user._id }),
-    req.query
-  )
+  const documentCount = await OrderModel.countDocuments(query.getQuery());
+  const features = new ApiFeatures(query, req.query)
     .filter()
     .search(["orderNumber", "status.current"])
     .sort()
@@ -392,7 +391,6 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     data: transformOrder(populatedOrder),
   });
 });
-
 
 export {
   createOrder,

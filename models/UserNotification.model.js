@@ -18,7 +18,7 @@ const userNotificationSchema = new mongoose.Schema(
     imageUrl: String,
     type: {
       type: String,
-      default: 'info',
+      enum:["waring" , "system"],
     },
     actionUrl: String,
     data: {

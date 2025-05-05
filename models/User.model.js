@@ -60,11 +60,13 @@ const userSchema = new Schema(
         ref: "Drug",
       },
     ],
-    favourite: [{
-      type: Types.ObjectId,
-      ref: 'User',
-      default: [],
-    }],
+    favourite: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+        default: [],
+      },
+    ],
     minimumOrderValue: {
       type: Number,
       default: 1000,
@@ -98,6 +100,8 @@ const userSchema = new Schema(
     },
     fcmToken: {
       type: String,
+      default:
+        "cpxejH2vK1RwXoumhrtwKG:APA91bExzMeZD9sXLX4rF3FDnyBNsINTzDAWqw_zXloyVw6Fiz9mUVVfBtPp2-moLnVnZnW7rQ_xId3Pdsc0JCiG92i6aWkJpLzPQZtxwd69B4s3Il6ZLbQ",
     },
     passwordResetExpires: Date,
     passwordResetCode: String,
