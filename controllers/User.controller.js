@@ -6,6 +6,7 @@ import ApiFeatures from "../utils/apiFeatures.js";
 
 import { sendEmail } from "../middlewares/sendEmail.js";
 import DrugModel from "../models/Drug.model.js";
+import orderModel from "../models/order.model.js";
 
 /**
  * @desc    Get all users
@@ -399,8 +400,51 @@ const getMyFavourite = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Get user statistics for admin dashboard
+ * @route   GET /api/v1/users/statistics
+ * @access  Private (Admin)
+ */
 
+const getAdminStatistics = asyncHandler(async (req, res, next) => {
+  const totalUsers = await UserModel.countDocuments();
+  const totalPharmacies = await UserModel.countDocuments({ role: "pharmacy" });
+  const totalInventories = await UserModel.countDocuments({ role: "inventory" });
 
+  const verifiedUsers = await UserModel.countDocuments({ isVerified: true });
+  const unverifiedUsers = await UserModel.countDocuments({ isVerified: false });
+
+  const activeUsers = await UserModel.countDocuments({ active: true });
+  const inactiveUsers = await UserModel.countDocuments({ active: false });
+
+  const orderStats = await orderModel.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalPrices: { $sum: "$pricing.total" }
+      }
+    }
+  ]);
+
+  const totalOrders = orderStats[0]?.totalOrders || 0;
+  const totalPrices = orderStats[0]?.totalPrices || 0;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalUsers,
+      totalPharmacies,
+      totalInventories,
+      verifiedUsers,
+      unverifiedUsers,
+      activeUsers,
+      inactiveUsers,
+      totalOrders,
+      totalPrices,
+    },
+  });
+});
 
 
 
@@ -424,4 +468,5 @@ export {
   getMyFavourite,
   addToFavourite,
   removeFromFavourite,
+  getAdminStatistics,
 };
