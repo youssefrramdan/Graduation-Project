@@ -6,6 +6,7 @@ import ApiFeatures from "../utils/apiFeatures.js";
 
 import { sendEmail } from "../middlewares/sendEmail.js";
 import DrugModel from "../models/Drug.model.js";
+import orderModel from "../models/order.model.js";
 
 /**
  * @desc    Get all users
@@ -411,6 +412,19 @@ const getUserStatistics = asyncHandler(async (req, res, next) => {
   const activeUsers = await UserModel.countDocuments({ active: true });
   const inactiveUsers = await UserModel.countDocuments({ active: false });
 
+  const orderStats = await orderModel.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalPrices: { $sum: "$pricing.total" }
+      }
+    }
+  ]);
+
+  const totalOrders = orderStats[0]?.totalOrders || 0;
+  const totalPrices = orderStats[0]?.totalPrices || 0;
+
   res.status(200).json({
     status: "success",
     data: {
@@ -421,6 +435,8 @@ const getUserStatistics = asyncHandler(async (req, res, next) => {
       unverifiedUsers,
       activeUsers,
       inactiveUsers,
+      totalOrders,
+      totalPrices,
     },
   });
 });
