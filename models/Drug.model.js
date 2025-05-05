@@ -72,35 +72,11 @@ const drugSchema = new Schema(
   },
   { timestamps: true }
 );
-/*
+
 drugSchema.pre("save", function (next) {
   this.discountedPrice = this.price - (this.price * this.discount) / 100;
   next();
 });
-*/
-
-
-
-
-drugSchema.pre("save", async function (next) {
-  const pharmacy = await model("User").findById(this.createdBy);
-
-
-  const baseDiscountedPrice = this.price - (this.price * this.discount) / 100;
-
-  if (pharmacy && pharmacy.offer) {
-    const generalOffer = pharmacy.offer || 0;
-    this.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * generalOffer) / 100;
-  } else {
-    this.discountedPrice = baseDiscountedPrice;
-  }
-
-  next();
-});
-
-
-
-
 
 drugSchema.index({ createdBy: 1 });
 drugSchema.index({ createdBy: 1, price: 1 });

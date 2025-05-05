@@ -64,7 +64,7 @@ const userSchema = new Schema(
       type: Types.ObjectId,
       ref: 'User',
       default: [],
-    }],   
+    }],
     minimumOrderValue: {
       type: Number,
       default: 1000,
@@ -92,7 +92,7 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    offer: {  
+    offer: {
       type: Number,
       default: 0,
     },

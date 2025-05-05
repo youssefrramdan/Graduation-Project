@@ -16,7 +16,6 @@ import {
   removeFromFavourite,
   updateMe,
   updateMyPassword,
-  updateOffer,
   updateUser,
   updateUserImage,
 } from "../controllers/User.controller.js";
@@ -65,7 +64,6 @@ userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
 
-  userRouter.route("/updateoffer").patch(protectedRoutes, updateOffer);
 
 
 
