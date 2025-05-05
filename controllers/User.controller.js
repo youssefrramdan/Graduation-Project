@@ -400,7 +400,30 @@ const getMyFavourite = asyncHandler(async (req, res, next) => {
 });
 
 
+const getUserStatistics = asyncHandler(async (req, res, next) => {
+  const totalUsers = await UserModel.countDocuments();
+  const totalPharmacies = await UserModel.countDocuments({ role: "pharmacy" });
+  const totalInventories = await UserModel.countDocuments({ role: "inventory" });
 
+  const verifiedUsers = await UserModel.countDocuments({ isVerified: true });
+  const unverifiedUsers = await UserModel.countDocuments({ isVerified: false });
+
+  const activeUsers = await UserModel.countDocuments({ active: true });
+  const inactiveUsers = await UserModel.countDocuments({ active: false });
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalUsers,
+      totalPharmacies,
+      totalInventories,
+      verifiedUsers,
+      unverifiedUsers,
+      activeUsers,
+      inactiveUsers,
+    },
+  });
+});
 
 
 
@@ -424,4 +447,5 @@ export {
   getMyFavourite,
   addToFavourite,
   removeFromFavourite,
+  getUserStatistics,
 };
