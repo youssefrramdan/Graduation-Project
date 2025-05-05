@@ -109,11 +109,16 @@ class NotificationService {
         const inventory = await User.findById(drug.createdBy);
         if (!inventory?.fcmToken) return;
 
+        // Calculate days until expiration
+        const daysUntilExpiration = Math.ceil(
+          (drug.expirationDate - new Date()) / (1000 * 60 * 60 * 24)
+        );
+
         // Send notification
         await this.sendNotification(
           inventory.fcmToken,
           "Drug Expiration Alert",
-          `The drug ${drug.name} will expire on ${drug.expirationDate.toLocaleDateString("en-US")}`,
+          `The drug ${drug.name} will expire in ${daysUntilExpiration} days`,
           drug.imageCover[0],
           "warning",
           `/drugs/${drug._id}`,
@@ -123,9 +128,11 @@ class NotificationService {
           }
         );
 
-        // Update drug visibility
-        drug.isVisible = false;
-        await drug.save();
+        // If drug is expired or about to expire (less than 7 days), make it invisible
+        if (daysUntilExpiration <= 7) {
+          drug.isVisible = false;
+          await drug.save();
+        }
       })
     );
 
