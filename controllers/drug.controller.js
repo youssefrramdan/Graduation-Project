@@ -597,6 +597,109 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
 
 
 
+/**
+ * @desc    Add new drug with promotion - Performance optimized
+ * @route   POST /api/v1/drugs
+ * @access  Private (Authenticated users only)
+ */
+const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
+  const { promotion, originalDrugId, ...drugData } = req.body;
+
+  // لازم يكون فيه بروموشن و ID للدواء الأصلي
+  if (promotion && originalDrugId) {
+    const { quantity, freeItems } = promotion;
+
+    // تأكد من صحة بيانات البروموشن
+    if (!quantity || !freeItems) {
+      return next(new ApiError("Invalid promotion data provided.", 400));
+    }
+
+    // هات الدواء الأصلي
+    const originalDrug = await DrugModel.findById(originalDrugId);
+    if (!originalDrug) {
+      return next(new ApiError("Original drug not found.", 404));
+    }
+
+    const originalPrice = originalDrug.price;
+
+    // إنشاء دواء جديد بالبروموشن
+    const promoDrug = {
+      ...drugData,
+      createdBy: req.user._id,
+      promotion: {
+        isActive: true,
+        buyQuantity: quantity,
+        freeQuantity: freeItems,
+      },
+      stock: quantity + freeItems,       // الخصم من المخزون هيكون الكمية الكاملة
+      price: originalPrice*  quantity,              // السعر للوحدة المدفوعة
+      discountedPrice: originalPrice,    // نفس السعر
+      expirationDate: originalDrug.expirationDate,
+      productionDate: originalDrug.productionDate,
+      originType: originalDrug.originType,
+      category: originalDrug.category,
+    };
+
+    const drug = await DrugModel.create(promoDrug);
+
+    // خصم الكمية كاملة (المدفوعة + الفري) من الدواء الأصلي
+    originalDrug.stock -= (quantity + freeItems);
+    await originalDrug.save();
+
+    const totalPromotionPrice = originalPrice * quantity; // حساب السعر بس للمدفوع
+
+    const [populatedDrug, updatedOriginalDrug] = await Promise.all([
+      DrugModel.findById(drug._id).populate({
+        path: "createdBy",
+        select: "name location shippingPrice profileImage",
+      }),
+      DrugModel.findById(originalDrugId),
+    ]);
+
+    res.status(201).json({
+      status: "success",
+      message: "Promotional drug added successfully to your inventory",
+      data: {
+        drug: populatedDrug,
+        originalDrugStock: updatedOriginalDrug.stock,
+        totalPromotionPrice,
+      },
+    });
+  } else {
+    // في حالة مفيش بروموشن
+    const drugDataWithUser = { ...req.body, createdBy: req.user._id };
+    const drug = await DrugModel.create(drugDataWithUser);
+
+    const [populatedDrug, _] = await Promise.all([
+      DrugModel.findById(drug._id).populate({
+        path: "createdBy",
+        select: "name location shippingPrice profileImage",
+      }),
+      UserModel.findByIdAndUpdate(req.user._id, {
+        $push: { drugs: drug._id },
+      }),
+    ]);
+
+    res.status(201).json({
+      status: "success",
+      message: "Drug added successfully to your inventory",
+      data: populatedDrug,
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 const updatePromotion = asyncHandler(async (req, res) => {
@@ -610,8 +713,7 @@ const updatePromotion = asyncHandler(async (req, res) => {
     return res.status(404).json({ success: false, message: "Drug not found" });
   }
 
-  
-
+  // تحديث تفاصيل العرض الترويجي
   drug.promotion = {
     isActive: isActive ?? false,
     buyQuantity: buyQuantity ?? drug.promotion?.buyQuantity,
@@ -638,4 +740,5 @@ export {
   getAllDrugsForSpecificInventory,
   getAlternativeDrugsFromAI,
   updatePromotion,
+  addDrugWithPromotion,
 };

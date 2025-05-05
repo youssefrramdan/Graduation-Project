@@ -7,12 +7,10 @@ const drugSchema = new Schema(
       required: [true, "Drug name is required."],
       trim: true,
     },
-
     manufacturer: {
       type: String,
       trim: true,
     },
-
     description: {
       type: String,
     },
@@ -26,7 +24,6 @@ const drugSchema = new Schema(
       enum: ["Imported", "Local"],
       required: [true, "Origin type is required."],
     },
-
     productionDate: {
       type: Date,
       required: [true, "Production date is required."],
@@ -35,7 +32,6 @@ const drugSchema = new Schema(
       type: Date,
       required: [true, "Expiration date is required."],
     },
-
     price: {
       type: Number,
       required: [true, "Base price is required."],
@@ -47,7 +43,6 @@ const drugSchema = new Schema(
     discountedPrice: {
       type: Number,
     },
-
     stock: {
       type: Number,
       required: [true, "Stock quantity is required."],
@@ -56,68 +51,60 @@ const drugSchema = new Schema(
       type: Number,
       default: 0,
     },
-
     isVisible: {
       type: Boolean,
       default: true,
     },
-
     imageCover: [String],
-
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
     promotion: {
-  isActive: {
-    type: Boolean,
-    default: false,
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      buyQuantity: {
+        type: Number,
+        min: [1, "Buy quantity must be at least 1"],
+      },
+      freeQuantity: {
+        type: Number,
+        min: [1, "Free quantity must be at least 1"],
+      },
+      originalDrugId: {
+        type: Schema.Types.ObjectId,
+        ref: "Drug", 
+      },
+    },
   },
-  buyQuantity: {
-    type: Number,
-    min: [1, "Buy quantity must be at least 1"],
-  },
-  freeQuantity: {
-    type: Number,
-    min: [1, "Free quantity must be at least 1"],
-  },
-},
-
-  },
-  
-
   { timestamps: true }
 );
-/*
-drugSchema.pre("save", function (next) {
-  this.discountedPrice = this.price - (this.price * this.discount) / 100;
-  next();
-});
-*/
 
-
-
-
+// تحديث الخصم بناءً على العرض الترويجي
 drugSchema.pre("save", async function (next) {
-  const pharmacy = await model("User").findById(this.createdBy);
-
-
   const baseDiscountedPrice = this.price - (this.price * this.discount) / 100;
 
-  if (pharmacy && pharmacy.offer) {
-    const generalOffer = pharmacy.offer || 0;
-    this.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * generalOffer) / 100;
+  if (this.promotion.isActive) {
+    // إذا كان العرض الترويجي مفعل، احسب السعر بناءً على الكمية المدفوعة فقط (5 حبات)
+    this.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * this.discount) / 100;
+    
+    // خصم الكمية الإجمالية من المخزون الأصلي عند تفعيل العرض
+    if (this.promotion.originalDrugId) {
+      const originalDrug = await mongoose.model("Drug").findById(this.promotion.originalDrugId);
+      if (originalDrug) {
+        originalDrug.stock -= this.promotion.buyQuantity + this.promotion.freeQuantity; // خصم الكمية الإجمالية
+        await originalDrug.save();
+      }
+    }
   } else {
     this.discountedPrice = baseDiscountedPrice;
   }
 
   next();
 });
-
-
-
-
 
 drugSchema.index({ createdBy: 1 });
 drugSchema.index({ createdBy: 1, price: 1 });

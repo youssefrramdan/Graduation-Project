@@ -2,6 +2,7 @@ import express from "express";
 import {
   addDrug,
   addDrugsFromExcel,
+  addDrugWithPromotion,
   createFilterObject,
   deleteDrug,
   getAllDrugs,
@@ -65,5 +66,9 @@ drugRouter
 
 
 drugRouter.patch("/:id/promotion", protectedRoutes, updatePromotion);
+
+drugRouter.post(
+  "/promotion",protectedRoutes,  addDrugWithPromotion        
+);
 
 export default drugRouter;
