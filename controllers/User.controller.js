@@ -400,8 +400,13 @@ const getMyFavourite = asyncHandler(async (req, res, next) => {
   });
 });
 
+/**
+ * @desc    Get user statistics for admin dashboard
+ * @route   GET /api/v1/users/statistics
+ * @access  Private (Admin)
+ */
 
-const getUserStatistics = asyncHandler(async (req, res, next) => {
+const getAdminStatistics = asyncHandler(async (req, res, next) => {
   const totalUsers = await UserModel.countDocuments();
   const totalPharmacies = await UserModel.countDocuments({ role: "pharmacy" });
   const totalInventories = await UserModel.countDocuments({ role: "inventory" });
@@ -463,5 +468,5 @@ export {
   getMyFavourite,
   addToFavourite,
   removeFromFavourite,
-  getUserStatistics,
+  getAdminStatistics,
 };

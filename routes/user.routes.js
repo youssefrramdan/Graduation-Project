@@ -8,12 +8,12 @@ import {
   createUser,
   deactivateMe,
   deleteUser,
+  getAdminStatistics,
   getAllUsers,
   getMe,
   getMyFavourite,
   getNearestInventories,
   getSpecificUser,
-  getUserStatistics,
   removeFromFavourite,
   updateMe,
   updateMyPassword,
@@ -49,7 +49,7 @@ userRouter.route("/favourite/:inventoryId").delete(protectedRoutes, removeFromFa
 userRouter.route("/favourite").get(protectedRoutes, getMyFavourite);
 
 //statistics routes
-userRouter.route("/statistics").get(protectedRoutes, getUserStatistics);
+userRouter.route("/statistics").get(protectedRoutes, getAdminStatistics);
 
 // admin routes
 userRouter.route("/").get(getAllUsers);
