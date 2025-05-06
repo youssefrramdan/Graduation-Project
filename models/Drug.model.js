@@ -76,36 +76,36 @@ const drugSchema = new Schema(
       },
       originalDrugId: {
         type: Schema.Types.ObjectId,
-        ref: "Drug", 
+        ref: "Drug",
       },
     },
   },
   { timestamps: true }
 );
 
-// تحديث الخصم بناءً على العرض الترويجي
+// Calculate discounted price and handle promotion stock
 drugSchema.pre("save", async function (next) {
-  const baseDiscountedPrice = this.price - (this.price * this.discount) / 100;
+  // Calculate base discounted price
+  this.discountedPrice = this.price - (this.price * (this.discount || 0)) / 100;
 
-  if (this.promotion?.isActive) {
-    this.discountedPrice = baseDiscountedPrice;
+  // Handle promotion logic
+  if (this.promotion?.isActive && this.promotion.originalDrugId) {
+    const originalDrug = await mongoose
+      .model("Drug")
+      .findById(this.promotion.originalDrugId);
 
-    if (this.promotion.originalDrugId) {
-      const originalDrug = await mongoose.model("Drug").findById(this.promotion.originalDrugId);
-      if (originalDrug) {
-        const totalUnits = this.promotion.buyQuantity + this.promotion.freeQuantity;
-        if (originalDrug.stock >= totalUnits) {
-          originalDrug.stock -= totalUnits;
-          await originalDrug.save();
-        } else {
-          return next(new Error("Not enough stock in the original drug for this promotion."));
-        }
-      }
+    if (!originalDrug) {
+      return next(new Error("Original drug not found for promotion"));
     }
-  } else {
-    this.discountedPrice = baseDiscountedPrice;
-  }
 
+    // Validate stock availability
+    const totalUnits = this.promotion.buyQuantity + this.promotion.freeQuantity;
+    if (originalDrug.stock < totalUnits) {
+      return next(
+        new Error("Not enough stock in the original drug for this promotion")
+      );
+    }
+  }
   next();
 });
 

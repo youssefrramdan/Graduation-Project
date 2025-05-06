@@ -37,7 +37,7 @@ const orderSchema = new Schema(
       paidAt: Date,
     },
     status: {
-      current: {    
+      current: {
         type: String,
         enum: [
           "pending",
@@ -67,7 +67,11 @@ const orderSchema = new Schema(
           },
           timestamp: { type: Date, default: Date.now },
           note: String,
-          updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+          updatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+          },
         },
       ],
     },

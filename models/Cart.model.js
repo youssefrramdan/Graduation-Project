@@ -21,7 +21,7 @@ const cartSchema = new Schema(
               required: true,
               min: [1, "Quantity must be at least 1"],
             },
-             // discountedPrice
+            // discountedPrice
             Price: {
               type: Number,
               required: true,
@@ -54,24 +54,17 @@ const cartSchema = new Schema(
 cartSchema.pre("save", function (next) {
   this.inventories.forEach((inventory) => {
     inventory.drugs.forEach((drug) => {
-      const { promotion, quantity } = drug.drug; // بيانات العرض الترويجي
+      const { promotion, quantity } = drug.drug;
       let totalPaidQuantity = quantity;
-
       if (promotion && promotion.isActive) {
-        // إذا كان العرض الترويجي مفعل
-        const freeItems = Math.floor(totalPaidQuantity / promotion.buyQuantity) * promotion.freeQuantity;
-        drug.freeItems = freeItems; // تخزين العناصر المجانية في cart
-
-        totalPaidQuantity -= freeItems; // خفض الكمية المدفوعة بناءً على العرض
+        const freeItems =
+          Math.floor(totalPaidQuantity / promotion.buyQuantity) *
+          promotion.freeQuantity;
+        drug.freeItems = freeItems;
+        totalPaidQuantity -= freeItems;
       }
-
-      // حساب totalDrugPrice بناءً على الكمية المدفوعة فقط
       drug.totalDrugPrice = drug.Price * totalPaidQuantity;
-
-      // إضافة price * quantity (totalDrugPrice) للـ totalInventoryPrice
     });
-
-    // تحديث totalInventoryPrice
     inventory.totalInventoryPrice = inventory.drugs.reduce(
       (total, drug) => total + drug.totalDrugPrice,
       0
@@ -79,6 +72,5 @@ cartSchema.pre("save", function (next) {
   });
   next();
 });
-
 
 export default model("Cart", cartSchema);

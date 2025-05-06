@@ -2,61 +2,25 @@ import asyncHandler from "express-async-handler";
 import CartModel from "../models/Cart.model.js";
 import OrderModel from "../models/order.model.js";
 import ApiError from "../utils/apiError.js";
-import DrugModel from "../models/Drug.model.js";
 import ApiFeatures from "../utils/apiFeatures.js";
-// Shared transform function for order responses
-const transformOrder = (order) => ({
-  _id: order._id,
-  orderNumber: order.orderNumber,
-  status: order.status.current,
-  statusHistory: order.status.history,
-  paymentStatus: order.payment?.status,
-  paymentPaidAt: order.payment?.paidAt,
-  inventory: order.inventory && {
-    _id: order.inventory._id,
-    name: order.inventory.name,
-  },
-  pharmacy: order.pharmacy && {
-    _id: order.pharmacy._id,
-    name: order.pharmacy.name,
-    phone: order.pharmacy.phone,
-  },
-  pricing: {
-    subtotal: order.pricing.subtotal,
-    shippingCost: order.pricing.shippingCost,
-    total: order.pricing.total,
-  },
-  drugs: order.drugs.map((drug) => ({
-    drug: {
-      _id: drug.drug._id,
-      name: drug.drug.name,
-      price: drug.Price,
-    },
-    quantity: drug.quantity,
-    totalPrice: drug.quantity * drug.Price,
-  })),
-  delivery: {
-    address: order.delivery.address,
-    location: order.delivery.location,
-    contactPhone: order.delivery.contactPhone,
-    actualDeliveryDate: order.delivery.actualDeliveryDate,
-  },
-  createdAt: order.createdAt,
-});
+import {
+  transformOrder,
+  validateStockAvailability,
+  updateDrugStock,
+  getPopulatedOrder,
+  handleCartCleanup,
+} from "../services/orderService.js";
 
 /**
  * @desc    Create a new order from cart items for a specific inventory
  * @route   POST /api/v1/orders/cart/:cartId
  * @access  Private/Pharmacy
- * @param   {string} cartId - The ID of the cart
- * @param   {string} inventoryId - The ID of the inventory to order from
- * @returns {Object} Created order with status and data
  */
 const createOrder = asyncHandler(async (req, res, next) => {
   const { cartId } = req.params;
   const { inventoryId } = req.body;
 
-  // Step 1: Find cart and validate ownership
+  // Find cart and validate ownership
   const cart = await CartModel.findOne({
     _id: cartId,
     pharmacy: req.user._id,
@@ -68,7 +32,7 @@ const createOrder = asyncHandler(async (req, res, next) => {
     },
     {
       path: "inventories.drugs.drug",
-      select: "name price",
+      select: "name price promotion",
     },
   ]);
 
@@ -76,7 +40,7 @@ const createOrder = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Cart not found or inventory not in cart", 404));
   }
 
-  // Step 2: Extract inventory items from cart
+  // Extract inventory items from cart
   const inventoryItems = cart.inventories.find(
     (item) => item.inventory._id.toString() === inventoryId
   );
@@ -85,45 +49,35 @@ const createOrder = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Inventory not found in cart", 404));
   }
 
-  // Step 3: Validate stock availability for all drugs
-  const stockCheck = await Promise.all(
-    inventoryItems.drugs.map(async (item) => {
-      const drug = await DrugModel.findById(item.drug._id).select("stock name");
-      return {
-        drug: item.drug._id,
-        name: drug.name,
-        requested: item.quantity,
-        available: drug.stock,
-      };
-    })
+  // Validate stock availability
+  const { isValid, unavailableItems } = await validateStockAvailability(
+    inventoryItems.drugs
   );
 
-  const unavailableItems = stockCheck.filter(
-    (item) => item.requested > item.available
-  );
-  if (unavailableItems.length > 0) {
+  if (!isValid) {
     return next(
       new ApiError(
-        `Some items are out of stock: ${unavailableItems.map((i) => i.name).join(", ")}`,
+        `Some items are out of stock: ${unavailableItems
+          .map((i) => i.name)
+          .join(", ")}`,
         400
       )
     );
   }
 
-  // Step 4: Create the order with all necessary information
+  // Create the order
   const order = await OrderModel.create({
     pharmacy: req.user._id,
     inventory: inventoryId,
-    drugs: inventoryItems.drugs.map((drug) => {
-      // حساب totalPrice بناءً على السعر المدفوع
-      const totalPrice = drug.paidQuantity * drug.Price;
-      return {
-        drug: drug.drug._id,
-        quantity: drug.quantity,
-        Price: drug.Price,
-        totalPrice: totalPrice, // إضافة totalPrice هنا
-      };
-    }),
+    drugs: inventoryItems.drugs.map((drug) => ({
+      drug: drug.drug._id,
+      quantity: drug.totalDelivered,
+      paidQuantity: drug.paidQuantity,
+      freeItems: drug.freeItems,
+      totalDelivered: drug.totalDelivered,
+      price: drug.Price,
+      totalPrice: drug.totalDrugPrice,
+    })),
     pricing: {
       subtotal: inventoryItems.totalInventoryPrice,
       shippingCost: inventoryItems.inventory.shippingPrice || 0,
@@ -138,36 +92,20 @@ const createOrder = asyncHandler(async (req, res, next) => {
     },
   });
 
-  // Step 5: Update inventory stock and cart in parallel
+  // Update inventory stock and cart in parallel
   await Promise.all([
-    // Update drug stock levels
-    ...inventoryItems.drugs.map((item) =>
-      DrugModel.updateOne(
-        { _id: item.drug._id },
-        { $inc: { stock: -item.quantity } }
-      )
-    ),
-    // Remove ordered items from cart
+    updateDrugStock(inventoryItems.drugs),
     CartModel.updateOne(
       { _id: cartId },
       { $pull: { inventories: { inventory: inventoryId } } }
     ),
   ]);
 
-  // Recalculate cart totals after removing items
-  const updatedCart = await CartModel.findById(cartId);
-  if (updatedCart && updatedCart.inventories.length > 0) {
-    //calcToCart()
-    await updatedCart.save();
-  } else if (updatedCart) {
-    await CartModel.findByIdAndDelete(cartId);
-  }
+  // Handle cart cleanup
+  await handleCartCleanup(cartId);
 
-  // Return populated order with all necessary details
-  const populatedOrder = await OrderModel.findById(order._id)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price");
+  // Return populated order
+  const populatedOrder = await getPopulatedOrder(order._id);
 
   res.status(201).json({
     status: "success",
@@ -175,15 +113,12 @@ const createOrder = asyncHandler(async (req, res, next) => {
   });
 });
 
-
 /**
  * @desc    Get all orders for the logged-in pharmacy
  * @route   GET /api/v1/orders/my-orders
  * @access  Private/Pharmacy
- * @returns {Object} Orders list with pagination
  */
 const getMyOrders = asyncHandler(async (req, res) => {
-  // Initialize API features for filtering, sorting, and pagination
   let query;
   if (req.user.role === "inventory") {
     query = OrderModel.find({ inventory: req.user._id });
@@ -198,9 +133,8 @@ const getMyOrders = asyncHandler(async (req, res) => {
     .sort()
     .limitFields();
 
-  // Apply pagination after other operations
   await features.paginate(documentCount);
-  // Get orders with populated data - include all necessary fields
+
   const orders = await features.mongooseQuery
     .select("orderNumber status payment pricing delivery drugs createdAt")
     .populate({
@@ -209,12 +143,11 @@ const getMyOrders = asyncHandler(async (req, res) => {
     })
     .populate({
       path: "drugs.drug",
-      select: "name price discountedPrice",
+      select: "name price promotion",
     })
     .lean();
-  // Use shared transform function
-  const transformedOrders = orders.map(transformOrder);
 
+  const transformedOrders = orders.map(transformOrder);
   const paginationResult = features.getPaginationResult();
 
   res.status(200).json({
@@ -228,19 +161,14 @@ const getMyOrders = asyncHandler(async (req, res) => {
  * @desc    Get specific order details
  * @route   GET /api/v1/orders/:id
  * @access  Private/Pharmacy-Inventory
- * @param   {string} id - Order ID
- * @returns {Object} Order details
  */
 const getOrder = asyncHandler(async (req, res, next) => {
-  // Get order with related data
-  const order = await OrderModel.findById(req.params.id)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price discountedPrice");
+  const order = await getPopulatedOrder(req.params.id);
 
   if (!order) {
     return next(new ApiError("Order not found", 404));
   }
+
   res.status(200).json({
     status: "success",
     data: transformOrder(order),
@@ -251,10 +179,6 @@ const getOrder = asyncHandler(async (req, res, next) => {
  * @desc    Update order status
  * @route   PATCH /api/v1/orders/:id/status
  * @access  Private/Inventory
- * @param   {string} id - Order ID
- * @param   {string} status - New status
- * @param   {string} note - Status change note
- * @returns {Object} Updated order
  */
 const updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
@@ -265,7 +189,6 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Order not found", 404));
   }
 
-  // Validate status transition
   if (!order.canTransitionTo(status)) {
     return next(
       new ApiError(
@@ -274,7 +197,7 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
       )
     );
   }
-  // Update order status and handle related changes
+
   order.updateStatus(status, note, req.user._id);
 
   if (status === "delivered") {
@@ -284,11 +207,9 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
       order.payment.paidAt = new Date();
     }
   }
+
   await order.save();
-  const populatedOrder = await OrderModel.findById(order._id)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price discountedPrice");
+  const populatedOrder = await getPopulatedOrder(order._id);
 
   res.status(200).json({
     status: "success",
@@ -300,23 +221,21 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
  * @desc    Cancel an order
  * @route   PATCH /api/v1/orders/:id/cancel
  * @access  Private/Pharmacy
- * @param   {string} id - Order ID
- * @param   {string} reason - Cancellation reason
- * @returns {Object} Updated order
  */
 const cancelOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
-  // Find order that can be cancelled
+
   if (req.user.role === "inventory") {
     return next(new ApiError("You can't do this action ..."));
   }
+
   const order = await OrderModel.findOne({
     _id: id,
     pharmacy: req.user._id,
     "status.current": { $in: ["pending", "confirmed"] },
   });
-  console.log(order);
+
   if (!order) {
     return next(
       new ApiError(
@@ -325,23 +244,12 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
       )
     );
   }
-  // Update order status to cancelled
-  order.updateStatus("cancelled", reason, req.user._id);
 
-  // Restore inventory stock
-  await Promise.all(
-    order.drugs.map((item) =>
-      DrugModel.updateOne(
-        { _id: item.drug },
-        { $inc: { stock: item.quantity } }
-      )
-    )
-  );
+  order.updateStatus("cancelled", reason, req.user._id);
+  await updateDrugStock(order.drugs, true);
   await order.save();
-  const populatedOrder = await OrderModel.findById(order._id)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price discountedPrice");
+
+  const populatedOrder = await getPopulatedOrder(order._id);
 
   res.status(200).json({
     status: "success",
@@ -353,23 +261,20 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
  * @desc    Reject an order
  * @route   PATCH /api/v1/orders/:id/reject
  * @access  Private/Inventory
- * @param   {string} id - Order ID
- * @body   {string} reason - Rejection reason
- * @returns {Object} Updated order
  */
-
 const rejectOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
+
   if (req.user.role === "pharmacy") {
     return next(new ApiError("You can't do this action ..."));
   }
+
   const order = await OrderModel.findOne({
     _id: id,
-
     "status.current": { $in: ["pending", "confirmed"] },
   });
-  console.log("Order ID:", id);
+
   if (!order) {
     return next(
       new ApiError(
@@ -379,24 +284,11 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
     );
   }
 
-  //
   order.updateStatus("rejected", reason, req.user._id);
-
-  await Promise.all(
-    order.drugs.map((item) =>
-      DrugModel.updateOne(
-        { _id: item.drug },
-        { $inc: { stock: item.quantity } }
-      )
-    )
-  );
-
+  await updateDrugStock(order.drugs, true);
   await order.save();
 
-  const populatedOrder = await OrderModel.findById(order._id)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price discountedPrice");
+  const populatedOrder = await getPopulatedOrder(order._id);
 
   res.status(200).json({
     status: "success",
