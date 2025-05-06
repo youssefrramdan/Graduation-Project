@@ -50,7 +50,7 @@ userRouter.route("/favourite/:inventoryId").delete(protectedRoutes, removeFromFa
 userRouter.route("/favourite").get(protectedRoutes, getMyFavourite);
 
 //statistics routes
-userRouter.route("/statistics").get(protectedRoutes, getAdminStatistics);
+userRouter.route("/statisticsAdmin").get(protectedRoutes, getAdminStatistics);
 userRouter.route("/statisticsInventory").get(protectedRoutes, getInventoryStatistics);
 
 // admin routes

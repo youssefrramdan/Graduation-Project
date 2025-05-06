@@ -362,10 +362,9 @@ const removeFromFavourite = asyncHandler(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "Inventory removed from favourite",
-    data : pharmacy.favourite,
+    data: pharmacy.favourite,
   });
 });
-
 
 /**
  * @desc    Get all inventories in pharmacy favourite
@@ -385,7 +384,7 @@ const getMyFavourite = asyncHandler(async (req, res, next) => {
       _id: 1,
       name: 1,
       ownerName: 1,
-      minimumOrderValue :1,
+      minimumOrderValue: 1,
       phone: 1,
       profileImage: 1,
       city: 1,
@@ -396,20 +395,22 @@ const getMyFavourite = asyncHandler(async (req, res, next) => {
 
   res.status(200).json({
     message: "success",
-    data:inventories,
+    data: inventories,
   });
 });
 
 /**
  * @desc    Get user statistics for admin dashboard
- * @route   GET /api/v1/users/statistics
+ * @route   GET /api/v1/users/statisticsAdmin
  * @access  Private (Admin)
  */
 
 const getAdminStatistics = asyncHandler(async (req, res, next) => {
   const totalUsers = await UserModel.countDocuments();
   const totalPharmacies = await UserModel.countDocuments({ role: "pharmacy" });
-  const totalInventories = await UserModel.countDocuments({ role: "inventory" });
+  const totalInventories = await UserModel.countDocuments({
+    role: "inventory",
+  });
 
   const verifiedUsers = await UserModel.countDocuments({ isVerified: true });
   const unverifiedUsers = await UserModel.countDocuments({ isVerified: false });
@@ -422,54 +423,55 @@ const getAdminStatistics = asyncHandler(async (req, res, next) => {
       $group: {
         _id: null,
         totalOrders: { $sum: 1 },
-        totalPrices: { $sum: "$pricing.total" }
-      }
-    }
+        totalPrices: { $sum: "$pricing.total" },
+      },
+    },
   ]);
 
   const totalOrders = orderStats[0]?.totalOrders || 0;
   const totalPrices = orderStats[0]?.totalPrices || 0;
 
-// Top 10 Inventories
-const topInventories = await orderModel.aggregate([
-  {
-    $group: {
-      _id: "$inventory",
-      totalSales: { $sum: "$pricing.total" },
-      orderCount: { $sum: 1 }
-    }
-  },
-  { $sort: { totalSales: -1 } },
-  { $limit: 10 },
-  {
-    $lookup: {
-      from: "users",
-      let: { inventoryId: "$_id" },
-      pipeline: [
-        { $match: {
-            $expr: { $eq: ["$_id", "$$inventoryId"] },
-            role: "inventory"
-        }}
-      ],
-      as: "inventoryInfo"
-    }
-  },
-  {
-    $unwind: "$inventoryInfo"
-  },
-  {
-    $project: {
-      _id: 1,
-      totalSales: 1,
-      orderCount: 1,
-      inventoryName: "$inventoryInfo.name",
-      email: "$inventoryInfo.email",      
-      phone: "$inventoryInfo.phone",      
-      address: "$inventoryInfo.address", 
-    }
-  }
-]);
-
+  // Top 10 Inventories
+  const topInventories = await orderModel.aggregate([
+    {
+      $group: {
+        _id: "$inventory",
+        totalSales: { $sum: "$pricing.total" },
+        orderCount: { $sum: 1 },
+      },
+    },
+    { $sort: { totalSales: -1 } },
+    { $limit: 10 },
+    {
+      $lookup: {
+        from: "users",
+        let: { inventoryId: "$_id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$_id", "$$inventoryId"] },
+              role: "inventory",
+            },
+          },
+        ],
+        as: "inventoryInfo",
+      },
+    },
+    {
+      $unwind: "$inventoryInfo",
+    },
+    {
+      $project: {
+        _id: 1,
+        totalSales: 1,
+        orderCount: 1,
+        inventoryName: "$inventoryInfo.name",
+        email: "$inventoryInfo.email",
+        phone: "$inventoryInfo.phone",
+        address: "$inventoryInfo.address",
+      },
+    },
+  ]);
 
   res.status(200).json({
     status: "success",
@@ -490,7 +492,7 @@ const topInventories = await orderModel.aggregate([
 
 /**
  * @desc    Get inventory statistics for individual inventory dashboard
- * @route   GET /api/v1/users/dashboard
+ * @route   GET /api/v1/users/statisticsInventory
  * @access  Private (Inventory)
  */
 
@@ -499,12 +501,20 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
   const now = new Date();
   const oneMonthLater = new Date(now.setMonth(now.getMonth() + 1));
 
-  const [totalOrders, totalSalesAgg, totalDrugs, lowStockDrugsCount, totalSoldAndStock, orderStatuses, categoriesStats] = await Promise.all([
+  const [
+    totalOrders,
+    totalSalesAgg,
+    totalDrugs,
+    lowStockDrugsCount,
+    totalSoldAndStock,
+    orderStatuses,
+    categoriesStats,
+  ] = await Promise.all([
     orderModel.countDocuments({ inventory: userId }),
 
     orderModel.aggregate([
       { $match: { inventory: userId } },
-      { $group: { _id: null, totalSales: { $sum: "$pricing.total" } } }
+      { $group: { _id: null, totalSales: { $sum: "$pricing.total" } } },
     ]),
 
     DrugModel.countDocuments({ createdBy: userId }),
@@ -517,9 +527,9 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
         $group: {
           _id: null,
           totalSold: { $sum: "$sold" },
-          totalStock: { $sum: "$stock" }
-        }
-      }
+          totalStock: { $sum: "$stock" },
+        },
+      },
     ]),
 
     orderModel.aggregate([
@@ -527,12 +537,12 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
       {
         $group: {
           _id: "$status.current",
-          count: { $sum: 1 }
-        }
+          count: { $sum: 1 },
+        },
       },
       {
-        $project: { _id: 0, status: "$_id", count: 1 }
-      }
+        $project: { _id: 0, status: "$_id", count: 1 },
+      },
     ]),
 
     DrugModel.aggregate([
@@ -543,22 +553,18 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
           totalStockInCategory: { $sum: "$stock" },
           nearExpirationCount: {
             $sum: {
-              $cond: [
-                { $lt: ["$expirationDate", oneMonthLater] },
-                1,
-                0
-              ]
-            }
-          }
-        }
+              $cond: [{ $lt: ["$expirationDate", oneMonthLater] }, 1, 0],
+            },
+          },
+        },
       },
       {
         $lookup: {
           from: "categories",
           localField: "_id",
           foreignField: "_id",
-          as: "categoryInfo"
-        }
+          as: "categoryInfo",
+        },
       },
       { $unwind: "$categoryInfo" },
       {
@@ -566,10 +572,10 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
           categoryName: "$categoryInfo.name",
           totalStockInCategory: 1,
           nearExpirationCount: 1,
-          _id: 1
-        }
-      }
-    ])
+          _id: 1,
+        },
+      },
+    ]),
   ]);
 
   const totalSales = totalSalesAgg[0]?.totalSales || 0;
@@ -591,12 +597,10 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
       lowStockDrugs: lowStockDrugsCount,
       soldPercentage,
       orderStatuses: statusCounts,
-      categoriesStats
-    }
+      categoriesStats,
+    },
   });
 });
-
-
 
 export {
   getAllUsers,
