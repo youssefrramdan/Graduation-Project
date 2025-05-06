@@ -47,14 +47,8 @@ export const addOrUpdateDrugInCart = async (
   inventoryId,
   quantity
 ) => {
-  const { freeItems, paidQuantity, totalDelivered } = calculatePromotionalItems(
-    drug,
-    quantity
-  );
-  const { unitPrice, totalDrugPrice } = calculateDrugPriceDetails(
-    drug,
-    paidQuantity
-  );
+  const { freeItems, paidQuantity, totalDelivered } = calculatePromotionalItems(drug,quantity);
+  const { unitPrice, totalDrugPrice } = calculateDrugPriceDetails(drug,paidQuantity);
 
   const inventoryIndex = cart.inventories.findIndex((item) =>
     item.inventory.equals(inventoryId)
