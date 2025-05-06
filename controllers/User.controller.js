@@ -490,7 +490,7 @@ const topInventories = await orderModel.aggregate([
 
 /**
  * @desc    Get inventory statistics for individual inventory dashboard
- * @route   GET /api/v1/inventories/dashboard
+ * @route   GET /api/v1/users/dashboard
  * @access  Private (Inventory)
  */
 
