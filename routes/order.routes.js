@@ -8,26 +8,54 @@ import {
   cancelOrder,
   rejectOrder,
 } from "../controllers/order.controller.js";
+import {
+  createOrderValidator,
+  updateOrderStatusValidator,
+  cancelOrderValidator,
+  rejectOrderValidator,
+} from "../utils/validators/orderValidation.js";
 
 const orderRouter = express.Router();
 
 // Protect all routes
 orderRouter.use(protectedRoutes);
 
-// Pharmacy order routes
-orderRouter.route("/cart/:cartId").post(createOrder);
-orderRouter.route("/my-orders").get(getMyOrders);
+// Create order from cart
+orderRouter.post(
+  "/cart/:cartId",
+  allowTo("pharmacy"),
+  createOrderValidator,
+  createOrder
+);
 
-// Specific order routes
-orderRouter.route("/:id").get(getOrder);
+// Get all orders for logged-in user
+orderRouter.get("/my-orders", allowTo("pharmacy", "inventory"), getMyOrders);
+
+// Get specific order
+orderRouter.get("/:id", allowTo("pharmacy", "inventory"), getOrder);
 
 // Update order status
-orderRouter.route("/:id/status").patch(updateOrderStatus);
+orderRouter.patch(
+  "/:id/status",
+  allowTo("inventory"),
+  updateOrderStatusValidator,
+  updateOrderStatus
+);
 
 // Cancel order
-orderRouter.route("/:id/cancel").patch(cancelOrder);
+orderRouter.patch(
+  "/:id/cancel",
+  allowTo("pharmacy"),
+  cancelOrderValidator,
+  cancelOrder
+);
 
-// reject order
-orderRouter.route("/:id/reject").patch(rejectOrder);
+// Reject order
+orderRouter.patch(
+  "/:id/reject",
+  allowTo("inventory"),
+  rejectOrderValidator,
+  rejectOrder
+);
 
 export default orderRouter;

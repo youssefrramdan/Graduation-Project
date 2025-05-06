@@ -19,51 +19,7 @@ import {
 const createOrder = asyncHandler(async (req, res, next) => {
   const { cartId } = req.params;
   const { inventoryId } = req.body;
-
-  // Find cart and validate ownership
-  const cart = await CartModel.findOne({
-    _id: cartId,
-    pharmacy: req.user._id,
-    "inventories.inventory": inventoryId,
-  }).populate([
-    {
-      path: "inventories.inventory",
-      select: "name shippingPrice",
-    },
-    {
-      path: "inventories.drugs.drug",
-      select: "name price promotion",
-    },
-  ]);
-
-  if (!cart) {
-    return next(new ApiError("Cart not found or inventory not in cart", 404));
-  }
-
-  // Extract inventory items from cart
-  const inventoryItems = cart.inventories.find(
-    (item) => item.inventory._id.toString() === inventoryId
-  );
-
-  if (!inventoryItems) {
-    return next(new ApiError("Inventory not found in cart", 404));
-  }
-
-  // Validate stock availability
-  const { isValid, unavailableItems } = await validateStockAvailability(
-    inventoryItems.drugs
-  );
-
-  if (!isValid) {
-    return next(
-      new ApiError(
-        `Some items are out of stock: ${unavailableItems
-          .map((i) => i.name)
-          .join(", ")}`,
-        400
-      )
-    );
-  }
+  const { cart, inventoryItems } = req;
 
   // Create the order
   const order = await OrderModel.create({
@@ -181,22 +137,8 @@ const getOrder = asyncHandler(async (req, res, next) => {
  * @access  Private/Inventory
  */
 const updateOrderStatus = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
   const { status, note } = req.body;
-
-  const order = await OrderModel.findById(id);
-  if (!order) {
-    return next(new ApiError("Order not found", 404));
-  }
-
-  if (!order.canTransitionTo(status)) {
-    return next(
-      new ApiError(
-        `Cannot change status from ${order.status.current} to ${status}`,
-        400
-      )
-    );
-  }
+  const { order } = req;
 
   order.updateStatus(status, note, req.user._id);
 
@@ -223,27 +165,8 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
  * @access  Private/Pharmacy
  */
 const cancelOrder = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
   const { reason } = req.body;
-
-  if (req.user.role === "inventory") {
-    return next(new ApiError("You can't do this action ..."));
-  }
-
-  const order = await OrderModel.findOne({
-    _id: id,
-    pharmacy: req.user._id,
-    "status.current": { $in: ["pending", "confirmed"] },
-  });
-
-  if (!order) {
-    return next(
-      new ApiError(
-        "Order not found or cannot be cancelled at current status",
-        404
-      )
-    );
-  }
+  const { order } = req;
 
   order.updateStatus("cancelled", reason, req.user._id);
   await updateDrugStock(order.drugs, true);
@@ -263,26 +186,8 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
  * @access  Private/Inventory
  */
 const rejectOrder = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
   const { reason } = req.body;
-
-  if (req.user.role === "pharmacy") {
-    return next(new ApiError("You can't do this action ..."));
-  }
-
-  const order = await OrderModel.findOne({
-    _id: id,
-    "status.current": { $in: ["pending", "confirmed"] },
-  });
-
-  if (!order) {
-    return next(
-      new ApiError(
-        "Order not found or cannot be rejected at current status",
-        404
-      )
-    );
-  }
+  const { order } = req;
 
   order.updateStatus("rejected", reason, req.user._id);
   await updateDrugStock(order.drugs, true);

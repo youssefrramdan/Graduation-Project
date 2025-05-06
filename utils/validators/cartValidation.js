@@ -1,72 +1,10 @@
 import { check } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
-import DrugModel from "../../models/Drug.model.js";
 import CartModel from "../../models/Cart.model.js";
-
-// Validator to check drug availability and get drug details
-const checkDrugAvailability = async (drugId, quantity, req) => {
-  // Get drug with necessary details
-  const drug = await DrugModel.findById(drugId)
-    .populate("createdBy")
-    .select("price discountedPrice stock createdBy status");
-
-  if (!drug) {
-    throw new Error("Drug not found");
-  }
-
-  // Check stock
-  if (!drug.stock || drug.stock === 0) {
-    throw new Error("Drug is out of stock");
-  }
-
-  if (drug.stock < quantity) {
-    throw new Error(`Only ${drug.stock} items available from this drug`);
-  }
-
-  // Check if pharmacy is trying to add their own drug
-  if (req.user._id.equals(drug.createdBy._id)) {
-    throw new Error("Cannot add your own drugs to cart");
-  }
-
-  return drug;
-};
-
-// Check total quantity in cart for a specific drug
-const checkCartQuantity = async (
-  drugId,
-  newQuantity,
-  pharmacyId,
-  drugStock
-) => {
-  const existingCart = await CartModel.findOne({
-    pharmacy: pharmacyId,
-    "inventories.drugs.drug": drugId,
-  });
-
-  if (existingCart) {
-    const currentQuantity = existingCart.inventories.reduce(
-      (total, inventory) => {
-        const drugItem = inventory.drugs.find(
-          (d) => d.drug.toString() === drugId
-        );
-        return total + (drugItem ? drugItem.quantity : 0);
-      },
-      0
-    );
-
-    const totalQuantity = currentQuantity + newQuantity;
-
-    if (totalQuantity > drugStock) {
-      throw new Error(
-        `Cannot add ${newQuantity} units. You already have ${currentQuantity} units in cart. Maximum available: ${drugStock}`
-      );
-    }
-
-    return { existingCart, currentQuantity };
-  }
-
-  return { existingCart: null, currentQuantity: 0 };
-};
+import {
+  validateDrugAvailability,
+  checkCartQuantity,
+} from "../../services/cartService.js";
 
 export const addToCartValidator = [
   check("drugId")
@@ -78,7 +16,11 @@ export const addToCartValidator = [
       const quantity = req.body.quantity || 0;
 
       // Check drug availability and get details
-      const drug = await checkDrugAvailability(drugId, quantity, req);
+      const drug = await validateDrugAvailability(
+        drugId,
+        quantity,
+        req.user._id
+      );
 
       // Check cart quantity
       await checkCartQuantity(drugId, quantity, req.user._id, drug.stock);
@@ -107,7 +49,11 @@ export const updateCartQuantityValidator = [
       const quantity = req.body.quantity || 0;
 
       // Check drug availability and get details
-      const drug = await checkDrugAvailability(drugId, quantity, req);
+      const drug = await validateDrugAvailability(
+        drugId,
+        quantity,
+        req.user._id
+      );
 
       // Check if drug exists in cart
       const cart = await CartModel.findOne({
