@@ -1,10 +1,10 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const userNotificationSchema = new mongoose.Schema(
   {
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     title: {
@@ -18,7 +18,7 @@ const userNotificationSchema = new mongoose.Schema(
     imageUrl: String,
     type: {
       type: String,
-      enum:["waring" , "system"],
+      default: "info",
     },
     actionUrl: String,
     data: {
@@ -43,4 +43,4 @@ const userNotificationSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model('UserNotification', userNotificationSchema);
+export default mongoose.model("UserNotification", userNotificationSchema);
