@@ -430,6 +430,47 @@ const getAdminStatistics = asyncHandler(async (req, res, next) => {
   const totalOrders = orderStats[0]?.totalOrders || 0;
   const totalPrices = orderStats[0]?.totalPrices || 0;
 
+// Top 10 Inventories
+const topInventories = await orderModel.aggregate([
+  {
+    $group: {
+      _id: "$inventory",
+      totalSales: { $sum: "$pricing.total" },
+      orderCount: { $sum: 1 }
+    }
+  },
+  { $sort: { totalSales: -1 } },
+  { $limit: 10 },
+  {
+    $lookup: {
+      from: "users",
+      let: { inventoryId: "$_id" },
+      pipeline: [
+        { $match: {
+            $expr: { $eq: ["$_id", "$$inventoryId"] },
+            role: "inventory"
+        }}
+      ],
+      as: "inventoryInfo"
+    }
+  },
+  {
+    $unwind: "$inventoryInfo"
+  },
+  {
+    $project: {
+      _id: 1,
+      totalSales: 1,
+      orderCount: 1,
+      inventoryName: "$inventoryInfo.name",
+      email: "$inventoryInfo.email",      
+      phone: "$inventoryInfo.phone",      
+      address: "$inventoryInfo.address", 
+    }
+  }
+]);
+
+
   res.status(200).json({
     status: "success",
     data: {
@@ -442,6 +483,7 @@ const getAdminStatistics = asyncHandler(async (req, res, next) => {
       inactiveUsers,
       totalOrders,
       totalPrices,
+      topInventories,
     },
   });
 });
