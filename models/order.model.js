@@ -37,7 +37,7 @@ const orderSchema = new Schema(
       paidAt: Date,
     },
     status: {
-      current: {
+      current: {    
         type: String,
         enum: [
           "pending",

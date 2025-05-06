@@ -13,6 +13,8 @@ import drugRouter from "./routes/drug.routes.js";
 import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import categoryRouter from "./routes/category.routes.js";
+import notificationRouter from "./routes/notification.routes.js";
+import "./jobs/drugExpirationJob.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -44,6 +46,7 @@ app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/drugs", drugRouter);
 app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/cart", cartRouter);
+app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/orders", orderRouter);
 
 app.get("/ping", (req, res) => {

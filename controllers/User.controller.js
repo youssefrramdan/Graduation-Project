@@ -6,6 +6,7 @@ import ApiFeatures from "../utils/apiFeatures.js";
 
 import { sendEmail } from "../middlewares/sendEmail.js";
 import DrugModel from "../models/Drug.model.js";
+import orderModel from "../models/order.model.js";
 
 /**
  * @desc    Get all users
@@ -277,6 +278,7 @@ const activateMe = asyncHandler(async (req, res, next) => {
 
 const getNearestInventories = asyncHandler(async (req, res, next) => {
   const userCoordinates = req.user.location.coordinates;
+  const keyword = req.query.keyword || "";
   const inventories = await UserModel.aggregate([
     {
       $geoNear: {
@@ -284,6 +286,11 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
         spherical: true,
         query: { role: "inventory" },
         distanceField: "calcDistance",
+      },
+    },
+    {
+      $match: {
+        name: { $regex: keyword, $options: "i" },
       },
     },
     {
@@ -307,11 +314,11 @@ const getNearestInventories = asyncHandler(async (req, res, next) => {
 });
 
 /**
- * @desc    Add inventory to pharmacy wishlist
- * @route   POST /api/v1/users/wishlist/:inventoryId
+ * @desc    Add inventory to pharmacy favourite
+ * @route   POST /api/v1/users/favourite/:inventoryId
  * @access  Private
  */
-const addToWishlist = asyncHandler(async (req, res, next) => {
+const addToFavourite = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user._id;
   const { inventoryId } = req.params;
   const pharmacy = await UserModel.findById(pharmacyId);
@@ -320,53 +327,58 @@ const addToWishlist = asyncHandler(async (req, res, next) => {
   if (!inventory || inventory.role !== "inventory") {
     return next(new ApiError("Inventory not found", 404));
   }
-  if (pharmacy.wishlist.includes(inventoryId)) {
-    return next(new ApiError("Inventory already in wishlist", 400));
+  if (pharmacy.favourite.includes(inventoryId)) {
+    return next(new ApiError("Inventory already in favourite", 400));
   }
 
-  pharmacy.wishlist.push(inventoryId);
+  pharmacy.favourite.push(inventoryId);
   await pharmacy.save();
 
   res.status(200).json({
     status: "success",
-    message: "Inventory added to wishlist",
-    data: pharmacy.wishlist,
+    message: "Inventory added to favourite",
+    data: pharmacy.favourite,
   });
 });
 
 /**
- * @desc    Remove inventory from pharmacy wishlist
- * @route   DELETE /api/v1/users/wishlist/:inventoryId
+ * @desc    Remove inventory from pharmacy favourite
+ * @route   DELETE /api/v1/users/favourite/:inventoryId
  * @access  Private (Pharmacy)
  */
 
-const removeFromWishlist = asyncHandler(async (req, res, next) => {
+const removeFromFavourite = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user._id;
   const { inventoryId } = req.params;
   const pharmacy = await UserModel.findById(pharmacyId);
-  const index = pharmacy.wishlist.indexOf(inventoryId);
+  const index = pharmacy.favourite.indexOf(inventoryId);
   if (index === -1) {
-    return next(new ApiError("Inventory not found in wishlist", 404));
+    return next(new ApiError("Inventory not found in favourite", 404));
   }
 
-  pharmacy.wishlist.splice(index, 1);
+  pharmacy.favourite.splice(index, 1);
   await pharmacy.save();
 
   res.status(200).json({
     status: "success",
-    message: "Inventory removed from wishlist",
-    data : pharmacy.wishlist,
+    message: "Inventory removed from favourite",
+    data : pharmacy.favourite,
   });
 });
 
 
+/**
+ * @desc    Get all inventories in pharmacy favourite
+ * @route   GET /api/v1/users/favourite
+ * @access  Private (Pharmacy)
+ */
 
-const getMyWishlist = asyncHandler(async (req, res, next) => {
+const getMyFavourite = asyncHandler(async (req, res, next) => {
   const pharmacyId = req.user._id;
   const pharmacy = await UserModel.findById(pharmacyId);
   const inventories = await UserModel.find(
     {
-      _id: { $in: pharmacy.wishlist },
+      _id: { $in: pharmacy.favourite },
       role: "inventory",
     },
     {
@@ -388,55 +400,93 @@ const getMyWishlist = asyncHandler(async (req, res, next) => {
   });
 });
 
-
-
-
 /**
- * @desc    updateOffer
- * @route   PUT /api/v1/users/updateOffer
- * @access  Private
+ * @desc    Get user statistics for admin dashboard
+ * @route   GET /api/v1/users/statistics
+ * @access  Private (Admin)
  */
 
-const updateOffer = asyncHandler(async (req, res) => {
-  try {
-    const userId= req.user._id;
-    const  offer  =  req.body.offer; 
+const getAdminStatistics = asyncHandler(async (req, res, next) => {
+  const totalUsers = await UserModel.countDocuments();
+  const totalPharmacies = await UserModel.countDocuments({ role: "pharmacy" });
+  const totalInventories = await UserModel.countDocuments({ role: "inventory" });
 
-    
-    if (offer === undefined || offer === null) {
-      return res.status(400).json({ success: false, message: "not vaild offer" });
+  const verifiedUsers = await UserModel.countDocuments({ isVerified: true });
+  const unverifiedUsers = await UserModel.countDocuments({ isVerified: false });
+
+  const activeUsers = await UserModel.countDocuments({ active: true });
+  const inactiveUsers = await UserModel.countDocuments({ active: false });
+
+  const orderStats = await orderModel.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalPrices: { $sum: "$pricing.total" }
+      }
     }
+  ]);
 
-    const inventory = await UserModel.findById(userId);  
+  const totalOrders = orderStats[0]?.totalOrders || 0;
+  const totalPrices = orderStats[0]?.totalPrices || 0;
 
-    if (!inventory) {
-      return res.status(404).json({ success: false, message: "inventory not found" });
+// Top 10 Inventories
+const topInventories = await orderModel.aggregate([
+  {
+    $group: {
+      _id: "$inventory",
+      totalSales: { $sum: "$pricing.total" },
+      orderCount: { $sum: 1 }
     }
-
-  
-    inventory.offer = offer;
-    await inventory.save();
-
-
-    const drugs = await DrugModel.find({ createdBy: userId }); 
-    for (let drug of drugs) {
- 
-      const baseDiscountedPrice = drug.price - (drug.price * drug.discount) / 100;
-      drug.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * offer) / 100;
-      await drug.save();
+  },
+  { $sort: { totalSales: -1 } },
+  { $limit: 10 },
+  {
+    $lookup: {
+      from: "users",
+      let: { inventoryId: "$_id" },
+      pipeline: [
+        { $match: {
+            $expr: { $eq: ["$_id", "$$inventoryId"] },
+            role: "inventory"
+        }}
+      ],
+      as: "inventoryInfo"
     }
-
-    res.status(200).json({
-      success: true,
-      message: "offer is updated",
-      data: inventory,
-    });
-  } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+  },
+  {
+    $unwind: "$inventoryInfo"
+  },
+  {
+    $project: {
+      _id: 1,
+      totalSales: 1,
+      orderCount: 1,
+      inventoryName: "$inventoryInfo.name",
+      email: "$inventoryInfo.email",      
+      phone: "$inventoryInfo.phone",      
+      address: "$inventoryInfo.address", 
+    }
   }
+]);
+
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalUsers,
+      totalPharmacies,
+      totalInventories,
+      verifiedUsers,
+      unverifiedUsers,
+      activeUsers,
+      inactiveUsers,
+      totalOrders,
+      totalPrices,
+      topInventories,
+    },
+  });
 });
-
-
 
 
 
@@ -457,8 +507,8 @@ export {
   deactivateMe,
   activateMe,
   getNearestInventories,
-  getMyWishlist,
-  addToWishlist,
-  removeFromWishlist,
-  updateOffer,
+  getMyFavourite,
+  addToFavourite,
+  removeFromFavourite,
+  getAdminStatistics,
 };

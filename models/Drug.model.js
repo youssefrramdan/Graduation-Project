@@ -109,7 +109,6 @@ drugSchema.pre("save", async function (next) {
   next();
 });
 
-
 drugSchema.index({ createdBy: 1 });
 drugSchema.index({ createdBy: 1, price: 1 });
 drugSchema.index({ createdBy: 1, stock: 1 });

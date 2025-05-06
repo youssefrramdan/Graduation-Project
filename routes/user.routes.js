@@ -3,20 +3,20 @@ import createUploader from "../middlewares/uploadImageMiddleware.js";
 import {
   activateMe,
   activateSpecificUser,
-  addToWishlist,
+  addToFavourite,
   changeUserPassword,
   createUser,
   deactivateMe,
   deleteUser,
+  getAdminStatistics,
   getAllUsers,
   getMe,
-  getMyWishlist,
+  getMyFavourite,
   getNearestInventories,
   getSpecificUser,
-  removeFromWishlist,
+  removeFromFavourite,
   updateMe,
   updateMyPassword,
-  updateOffer,
   updateUser,
   updateUserImage,
 } from "../controllers/User.controller.js";
@@ -43,9 +43,13 @@ userRouter
 userRouter.route("/deactivate").patch(protectedRoutes, deactivateMe);
 userRouter.route("/activate").patch(protectedRoutes, activateMe);
 
-userRouter.route("/wishlist/:inventoryId").post(protectedRoutes, addToWishlist);
-userRouter.route("/wishlist/:inventoryId").delete(protectedRoutes, removeFromWishlist);
-userRouter.route("/wishlist").get(protectedRoutes, getMyWishlist);
+//favourite routes
+userRouter.route("/favourite/:inventoryId").post(protectedRoutes, addToFavourite);
+userRouter.route("/favourite/:inventoryId").delete(protectedRoutes, removeFromFavourite);
+userRouter.route("/favourite").get(protectedRoutes, getMyFavourite);
+
+//statistics routes
+userRouter.route("/statistics").get(protectedRoutes, getAdminStatistics);
 
 // admin routes
 userRouter.route("/").get(getAllUsers);
@@ -65,7 +69,6 @@ userRouter
   .route("/activate/:id")
   .patch(protectedRoutes, activeValidator, activateSpecificUser);
 
-  userRouter.route("/updateoffer").patch(protectedRoutes, updateOffer);
 
 
 
