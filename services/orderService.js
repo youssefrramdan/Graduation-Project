@@ -70,33 +70,49 @@ export const validateStockAvailability = async (drugs) => {
   };
 };
 
-// Update drug stock levels
-export const updateDrugStock = async (drugs, increment = false) => {
-  const multiplier = increment ? 1 : -1;
-  return Promise.all(
-    drugs.map((item) =>
-      DrugModel.updateOne(
-        { _id: item.drug._id },
-        { $inc: { stock: multiplier * item.totalDelivered } }
-      )
-    )
-  );
+// Update drug stock
+export const updateDrugStock = async (drugs, isCancellation = false) => {
+  const updatePromises = drugs.map(async (item) => {
+    const drug = await DrugModel.findById(item.drug._id);
+    if (!drug) return;
+
+    const quantity = item.totalDelivered || 0;
+    const stockChange = isCancellation ? quantity : -quantity;
+
+    // Ensure stock is a valid number
+    const currentStock = Number(drug.stock) || 0;
+    const newStock = Math.max(0, currentStock + stockChange);
+
+    return DrugModel.findByIdAndUpdate(
+      item.drug._id,
+      { $set: { stock: newStock } },
+      { new: true }
+    );
+  });
+
+  await Promise.all(updatePromises);
 };
 
 // Get populated order
-export const getPopulatedOrder = async (orderId) => {
-  return OrderModel.findById(orderId)
-    .populate("inventory", "name location")
-    .populate("pharmacy", "name phone location")
-    .populate("drugs.drug", "name price promotion");
-};
+export const getPopulatedOrder = async (orderId) =>
+  OrderModel.findById(orderId)
+    .populate({
+      path: "inventory",
+      select: "name location",
+    })
+    .populate({
+      path: "pharmacy",
+      select: "name phone",
+    })
+    .populate({
+      path: "drugs.drug",
+      select: "name price promotion",
+    });
 
-// Handle cart cleanup after order
+// Handle cart cleanup
 export const handleCartCleanup = async (cartId) => {
-  const updatedCart = await CartModel.findById(cartId);
-  if (updatedCart && updatedCart.inventories.length > 0) {
-    await updatedCart.save();
-  } else if (updatedCart) {
-    await CartModel.findByIdAndDelete(cartId);
-  }
+  const cart = await CartModel.findById(cartId);
+  if (!cart || cart.inventories.length > 0) return;
+
+  await CartModel.findByIdAndDelete(cartId);
 };

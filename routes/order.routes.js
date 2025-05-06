@@ -23,7 +23,6 @@ orderRouter.use(protectedRoutes);
 // Create order from cart
 orderRouter.post(
   "/cart/:cartId",
-  allowTo("pharmacy"),
   createOrderValidator,
   createOrder
 );
