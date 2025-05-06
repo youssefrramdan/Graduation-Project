@@ -488,7 +488,113 @@ const topInventories = await orderModel.aggregate([
   });
 });
 
+/**
+ * @desc    Get inventory statistics for individual inventory dashboard
+ * @route   GET /api/v1/inventories/dashboard
+ * @access  Private (Inventory)
+ */
 
+const getInventoryStatistics = asyncHandler(async (req, res, next) => {
+  const userId = req.user._id;
+  const now = new Date();
+  const oneMonthLater = new Date(now.setMonth(now.getMonth() + 1));
+
+  const [totalOrders, totalSalesAgg, totalDrugs, lowStockDrugsCount, totalSoldAndStock, orderStatuses, categoriesStats] = await Promise.all([
+    orderModel.countDocuments({ inventory: userId }),
+
+    orderModel.aggregate([
+      { $match: { inventory: userId } },
+      { $group: { _id: null, totalSales: { $sum: "$pricing.total" } } }
+    ]),
+
+    DrugModel.countDocuments({ createdBy: userId }),
+
+    DrugModel.countDocuments({ createdBy: userId, stock: { $lt: 500 } }),
+
+    DrugModel.aggregate([
+      { $match: { createdBy: userId } },
+      {
+        $group: {
+          _id: null,
+          totalSold: { $sum: "$sold" },
+          totalStock: { $sum: "$stock" }
+        }
+      }
+    ]),
+
+    orderModel.aggregate([
+      { $match: { inventory: userId } },
+      {
+        $group: {
+          _id: "$status.current",
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $project: { _id: 0, status: "$_id", count: 1 }
+      }
+    ]),
+
+    DrugModel.aggregate([
+      { $match: { createdBy: userId } },
+      {
+        $group: {
+          _id: "$category",
+          totalStockInCategory: { $sum: "$stock" },
+          nearExpirationCount: {
+            $sum: {
+              $cond: [
+                { $lt: ["$expirationDate", oneMonthLater] },
+                1,
+                0
+              ]
+            }
+          }
+        }
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "_id",
+          foreignField: "_id",
+          as: "categoryInfo"
+        }
+      },
+      { $unwind: "$categoryInfo" },
+      {
+        $project: {
+          categoryName: "$categoryInfo.name",
+          totalStockInCategory: 1,
+          nearExpirationCount: 1,
+          _id: 1
+        }
+      }
+    ])
+  ]);
+
+  const totalSales = totalSalesAgg[0]?.totalSales || 0;
+  const totalSold = totalSoldAndStock[0]?.totalSold || 0;
+  const totalStock = totalSoldAndStock[0]?.totalStock || 0;
+  const soldPercentage = totalStock ? (totalSold / totalStock) * 100 : 0;
+
+  const statusCounts = orderStatuses.reduce((acc, item) => {
+    acc[item.status] = item.count;
+    return acc;
+  }, {});
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalOrders,
+      totalSales,
+      totalDrugs,
+      lowStockDrugs: lowStockDrugsCount,
+      soldPercentage,
+      orderStatuses: statusCounts,
+      categoriesStats
+    }
+  });
+});
 
 
 
@@ -511,4 +617,5 @@ export {
   addToFavourite,
   removeFromFavourite,
   getAdminStatistics,
+  getInventoryStatistics,
 };

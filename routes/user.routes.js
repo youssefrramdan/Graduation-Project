@@ -10,6 +10,7 @@ import {
   deleteUser,
   getAdminStatistics,
   getAllUsers,
+  getInventoryStatistics,
   getMe,
   getMyFavourite,
   getNearestInventories,
@@ -50,6 +51,7 @@ userRouter.route("/favourite").get(protectedRoutes, getMyFavourite);
 
 //statistics routes
 userRouter.route("/statistics").get(protectedRoutes, getAdminStatistics);
+userRouter.route("/statisticsInventory").get(protectedRoutes, getInventoryStatistics);
 
 // admin routes
 userRouter.route("/").get(getAllUsers);
