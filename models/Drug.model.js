@@ -87,16 +87,19 @@ const drugSchema = new Schema(
 drugSchema.pre("save", async function (next) {
   const baseDiscountedPrice = this.price - (this.price * this.discount) / 100;
 
-  if (this.promotion.isActive) {
-    // إذا كان العرض الترويجي مفعل، احسب السعر بناءً على الكمية المدفوعة فقط (5 حبات)
-    this.discountedPrice = baseDiscountedPrice - (baseDiscountedPrice * this.discount) / 100;
-    
-    // خصم الكمية الإجمالية من المخزون الأصلي عند تفعيل العرض
+  if (this.promotion?.isActive) {
+    this.discountedPrice = baseDiscountedPrice;
+
     if (this.promotion.originalDrugId) {
       const originalDrug = await mongoose.model("Drug").findById(this.promotion.originalDrugId);
       if (originalDrug) {
-        originalDrug.stock -= this.promotion.buyQuantity + this.promotion.freeQuantity; // خصم الكمية الإجمالية
-        await originalDrug.save();
+        const totalUnits = this.promotion.buyQuantity + this.promotion.freeQuantity;
+        if (originalDrug.stock >= totalUnits) {
+          originalDrug.stock -= totalUnits;
+          await originalDrug.save();
+        } else {
+          return next(new Error("Not enough stock in the original drug for this promotion."));
+        }
       }
     }
   } else {
@@ -105,6 +108,7 @@ drugSchema.pre("save", async function (next) {
 
   next();
 });
+
 
 drugSchema.index({ createdBy: 1 });
 drugSchema.index({ createdBy: 1, price: 1 });

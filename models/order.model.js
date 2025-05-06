@@ -2,9 +2,7 @@ import { model, Schema, Types } from "mongoose";
 
 const orderSchema = new Schema(
   {
-    orderNumber: {
-      type: String,
-    },
+    orderNumber: { type: String },
     pharmacy: {
       type: Types.ObjectId,
       ref: "User",
@@ -17,30 +15,18 @@ const orderSchema = new Schema(
     },
     drugs: [
       {
-        drug: {
-          type: Types.ObjectId,
-          ref: "Drug",
-        },
-        quantity: {
-          type: Number,
-          min: [1, "Quantity must be at least 1"],
-        },
-        Price: {
-          type: Number,
-        },
+        drug: { type: Types.ObjectId, ref: "Drug" },
+        quantity: { type: Number, min: [1, "Quantity must be at least 1"] },
+        paidQuantity: { type: Number },
+        freeItems: { type: Number },
+        totalDelivered: { type: Number },
+        price: { type: Number },
       },
     ],
     pricing: {
-      subtotal: {
-        type: Number,
-      },
-      shippingCost: {
-        type: Number,
-        default: 0,
-      },
-      total: {
-        type: Number,
-      },
+      subtotal: { type: Number },
+      shippingCost: { type: Number, default: 0 },
+      total: { type: Number },
     },
     payment: {
       status: {
@@ -79,42 +65,23 @@ const orderSchema = new Schema(
             ],
             required: true,
           },
-          timestamp: {
-            type: Date,
-            default: Date.now,
-          },
+          timestamp: { type: Date, default: Date.now },
           note: String,
-          updatedBy: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-          },
+          updatedBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
         },
       ],
     },
     delivery: {
-      address: {
-        city: String,
-        governorate: String,
-      },
+      address: { city: String, governorate: String },
       location: {
-        type: {
-          type: String,
-          enum: ["Point"],
-          default: "Point",
-        },
-        coordinates: {
-          type: [Number],
-          required: true,
-        },
+        type: { type: String, enum: ["Point"], default: "Point" },
+        coordinates: { type: [Number], required: true },
       },
       contactPhone: String,
       actualDeliveryDate: Date,
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
 // Indexes
@@ -134,11 +101,11 @@ orderSchema.pre("save", async function (next) {
   next();
 });
 
-// Calculate totals before saving
+// Calculate totals before saving (based on paidQuantity)
 orderSchema.pre("save", function (next) {
   if (this.isModified("drugs") || this.isNew) {
     this.pricing.subtotal = this.drugs.reduce(
-      (total, item) => total + item.Price * item.quantity,
+      (total, item) => total + item.price * item.paidQuantity,
       0
     );
     this.pricing.total = this.pricing.subtotal + this.pricing.shippingCost;
@@ -161,7 +128,6 @@ orderSchema.methods.canTransitionTo = function (newStatus) {
   return validTransitions[this.status.current]?.includes(newStatus) || false;
 };
 
-// Use this method without pre-save
 orderSchema.methods.updateStatus = function (newStatus, note, userId) {
   if (!this.canTransitionTo(newStatus)) {
     throw new Error(

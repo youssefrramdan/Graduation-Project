@@ -2,22 +2,40 @@
 import asyncHandler from "express-async-handler";
 import CartModel from "../models/Cart.model.js";
 import ApiError from "../utils/apiError.js";
+import DrugModel from "../models/Drug.model.js";
 
 /**
  * @desc    Add a drug to the pharmacy's cart
  * @route   POST /api/v1/cart
  * @access  Private/Pharmacy
  */
+// ✅ تعديل دالة إضافة الدواء للكارت مع دعم البروموشن (Buy X Get Y Free)
+
 const addDrugToCart = asyncHandler(async (req, res) => {
   const { drugId, quantity } = req.body;
-  const { drug } = req; // Validated and added by validator
+  const drug = await DrugModel.findById(drugId);
   const inventoryId = drug.createdBy._id;
 
-  // Find or create cart
+  const unitPrice = drug.discountedPrice || drug.price;
+  let freeItems = 0;
+
+  if (
+    drug.promotion?.isActive &&
+    drug.promotion?.buyQuantity > 0 &&
+    drug.promotion?.freeQuantity > 0
+  ) {
+    const { buyQuantity, freeQuantity } = drug.promotion;
+    const fullOffers = Math.floor(quantity / buyQuantity);
+    freeItems = fullOffers * freeQuantity;
+  }
+
+  const totalDelivered = quantity + freeItems;
+  const paidQuantity = quantity;
+  const totalDrugPrice = unitPrice * paidQuantity;
+
   let cart = await CartModel.findOne({ pharmacy: req.user._id });
 
   if (!cart) {
-    // Create new cart
     cart = await CartModel.create({
       pharmacy: req.user._id,
       inventories: [
@@ -26,57 +44,84 @@ const addDrugToCart = asyncHandler(async (req, res) => {
           drugs: [
             {
               drug: drugId,
-              quantity,
-              Price: drug.discountedPrice || drug.price,
+              quantity: totalDelivered,
+              paidQuantity,
+              Price: unitPrice,
+              freeItems,
+              totalDelivered,
+              totalDrugPrice,
             },
           ],
         },
       ],
     });
   } else {
-    // Check if inventory exists
     const inventoryIndex = cart.inventories.findIndex((item) =>
       item.inventory.equals(inventoryId)
     );
 
     if (inventoryIndex > -1) {
-      // Check if drug exists in this inventory
       const drugIndex = cart.inventories[inventoryIndex].drugs.findIndex((d) =>
         d.drug.equals(drugId)
       );
 
       if (drugIndex > -1) {
-        // Update existing drug quantity
-        cart.inventories[inventoryIndex].drugs[drugIndex].quantity += quantity;
-        cart.inventories[inventoryIndex].drugs[drugIndex].Price =
-          drug.discountedPrice;
+        // إجمالي الطلب الجديد
+        const oldQuantity = cart.inventories[inventoryIndex].drugs[drugIndex].paidQuantity;
+        const newPaidQuantity = oldQuantity + quantity;
+
+        let newFreeItems = 0;
+        if (
+          drug.promotion?.isActive &&
+          drug.promotion?.buyQuantity > 0 &&
+          drug.promotion?.freeQuantity > 0
+        ) {
+          const { buyQuantity, freeQuantity } = drug.promotion;
+          const fullOffers = Math.floor(newPaidQuantity / buyQuantity);
+          newFreeItems = fullOffers * freeQuantity;
+        }
+
+        const newTotalDelivered = newPaidQuantity + newFreeItems;
+        const newTotalDrugPrice = unitPrice * newPaidQuantity;
+
+        const drugEntry = cart.inventories[inventoryIndex].drugs[drugIndex];
+        drugEntry.quantity = newTotalDelivered;
+        drugEntry.paidQuantity = newPaidQuantity;
+        drugEntry.freeItems = newFreeItems;
+        drugEntry.totalDelivered = newTotalDelivered;
+        drugEntry.totalDrugPrice = newTotalDrugPrice;
+        drugEntry.Price = unitPrice;
       } else {
-        // Add new drug to existing inventory
         cart.inventories[inventoryIndex].drugs.push({
           drug: drugId,
-          quantity,
-          Price: drug.discountedPrice || drug.price,
+          quantity: totalDelivered,
+          paidQuantity,
+          Price: unitPrice,
+          freeItems,
+          totalDelivered,
+          totalDrugPrice,
         });
       }
     } else {
-      // Add new inventory with drug
       cart.inventories.push({
         inventory: inventoryId,
         drugs: [
           {
             drug: drugId,
-            quantity,
-            Price: drug.discountedPrice || drug.price,
+            quantity: totalDelivered,
+            paidQuantity,
+            Price: unitPrice,
+            freeItems,
+            totalDelivered,
+            totalDrugPrice,
           },
         ],
       });
     }
 
-    // Save the updated cart
     await cart.save();
   }
 
-  // Populate cart before sending response
   cart = await cart.populate([
     {
       path: "inventories.inventory",
@@ -98,6 +143,17 @@ const addDrugToCart = asyncHandler(async (req, res) => {
     data: cart,
   });
 });
+
+
+
+
+
+
+
+
+
+
+
 
 /**
  * @desc    Remove a specific drug from cart
