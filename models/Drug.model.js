@@ -7,12 +7,10 @@ const drugSchema = new Schema(
       required: [true, "Drug name is required."],
       trim: true,
     },
-
     manufacturer: {
       type: String,
       trim: true,
     },
-
     description: {
       type: String,
     },
@@ -26,7 +24,6 @@ const drugSchema = new Schema(
       enum: ["Imported", "Local"],
       required: [true, "Origin type is required."],
     },
-
     productionDate: {
       type: Date,
       required: [true, "Production date is required."],
@@ -35,7 +32,6 @@ const drugSchema = new Schema(
       type: Date,
       required: [true, "Expiration date is required."],
     },
-
     price: {
       type: Number,
       required: [true, "Base price is required."],
@@ -47,7 +43,6 @@ const drugSchema = new Schema(
     discountedPrice: {
       type: Number,
     },
-
     stock: {
       type: Number,
       required: [true, "Stock quantity is required."],
@@ -56,25 +51,61 @@ const drugSchema = new Schema(
       type: Number,
       default: 0,
     },
-
     isVisible: {
       type: Boolean,
       default: true,
     },
-
     imageCover: [String],
-
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
+    promotion: {
+      isActive: {
+        type: Boolean,
+        default: false,
+      },
+      buyQuantity: {
+        type: Number,
+        min: [1, "Buy quantity must be at least 1"],
+      },
+      freeQuantity: {
+        type: Number,
+        min: [1, "Free quantity must be at least 1"],
+      },
+      originalDrugId: {
+        type: Schema.Types.ObjectId,
+        ref: "Drug", 
+      },
+    },
   },
   { timestamps: true }
 );
 
-drugSchema.pre("save", function (next) {
-  this.discountedPrice = this.price - (this.price * this.discount) / 100;
+// تحديث الخصم بناءً على العرض الترويجي
+drugSchema.pre("save", async function (next) {
+  const baseDiscountedPrice = this.price - (this.price * this.discount) / 100;
+
+  if (this.promotion?.isActive) {
+    this.discountedPrice = baseDiscountedPrice;
+
+    if (this.promotion.originalDrugId) {
+      const originalDrug = await mongoose.model("Drug").findById(this.promotion.originalDrugId);
+      if (originalDrug) {
+        const totalUnits = this.promotion.buyQuantity + this.promotion.freeQuantity;
+        if (originalDrug.stock >= totalUnits) {
+          originalDrug.stock -= totalUnits;
+          await originalDrug.save();
+        } else {
+          return next(new Error("Not enough stock in the original drug for this promotion."));
+        }
+      }
+    }
+  } else {
+    this.discountedPrice = baseDiscountedPrice;
+  }
+
   next();
 });
 

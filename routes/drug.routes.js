@@ -2,6 +2,7 @@ import express from "express";
 import {
   addDrug,
   addDrugsFromExcel,
+  addDrugWithPromotion,
   createFilterObject,
   deleteDrug,
   getAllDrugs,
@@ -10,6 +11,7 @@ import {
   getSpecificDrug,
   updateDrug,
   updateDrugImage,
+  updatePromotion,
 } from "../controllers/drug.controller.js";
 import { protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -61,5 +63,12 @@ drugRouter
 drugRouter
   .route("/image/:id")
   .put(protectedRoutes, uploadimg.single("imageCover"), updateDrugImage);
+
+
+drugRouter.patch("/:id/promotion", protectedRoutes, updatePromotion);
+
+drugRouter.post(
+  "/promotion",protectedRoutes,  addDrugWithPromotion        
+);
 
 export default drugRouter;

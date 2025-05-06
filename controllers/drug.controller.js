@@ -592,6 +592,170 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
   }
 });
 
+
+
+
+
+
+/**
+ * @desc    Add new drug with promotion - Performance optimized
+ * @route   POST /api/v1/drugs
+ * @access  Private (Authenticated users only)
+ */
+const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
+  const { promotion, originalDrugId, stock, ...drugData } = req.body;
+
+  if (promotion && originalDrugId) {
+    const { quantity, freeItems } = promotion;
+
+    if (!quantity || !freeItems) {
+      return next(new ApiError("Invalid promotion data provided.", 400));
+    }
+
+    const originalDrug = await DrugModel.findById(originalDrugId);
+    if (!originalDrug) {
+      return next(new ApiError("Original drug not found.", 404));
+    }
+
+    if (!stock || stock < quantity + freeItems) {
+      return next(new ApiError("Invalid or insufficient stock provided for the promotion.", 400));
+    }
+
+    const originalPrice = originalDrug.price;
+    const discountedPrice = originalDrug.discountedPrice || originalPrice;
+
+    
+
+    const unitsPerPromotion = quantity + freeItems;
+    const totalPromotions = Math.floor(stock / unitsPerPromotion);
+    const paidUnits = totalPromotions * quantity;
+
+    const promoDrug = {
+      ...drugData,
+      createdBy: req.user._id,
+      promotion: {
+        isActive: true,
+        buyQuantity: quantity,
+        freeQuantity: freeItems,
+        unitsPerPromotion,
+        totalPromotions,
+      },
+      stock,
+      price: originalPrice,
+      discount: originalDrug.discount,
+      discountedPrice:originalDrug.discountedPrice,
+      expirationDate: originalDrug.expirationDate,
+      productionDate: originalDrug.productionDate,
+      originType: originalDrug.originType,
+      category: originalDrug.category,
+    };
+
+    const drug = await DrugModel.create(promoDrug);
+
+    // خصم الكمية كلها من الدواء الأصلي
+    if (originalDrug.stock < stock) {
+      return next(new ApiError("Not enough stock in original drug to apply this promotion.", 400));
+    }
+
+    originalDrug.stock -= stock;
+    await originalDrug.save();
+
+    const totalPromotionPrice = discountedPrice * paidUnits;
+
+    const [populatedDrug, updatedOriginalDrug] = await Promise.all([
+      DrugModel.findById(drug._id).populate({
+        path: "createdBy",
+        select: "name location shippingPrice profileImage",
+      }),
+      DrugModel.findById(originalDrugId),
+    ]);
+
+    res.status(201).json({
+      status: "success",
+      message: "Promotional drug added successfully to your inventory",
+      
+      data: {
+        drug: populatedDrug,
+      },
+        /*
+        originalDrugStock: updatedOriginalDrug.stock,
+        totalPromotionPrice,
+        totalPromotions,
+        paidUnits,
+        freeUnits: stock - paidUnits,
+        originalPrice,
+        discountedPrice,
+        discountPercentage,
+      },
+
+      */
+    });
+  } else {
+    // بدون بروموشن
+    const drugDataWithUser = { ...req.body, createdBy: req.user._id };
+    const drug = await DrugModel.create(drugDataWithUser);
+
+    const [populatedDrug, _] = await Promise.all([
+      DrugModel.findById(drug._id).populate({
+        path: "createdBy",
+        select: "name location shippingPrice profileImage",
+      }),
+      UserModel.findByIdAndUpdate(req.user._id, {
+        $push: { drugs: drug._id },
+      }),
+    ]);
+
+    res.status(201).json({
+      status: "success",
+      message: "Drug added successfully to your inventory",
+      data: populatedDrug,
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const updatePromotion = asyncHandler(async (req, res) => {
+  const { isActive, buyQuantity, freeQuantity } = req.body;
+  const drugId = req.params.id;
+  const userId = req.user._id;
+
+  const drug = await DrugModel.findById(drugId);
+
+  if (!drug) {
+    return res.status(404).json({ success: false, message: "Drug not found" });
+  }
+
+  // تحديث تفاصيل العرض الترويجي
+  drug.promotion = {
+    isActive: isActive ?? false,
+    buyQuantity: buyQuantity ?? drug.promotion?.buyQuantity,
+    freeQuantity: freeQuantity ?? drug.promotion?.freeQuantity,
+  };
+
+  await drug.save();
+
+  res.status(200).json({ success: true, message: "Promotion updated", data: drug.promotion });
+});
+
+
+
+
 export {
   createFilterObject,
   addDrug,
@@ -603,4 +767,6 @@ export {
   deleteDrug,
   getAllDrugsForSpecificInventory,
   getAlternativeDrugsFromAI,
+  updatePromotion,
+  addDrugWithPromotion,
 };

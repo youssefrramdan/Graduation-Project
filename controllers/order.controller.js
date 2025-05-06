@@ -114,11 +114,16 @@ const createOrder = asyncHandler(async (req, res, next) => {
   const order = await OrderModel.create({
     pharmacy: req.user._id,
     inventory: inventoryId,
-    drugs: inventoryItems.drugs.map((drug) => ({
-      drug: drug.drug._id,
-      quantity: drug.quantity,
-      Price: drug.Price,
-    })),
+    drugs: inventoryItems.drugs.map((drug) => {
+      // حساب totalPrice بناءً على السعر المدفوع
+      const totalPrice = drug.paidQuantity * drug.Price;
+      return {
+        drug: drug.drug._id,
+        quantity: drug.quantity,
+        Price: drug.Price,
+        totalPrice: totalPrice, // إضافة totalPrice هنا
+      };
+    }),
     pricing: {
       subtotal: inventoryItems.totalInventoryPrice,
       shippingCost: inventoryItems.inventory.shippingPrice || 0,
@@ -169,6 +174,7 @@ const createOrder = asyncHandler(async (req, res, next) => {
     data: transformOrder(populatedOrder),
   });
 });
+
 
 /**
  * @desc    Get all orders for the logged-in pharmacy
