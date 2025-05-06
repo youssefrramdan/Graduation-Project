@@ -302,11 +302,15 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
   // Find order that can be cancelled
+  if (req.user.role === "inventory") {
+    return next(new ApiError("You can't do this action ..."));
+  }
   const order = await OrderModel.findOne({
     _id: id,
     pharmacy: req.user._id,
     "status.current": { $in: ["pending", "confirmed"] },
   });
+  console.log(order);
   if (!order) {
     return next(
       new ApiError(
@@ -351,7 +355,9 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
 const rejectOrder = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const { reason } = req.body;
-
+  if (req.user.role === "pharmacy") {
+    return next(new ApiError("You can't do this action ..."));
+  }
   const order = await OrderModel.findOne({
     _id: id,
 
