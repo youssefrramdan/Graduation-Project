@@ -200,18 +200,25 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
 const rejectOrder = asyncHandler(async (req, res, next) => {
   const { reason } = req.body;
   const { order } = req;
-
+  
   order.updateStatus("rejected", reason, req.user._id);
   await updateDrugStock(order.drugs, true);
   await order.save();
-
+  
   const populatedOrder = await getPopulatedOrder(order._id);
-
+  
+  // Send notification to pharmacy
+  await NotificationService.notifyPharmacyOrderRejected(
+  populatedOrder,
+  req.user,
+  reason
+  );
+  
   res.status(200).json({
-    status: "success",
-    data: transformOrder(populatedOrder),
+  status: "success",
+  data: transformOrder(populatedOrder),
   });
-});
+  });
 
 export {
   createOrder,

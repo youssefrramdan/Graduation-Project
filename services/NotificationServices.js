@@ -195,6 +195,31 @@ class NotificationService {
       }
     );
   }
+
+
+
+
+  static async notifyPharmacyOrderRejected(order, rejectedByInventory, reason) {
+    const pharmacy = await User.findById(order.pharmacy);
+
+    if (!pharmacy?.fcmToken) return;
+
+    const body = `Order #${order.orderNumber} was rejected by inventory ${rejectedByInventory.name}. Reason: ${reason || "No reason provided."}`;
+
+    return await this.sendNotification(
+      pharmacy.fcmToken,
+      "Order Rejected",
+      body,
+      null,
+      "danger",
+      `/orders/${order._id}`,
+      {
+        userId: pharmacy._id,
+        orderId: order._id,
+        rejectedBy: rejectedByInventory._id,
+      }
+    );
+  }
   
 }
 
