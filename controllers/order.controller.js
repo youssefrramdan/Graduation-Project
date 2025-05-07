@@ -10,6 +10,8 @@ import {
   getPopulatedOrder,
   handleCartCleanup,
 } from "../services/orderService.js";
+import NotificationService from "../services/NotificationServices.js";
+import UserModel from "../models/User.model.js";
 
 /**
  * @desc    Create a new order from cart items for a specific inventory
@@ -151,6 +153,9 @@ const updateOrderStatus = asyncHandler(async (req, res, next) => {
   }
 
   await order.save();
+  const pharmacy = await UserModel.findById(order.pharmacy);
+  await NotificationService.notifyOrderStatusChange(order, pharmacy);
+
   const populatedOrder = await getPopulatedOrder(order._id);
 
   res.status(200).json({

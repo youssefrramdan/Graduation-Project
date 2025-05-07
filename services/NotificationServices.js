@@ -138,6 +138,36 @@ class NotificationService {
 
     return expiringDrugs.length;
   }
+
+  static async notifyOrderStatusChange(order, pharmacy) {
+    const fcmToken = pharmacy.fcmToken;
+    console.log("Preparing to send FCM notification to:", fcmToken);
+    if (!pharmacy?.fcmToken) return;
+  
+    const statusMessage = {
+      pending: "Your order is pending confirmation.",
+      processing: "Your order is now being processed.",
+      shipped: "Your order has been shipped.",
+      delivered: "Your order has been delivered.",
+      cancelled: "Your order has been cancelled.",
+    };
+  
+    const body = statusMessage[order.status] || `Order status changed to ${order.status}`;
+  
+    return await this.sendNotification(
+      pharmacy.fcmToken,
+      "Order Status Updated",
+      body,
+      null,
+      "info",
+      `/orders/${order._id}`,
+      {
+        userId: pharmacy._id,
+        orderId: order._id,
+        status: order.status,
+      }
+    );
+  }
 }
 
 export default NotificationService;
