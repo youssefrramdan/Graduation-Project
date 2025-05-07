@@ -37,6 +37,9 @@ const getSpecificCategory = asyncHandler(async (req, res, next) => {
 
 const updateCategory = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
+  if (req.file) {
+    req.body.imageCover = req.file.path;
+  }
   const category = await CategoryModel.findByIdAndUpdate(id, req.body, {
     new: true,
   });
