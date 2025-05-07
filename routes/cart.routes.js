@@ -1,5 +1,5 @@
 import express from "express";
-import { protectedRoutes } from "../controllers/auth.controller.js";
+import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
   addDrugToCart,
   getLoggedUserCart,
@@ -20,7 +20,7 @@ const cartRouter = express.Router();
 
 // Apply authentication for all routes
 cartRouter.use(protectedRoutes);
-
+cartRouter.use(allowTo("pharmacy"));
 cartRouter
   .route("/")
   .get(getLoggedUserCart)

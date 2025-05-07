@@ -99,7 +99,8 @@ const removeDrugFromCart = asyncHandler(async (req, res) => {
 const updateCartItemQuantity = asyncHandler(async (req, res) => {
   const { drugId } = req.params;
   const { quantity } = req.body;
-  const { cart, drug } = req;
+  const { drug } = req;
+  let { cart } = req;
 
   // Find and update drug quantity
   const cartInventory = cart.inventories.find((inventory) =>
@@ -126,6 +127,18 @@ const updateCartItemQuantity = asyncHandler(async (req, res) => {
   });
 
   await cart.save();
+
+  // Populate cart data before sending response
+  cart = await cart.populate([
+    {
+      path: "inventories.inventory",
+      select: "name shippingPrice",
+    },
+    {
+      path: "inventories.drugs.drug",
+      select: "name quantity promotion",
+    },
+  ]);
 
   res.status(200).json({
     status: "success",
