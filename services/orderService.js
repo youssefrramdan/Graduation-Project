@@ -98,11 +98,11 @@ export const getPopulatedOrder = async (orderId) =>
   OrderModel.findById(orderId)
     .populate({
       path: "inventory",
-      select: "name location",
+      select: "_id name location",
     })
     .populate({
       path: "pharmacy",
-      select: "name phone",
+      select: "_id name phone fcmToken",
     })
     .populate({
       path: "drugs.drug",

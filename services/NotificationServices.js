@@ -170,10 +170,6 @@ class NotificationService {
   }
 
 
-
-
-
-
   static async notifyInventoryOrderCancelled(order, cancelledByPharmacy, reason) {
     const inventory = await User.findById(order.inventory);
   
@@ -196,16 +192,16 @@ class NotificationService {
     );
   }
 
-
-
-
   static async notifyPharmacyOrderRejected(order, rejectedByInventory, reason) {
-    const pharmacy = await User.findById(order.pharmacy);
-
-    if (!pharmacy?.fcmToken) return;
-
+    const pharmacy = order.pharmacy;
+  
+    if (!pharmacy?.fcmToken) {
+      console.log("Pharmacy has no FCM token.");
+      return;
+    }
+  
     const body = `Order #${order.orderNumber} was rejected by inventory ${rejectedByInventory.name}. Reason: ${reason || "No reason provided."}`;
-
+  
     return await this.sendNotification(
       pharmacy.fcmToken,
       "Order Rejected",
