@@ -179,6 +179,13 @@ const cancelOrder = asyncHandler(async (req, res, next) => {
 
   const populatedOrder = await getPopulatedOrder(order._id);
 
+  // Send notification to inventory
+  await NotificationService.notifyInventoryOrderCancelled(
+    populatedOrder,
+    req.user,
+    reason
+  );
+
   res.status(200).json({
     status: "success",
     data: transformOrder(populatedOrder),

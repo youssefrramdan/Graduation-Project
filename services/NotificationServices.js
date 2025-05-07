@@ -168,6 +168,36 @@ class NotificationService {
       }
     );
   }
+
+
+
+
+
+
+  static async notifyInventoryOrderCancelled(order, cancelledByPharmacy, reason) {
+    const inventory = await User.findById(order.inventory);
+  
+    if (!inventory?.fcmToken) return;
+  
+    const body = `Order #${order.orderNumber} was cancelled by pharmacy ${cancelledByPharmacy.name}. Reason: ${reason || "No reason provided."}`;
+  
+    return await this.sendNotification(
+      inventory.fcmToken,
+      "Order Cancelled",
+      body,
+      null,
+      "warning",
+      `/orders/${order._id}`,
+      {
+        userId: inventory._id,
+        orderId: order._id,
+        cancelledBy: cancelledByPharmacy._id,
+      }
+    );
+  }
+  
 }
+
+
 
 export default NotificationService;
