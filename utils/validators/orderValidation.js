@@ -3,6 +3,7 @@ import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import CartModel from "../../models/Cart.model.js";
 import OrderModel from "../../models/order.model.js";
 import { validateStockAvailability } from "../../services/orderService.js";
+import UserModel from "../../models/User.model.js";
 
 export const createOrderValidator = [
   check("cartId")
@@ -21,7 +22,7 @@ export const createOrderValidator = [
       }).populate([
         {
           path: "inventories.inventory",
-          select: "name shippingPrice",
+          select: "name shippingPrice minimumOrderValue",
         },
         {
           path: "inventories.drugs.drug",
@@ -40,6 +41,17 @@ export const createOrderValidator = [
 
       if (!inventoryItems) {
         throw new Error("Inventory not found in cart");
+      }
+
+      // Get inventory details including minimum order value
+      const inventory =
+        await UserModel.findById(inventoryId).select("minimumOrderValue");
+
+      // Check if order meets minimum value requirement
+      if (inventoryItems.totalInventoryPrice < inventory.minimumOrderValue) {
+        throw new Error(
+          `Order total (${inventoryItems.totalInventoryPrice}) is less than the minimum required value (${inventory.minimumOrderValue})`
+        );
       }
 
       // Validate stock availability
