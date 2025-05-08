@@ -13,7 +13,7 @@ import {
   updateDrugImage,
   updatePromotion,
 } from "../controllers/drug.controller.js";
-import { protectedRoutes } from "../controllers/auth.controller.js";
+import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
   addDrugsFromExcelValidator,
   addDrugValidator,
@@ -31,6 +31,7 @@ drugRouter
   .route("/excel")
   .post(
     protectedRoutes,
+    allowTo("inventory"),
     upload.single("file"),
     addDrugsFromExcelValidator,
     addDrugsFromExcel
@@ -38,7 +39,7 @@ drugRouter
 
 drugRouter
   .route("/")
-  .post(protectedRoutes, addDrugValidator, addDrug)
+  .post(protectedRoutes, addDrugValidator, allowTo("inventory"), addDrug)
   .get(protectedRoutes, createFilterObject, getAllDrugs);
 
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
@@ -58,17 +59,34 @@ drugRouter
     updateDrugValidator,
     updateDrug
   )
-  .delete(protectedRoutes, deleteDrugValidator, deleteDrug);
+  .delete(
+    protectedRoutes,
+    deleteDrugValidator,
+    allowTo("inventory"),
+    deleteDrug
+  );
 
 drugRouter
   .route("/image/:id")
-  .put(protectedRoutes, uploadimg.single("imageCover"), updateDrugImage);
+  .put(
+    protectedRoutes,
+    uploadimg.single("imageCover"),
+    allowTo("inventory"),
+    updateDrugImage
+  );
 
-
-drugRouter.patch("/:id/promotion", protectedRoutes, updatePromotion);
+drugRouter.patch(
+  "/:id/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  updatePromotion
+);
 
 drugRouter.post(
-  "/promotion",protectedRoutes,  addDrugWithPromotion        
+  "/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  addDrugWithPromotion
 );
 
 export default drugRouter;

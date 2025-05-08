@@ -140,10 +140,10 @@ class NotificationService {
   }
 
   static async notifyOrderStatusChange(order, pharmacy) {
-    const fcmToken = pharmacy.fcmToken;
+    const { fcmToken } = pharmacy;
     console.log("Preparing to send FCM notification to:", fcmToken);
-    if (!pharmacy?.fcmToken) return;
-  
+    if (!pharmacy?.fcmToken) return null;
+
     const statusMessage = {
       pending: "Your order is pending confirmation.",
       processing: "Your order is now being processed.",
@@ -151,9 +151,10 @@ class NotificationService {
       delivered: "Your order has been delivered.",
       cancelled: "Your order has been cancelled.",
     };
-  
-    const body = statusMessage[order.status] || `Order status changed to ${order.status}`;
-  
+
+    const body =
+      statusMessage[order.status] || `Order status changed to ${order.status}`;
+
     return await this.sendNotification(
       pharmacy.fcmToken,
       "Order Status Updated",
@@ -169,39 +170,50 @@ class NotificationService {
     );
   }
 
+  static async notifyInventoryOrderCancelled(
+    order,
+    cancelledByPharmacy,
+    reason
+  ) {
+    try {
+      const inventory = await User.findById(order.inventory);
 
-  static async notifyInventoryOrderCancelled(order, cancelledByPharmacy, reason) {
-    const inventory = await User.findById(order.inventory);
-  
-    if (!inventory?.fcmToken) return;
-  
-    const body = `Order #${order.orderNumber} was cancelled by pharmacy ${cancelledByPharmacy.name}. Reason: ${reason || "No reason provided."}`;
-  
-    return await this.sendNotification(
-      inventory.fcmToken,
-      "Order Cancelled",
-      body,
-      null,
-      "warning",
-      `/orders/${order._id}`,
-      {
-        userId: inventory._id,
-        orderId: order._id,
-        cancelledBy: cancelledByPharmacy._id,
+      if (!inventory?.fcmToken) {
+        console.log(`No FCM token found for inventory ${order.inventory}`);
+        return null;
       }
-    );
+
+      const body = `Order #${order.orderNumber} was cancelled by pharmacy ${cancelledByPharmacy.name}. Reason: ${reason || "No reason provided."}`;
+
+      return await this.sendNotification(
+        inventory.fcmToken,
+        "Order Cancelled",
+        body,
+        null,
+        "warning",
+        `/orders/${order._id}`,
+        {
+          userId: inventory._id,
+          orderId: order._id,
+          cancelledBy: cancelledByPharmacy._id,
+        }
+      );
+    } catch (error) {
+      console.error("Error sending cancellation notification:", error);
+      return null;
+    }
   }
 
   static async notifyPharmacyOrderRejected(order, rejectedByInventory, reason) {
-    const pharmacy = order.pharmacy;
-  
+    const { pharmacy } = order;
+
     if (!pharmacy?.fcmToken) {
       console.log("Pharmacy has no FCM token.");
-      return;
+      return null;
     }
-  
+
     const body = `Order #${order.orderNumber} was rejected by inventory ${rejectedByInventory.name}. Reason: ${reason || "No reason provided."}`;
-  
+
     return await this.sendNotification(
       pharmacy.fcmToken,
       "Order Rejected",
@@ -216,9 +228,6 @@ class NotificationService {
       }
     );
   }
-  
 }
-
-
 
 export default NotificationService;

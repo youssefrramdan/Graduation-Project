@@ -28,7 +28,7 @@ import {
   getSpecificUserValidator,
   updateUserValidator,
 } from "../utils/validators/userValidator.js";
-import { protectedRoutes } from "../controllers/auth.controller.js";
+import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 
 const userRouter = express.Router();
 const upload = createUploader("users", ["jpeg", "jpg", "png", "pdf"]);
@@ -45,13 +45,23 @@ userRouter.route("/deactivate").patch(protectedRoutes, deactivateMe);
 userRouter.route("/activate").patch(protectedRoutes, activateMe);
 
 //favourite routes
-userRouter.route("/favourite/:inventoryId").post(protectedRoutes, addToFavourite);
-userRouter.route("/favourite/:inventoryId").delete(protectedRoutes, removeFromFavourite);
-userRouter.route("/favourite").get(protectedRoutes, getMyFavourite);
+userRouter
+  .route("/favourite/:inventoryId")
+  .post(protectedRoutes, allowTo("pharmacy"), addToFavourite);
+userRouter
+  .route("/favourite/:inventoryId")
+  .delete(protectedRoutes, allowTo("pharmacy"), removeFromFavourite);
+userRouter
+  .route("/favourite")
+  .get(protectedRoutes, allowTo("pharmacy"), getMyFavourite);
 
 //statistics routes
-userRouter.route("/statisticsAdmin").get(protectedRoutes, getAdminStatistics);
-userRouter.route("/statisticsInventory").get(protectedRoutes, getInventoryStatistics);
+userRouter
+  .route("/statisticsAdmin")
+  .get(protectedRoutes, allowTo("admin"), getAdminStatistics);
+userRouter
+  .route("/statisticsInventory")
+  .get(protectedRoutes, allowTo("inventory"), getInventoryStatistics);
 
 // admin routes
 userRouter.route("/").get(getAllUsers);
@@ -69,11 +79,11 @@ userRouter
 
 userRouter
   .route("/activate/:id")
-  .patch(protectedRoutes, activeValidator, activateSpecificUser);
-
-
-
-
-
+  .patch(
+    protectedRoutes,
+    activeValidator,
+    allowTo("admin"),
+    activateSpecificUser
+  );
 
 export default userRouter;
