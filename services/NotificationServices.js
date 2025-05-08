@@ -144,16 +144,24 @@ class NotificationService {
     console.log("Preparing to send FCM notification to:", fcmToken);
     if (!pharmacy?.fcmToken) return null;
 
-    const statusMessage = {
-      pending: "Your order is pending confirmation.",
-      processing: "Your order is now being processed.",
-      shipped: "Your order has been shipped.",
-      delivered: "Your order has been delivered.",
-      cancelled: "Your order has been cancelled.",
+    const statusMessages = {
+      pending: "Your order is pending confirmation",
+      confirmed: "Your order has been confirmed and is being prepared",
+      processing: "Your order is now being processed",
+      shipped: "Your order has been shipped and is on its way",
+      delivered: "Your order has been delivered successfully",
+      cancelled: "Your order has been cancelled",
+      rejected: "Your order has been rejected",
     };
 
-    const body =
-      statusMessage[order.status] || `Order status changed to ${order.status}`;
+    const currentStatus = order.status.current;
+    const lastHistoryEntry = order.status.history[order.status.history.length - 1];
+    const note = lastHistoryEntry?.note;
+
+    let body = statusMessages[currentStatus] || `Order status changed to ${currentStatus}`;
+    if (note) {
+      body += `\nNote: ${note}`;
+    }
 
     return await this.sendNotification(
       pharmacy.fcmToken,
@@ -165,7 +173,7 @@ class NotificationService {
       {
         userId: pharmacy._id,
         orderId: order._id,
-        status: order.status,
+        status: currentStatus,
       }
     );
   }
@@ -227,6 +235,37 @@ class NotificationService {
         rejectedBy: rejectedByInventory._id,
       }
     );
+  }
+
+  static async notifyInventoryNewOrder(order, pharmacy) {
+    try {
+      const inventory = await User.findById(order.inventory);
+
+      if (!inventory?.fcmToken) {
+        console.log(`No FCM token found for inventory ${order.inventory}`);
+        return null;
+      }
+
+      const body = `New order #${order.orderNumber} received from pharmacy ${pharmacy.name}. Total amount: ${order.pricing.total} EGP`;
+
+      return await this.sendNotification(
+        inventory.fcmToken,
+        "New Order Received",
+        body,
+        null,
+        "info",
+        `/orders/${order._id}`,
+        {
+          userId: inventory._id,
+          orderId: order._id,
+          pharmacyId: pharmacy._id,
+          type: "new_order",
+        }
+      );
+    } catch (error) {
+      console.error("Error sending new order notification:", error);
+      return null;
+    }
   }
 }
 

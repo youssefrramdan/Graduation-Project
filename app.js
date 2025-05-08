@@ -14,7 +14,7 @@ import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import categoryRouter from "./routes/category.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
-import "./jobs/drugExpirationJob.js";
+import initCronJobs from "./config/cronJobs.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -56,6 +56,9 @@ app.get("/ping", (req, res) => {
 app.all("*", (req, res, next) => {
   next(new ApiError(`Cant find this route ${req.originalUrl}`, 400));
 });
+
+// Initialize cron jobs
+initCronJobs();
 
 app.use(globalError);
 
