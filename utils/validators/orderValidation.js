@@ -47,12 +47,12 @@ export const createOrderValidator = [
       const inventory =
         await UserModel.findById(inventoryId).select("minimumOrderValue");
 
-    //   // Check if order meets minimum value requirement
-    //   if (inventoryItems.totalInventoryPrice < inventory.minimumOrderValue) {
-    //     throw new Error(
-    //       `Order total (${inventoryItems.totalInventoryPrice}) is less than the minimum required value (${inventory.minimumOrderValue})`
-    //     );
-    //   }
+      // Check if order meets minimum value requirement
+      if (inventoryItems.totalInventoryPrice < inventory.minimumOrderValue) {
+        throw new Error(
+          `Order total (${inventoryItems.totalInventoryPrice}) is less than the minimum required value (${inventory.minimumOrderValue})`
+        );
+      }
 
       // Validate stock availability
       const { isValid, unavailableItems } = await validateStockAvailability(
