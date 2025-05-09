@@ -267,6 +267,39 @@ class NotificationService {
       return null;
     }
   }
+
+  static async notifyPharmaciesForNewDrug(inventoryId, drugId) {
+    const inventory = await User.findById(inventoryId);
+    if (!inventory) return;
+  
+    const pharmacies = await User.find({
+      favourite: inventoryId,
+      role: "pharmacy",
+      fcmToken: { $ne: null },
+    });
+  
+    if (!pharmacies.length) return;
+  
+    const deviceTokens = pharmacies.map((ph) => ph.fcmToken);
+    const userIds = pharmacies.map((ph) => ph._id);
+  
+    const actionUrl = `/users/${inventoryId}`;
+  
+    await NotificationService.sendMultipleNotification(
+      deviceTokens,
+      "A inventory has added new drugs 💊",
+      `Inventory ${inventory.name} has added new drugs. Browse them now!`,
+      inventory.profileImage,
+      "info",
+      actionUrl,
+      {
+        userIds,
+        inventoryId,
+        drugId,
+      }
+    );
+  }
+  
 }
 
 export default NotificationService;

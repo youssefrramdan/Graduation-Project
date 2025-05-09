@@ -13,6 +13,7 @@ import {
   validateRowRange,
   formatDrugData,
 } from "../utils/excelUtils.js";
+import NotificationService from "../services/NotificationServices.js";
 
 // ======== Helper Functions ========
 
@@ -350,6 +351,8 @@ const addDrug = asyncHandler(async (req, res, next) => {
     }),
   ]);
 
+  await NotificationService.notifyPharmaciesForNewDrug(req.user._id, drug._id);
+
   res.status(201).json({
     status: "success",
     message: "Drug added successfully to your inventory",
@@ -485,6 +488,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
       },
     });
   }
+  await NotificationService.notifyPharmaciesForNewDrug(req.user._id, drugs._id);
 
   res.status(200).json({
     status: "success",
