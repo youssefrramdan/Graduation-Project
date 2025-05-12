@@ -15,6 +15,7 @@ import orderRouter from "./routes/order.routes.js";
 import categoryRouter from "./routes/category.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
 import initCronJobs from "./config/cronJobs.js";
+import cronRoutes from "./routes/corn.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
 
@@ -48,7 +49,7 @@ app.use("/api/v1/categories", categoryRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/orders", orderRouter);
-
+app.use("/api/v1/cron", cronRoutes);
 app.get("/ping", (req, res) => {
   res.status(200).send("pong");
 });
