@@ -14,7 +14,7 @@ import cartRouter from "./routes/cart.routes.js";
 import orderRouter from "./routes/order.routes.js";
 import categoryRouter from "./routes/category.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
-import initCronJobs from "./config/cronJobs.js";
+// import initCronJobs from "./config/cronJobs.js";
 import cronRoutes from "./routes/corn.routes.js";
 
 dotenv.config({ path: "./config/config.env" });
@@ -59,7 +59,7 @@ app.all("*", (req, res, next) => {
 });
 
 // Initialize cron jobs
-initCronJobs();
+// initCronJobs();
 
 app.use(globalError);
 
