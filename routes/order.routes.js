@@ -7,6 +7,7 @@ import {
   updateOrderStatus,
   cancelOrder,
   rejectOrder,
+  authorizeOrderOwner,
 } from "../controllers/order.controller.js";
 import {
   createOrderValidator,
@@ -21,22 +22,24 @@ const orderRouter = express.Router();
 orderRouter.use(protectedRoutes);
 
 // Create order from cart
-orderRouter.post(
-  "/cart/:cartId",
-  createOrderValidator,
-  createOrder
-);
+orderRouter.post("/cart/:cartId", createOrderValidator, createOrder);
 
 // Get all orders for logged-in user
 orderRouter.get("/my-orders", allowTo("pharmacy", "inventory"), getMyOrders);
 
 // Get specific order
-orderRouter.get("/:id", allowTo("pharmacy", "inventory"), getOrder);
+orderRouter.get(
+  "/:id",
+  allowTo("pharmacy", "inventory"),
+  authorizeOrderOwner,
+  getOrder
+);
 
 // Update order status
 orderRouter.patch(
   "/:id/status",
   allowTo("inventory"),
+  authorizeOrderOwner,
   updateOrderStatusValidator,
   updateOrderStatus
 );
@@ -45,6 +48,7 @@ orderRouter.patch(
 orderRouter.patch(
   "/:id/cancel",
   allowTo("pharmacy"),
+  authorizeOrderOwner,
   cancelOrderValidator,
   cancelOrder
 );
@@ -53,6 +57,7 @@ orderRouter.patch(
 orderRouter.patch(
   "/:id/reject",
   allowTo("inventory"),
+  authorizeOrderOwner,
   rejectOrderValidator,
   rejectOrder
 );

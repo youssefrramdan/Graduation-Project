@@ -12,6 +12,7 @@ import {
   updateDrug,
   updateDrugImage,
   updatePromotion,
+  authorizeDrugOwner,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -72,13 +73,15 @@ drugRouter
     protectedRoutes,
     uploadimg.single("imageCover"),
     allowTo("inventory"),
+    authorizeDrugOwner,
     updateDrugImage
   );
 
 drugRouter.patch(
-  "/:id/promotion",
+  "/promotion/:id",
   protectedRoutes,
   allowTo("inventory"),
+  authorizeDrugOwner,
   updatePromotion
 );
 
