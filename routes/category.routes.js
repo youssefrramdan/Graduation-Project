@@ -4,6 +4,7 @@ import {
   createCategory,
   deleteCategory,
   getAllCategories,
+  getInventoryCategories,
   getSpecificCategory,
   updateCategory,
 } from "../controllers/category.controller.js";
@@ -12,6 +13,7 @@ import drugRouter from "./drug.routes.js";
 
 const categoryRouter = express.Router();
 const upload = createUploader("category-image");
+
 categoryRouter
   .route("/")
   .post(
@@ -21,6 +23,12 @@ categoryRouter
     createCategory
   )
   .get(getAllCategories);
+
+categoryRouter.get(
+  "/myCategories",
+  protectedRoutes,
+  getInventoryCategories
+);  
 
 categoryRouter.use("/:categoryId/drugs", drugRouter);
 

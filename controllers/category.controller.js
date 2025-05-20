@@ -8,6 +8,7 @@ const createCategory = asyncHandler(async (req, res, next) => {
   if (req.file) {
     req.body.imageCover = req.file.path;
   }
+  req.body.createdBy = req.user._id;
   const category = await CategoryModel.create(req.body);
   res.status(201).json({
     message: "success",
@@ -73,10 +74,23 @@ const deleteCategory = asyncHandler(async (req, res, next) => {
   });
 });
 
+const getInventoryCategories = asyncHandler(async (req, res, next) => {
+  const drugs = await DrugModel.find({ createdBy: req.user._id });
+  const categoryIds = [...new Set(drugs.map((d) => d.category).filter(Boolean))];
+
+  const categories = await CategoryModel.find({ _id: { $in: categoryIds } });
+  res.status(200).json({
+    message: "success",
+    data: categories,
+  });
+});
+
+
 export {
   createCategory,
   getAllCategories,
   getSpecificCategory,
   updateCategory,
   deleteCategory,
+  getInventoryCategories
 };
