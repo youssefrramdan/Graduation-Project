@@ -12,6 +12,26 @@ import {
 } from "../services/orderService.js";
 import NotificationService from "../services/NotificationServices.js";
 import UserModel from "../models/User.model.js";
+/**
+ * Middleware to check if the current user is the owner of the order (pharmacy or inventory)
+ * Usage: add as middleware before controller (must have :id param)
+ */
+const authorizeOrderOwner = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const order = await OrderModel.findById(id);
+  if (!order) {
+    return next(new ApiError("Order not found", 404));
+  }
+  // Allow if user is the pharmacy or the inventory of the order
+  if (
+    String(order.pharmacy) !== String(req.user._id) &&
+    String(order.inventory) !== String(req.user._id)
+  ) {
+    return next(new ApiError("Not authorized to access this order", 403));
+  }
+  req.order = order;
+  next();
+});
 
 /**
  * @desc    Create a new order from cart items for a specific inventory
@@ -224,6 +244,7 @@ const rejectOrder = asyncHandler(async (req, res, next) => {
 });
 
 export {
+  authorizeOrderOwner,
   createOrder,
   getMyOrders,
   getOrder,

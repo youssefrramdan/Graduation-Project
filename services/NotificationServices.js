@@ -24,7 +24,6 @@ class NotificationService {
       imageUrl,
       type,
       actionUrl,
-      data,
       isRead: false,
       sentAt: new Date(),
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
@@ -66,7 +65,6 @@ class NotificationService {
           imageUrl,
           type,
           actionUrl,
-          data,
           isRead: false,
           sentAt: new Date(),
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
@@ -271,20 +269,20 @@ class NotificationService {
   static async notifyPharmaciesForNewDrug(inventoryId, drugId) {
     const inventory = await User.findById(inventoryId);
     if (!inventory) return;
-  
+
     const pharmacies = await User.find({
       favourite: inventoryId,
       role: "pharmacy",
       fcmToken: { $ne: null },
     });
-  
+
     if (!pharmacies.length) return;
-  
+
     const deviceTokens = pharmacies.map((ph) => ph.fcmToken);
     const userIds = pharmacies.map((ph) => ph._id);
-  
+
     const actionUrl = `/users/${inventoryId}`;
-  
+
     await NotificationService.sendMultipleNotification(
       deviceTokens,
       "A inventory has added new drugs 💊",
@@ -299,7 +297,7 @@ class NotificationService {
       }
     );
   }
-  
+
 }
 
 export default NotificationService;

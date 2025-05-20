@@ -196,6 +196,24 @@ const executeAggregationPipeline = async (pipeline, skip, limit) => {
   return { totalCount, drugs };
 };
 
+/**
+ * Middleware to check if the current user is the owner of the drug
+ * Usage: add as middleware before controller (must have :id param)
+ */
+const authorizeDrugOwner = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const drug = await DrugModel.findById(id);
+  if (!drug) {
+    return next(new ApiError("Drug not found.", 404));
+  }
+  if (String(drug.createdBy) !== String(req.user._id)) {
+    return next(new ApiError("Not authorized to modify this drug", 403));
+  }
+  // Attach drug to request for later use if needed
+  req.drug = drug;
+  next();
+});
+
 // ======== Controller Functions ========
 // [list from ai]--> drugs ----> drugs with location
 /**
@@ -696,34 +714,37 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
   });
 });
 
-const updatePromotion = asyncHandler(async (req, res) => {
-  const { isActive, buyQuantity, freeQuantity } = req.body;
-  const drugId = req.params.id;
-  const userId = req.user._id;
+const updatePromotion = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
+  const { buyQuantity, freeQuantity, isActive } = req.body;
 
-  const drug = await DrugModel.findById(drugId);
-
+  const drug = await DrugModel.findById(id);
   if (!drug) {
-    return res.status(404).json({ success: false, message: "Drug not found" });
+    return next(new ApiError("Drug not found.", 404));
   }
 
-  // تحديث تفاصيل العرض الترويجي
   drug.promotion = {
-    isActive: isActive ?? false,
-    buyQuantity: buyQuantity ?? drug.promotion?.buyQuantity,
-    freeQuantity: freeQuantity ?? drug.promotion?.freeQuantity,
+    ...drug.promotion,
+    ...(buyQuantity !== undefined ? { buyQuantity } : {}),
+    ...(freeQuantity !== undefined ? { freeQuantity } : {}),
+    ...(isActive !== undefined ? { isActive } : {}),
   };
 
   await drug.save();
+  const updatedDrug = await DrugModel.findById(id).populate({
+    path: "createdBy",
+    select: "name location shippingPrice profileImage",
+  });
 
   res.status(200).json({
-    success: true,
-    message: "Promotion updated",
-    data: drug.promotion,
+    status: "success",
+    message: "Promotion updated successfully",
+    data: updatedDrug,
   });
 });
 
 export {
+  authorizeDrugOwner,
   createFilterObject,
   addDrug,
   getAllDrugs,

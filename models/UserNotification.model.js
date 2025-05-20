@@ -21,10 +21,6 @@ const userNotificationSchema = new mongoose.Schema(
       default: "info",
     },
     actionUrl: String,
-    data: {
-      type: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
     isRead: {
       type: Boolean,
       default: false,
