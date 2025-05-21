@@ -714,34 +714,58 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
   });
 });
 
-const updatePromotion = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { buyQuantity, freeQuantity, isActive } = req.body;
 
-  const drug = await DrugModel.findById(id);
-  if (!drug) {
-    return next(new ApiError("Drug not found.", 404));
-  }
 
-  drug.promotion = {
-    ...drug.promotion,
-    ...(buyQuantity !== undefined ? { buyQuantity } : {}),
-    ...(freeQuantity !== undefined ? { freeQuantity } : {}),
-    ...(isActive !== undefined ? { isActive } : {}),
-  };
 
-  await drug.save();
-  const updatedDrug = await DrugModel.findById(id).populate({
-    path: "createdBy",
-    select: "name location shippingPrice profileImage",
+const getAllPromotionDrugs = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+ const promotionDrugs = await DrugModel.find({
+  "promotion.isActive": true,
+});
+
+  res.status(200).json({
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+const getAllPromotionDrugsForLoggedUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const promotionDrugs = await DrugModel.find({
+    createdBy: userId,
+    "promotion.isActive": true,
   });
 
   res.status(200).json({
-    status: "success",
-    message: "Promotion updated successfully",
-    data: updatedDrug,
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
   });
 });
+
+
+const getAllPromotionDrugsForSpecificInventory = asyncHandler(async (req, res) => {
+  const { inventoryId } = req.params;
+
+  const promotionDrugs = await DrugModel.find({
+    createdBy: inventoryId,
+    "promotion.isActive": true,
+  });
+
+  res.status(200).json({
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+
+
+
+
 
 export {
   authorizeDrugOwner,
@@ -755,6 +779,8 @@ export {
   deleteDrug,
   getAllDrugsForSpecificInventory,
   getAlternativeDrugsFromAI,
-  updatePromotion,
   addDrugWithPromotion,
+  getAllPromotionDrugs,
+  getAllPromotionDrugsForLoggedUser,
+  getAllPromotionDrugsForSpecificInventory
 };
