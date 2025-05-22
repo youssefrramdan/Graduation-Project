@@ -367,6 +367,30 @@ const removeFromFavourite = asyncHandler(async (req, res, next) => {
 });
 
 /**
+ * @desc    Remove all inventories from pharmacy favourite
+ * @route   DELETE /api/v1/users/favourite
+ * @access  Private (Pharmacy)
+ */
+
+const clearFavourites = asyncHandler(async (req, res, next) => {
+  const pharmacyId = req.user._id;
+
+  const pharmacy = await UserModel.findById(pharmacyId);
+  if (!pharmacy) {
+    return next(new ApiError("Pharmacy not found", 404));
+  }
+
+  pharmacy.favourite = []; 
+  await pharmacy.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "All favourites have been removed",
+    data: pharmacy.favourite,
+  });
+});
+
+/**
  * @desc    Get all inventories in pharmacy favourite
  * @route   GET /api/v1/users/favourite
  * @access  Private (Pharmacy)
@@ -640,6 +664,7 @@ export {
   getMyFavourite,
   addToFavourite,
   removeFromFavourite,
+  clearFavourites,
   getAdminStatistics,
   getInventoryStatistics,
 };
