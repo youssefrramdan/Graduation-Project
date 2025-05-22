@@ -13,11 +13,11 @@ import {
   updateDrugImage,
   authorizeDrugOwner,
   getOwnDrugs,
-//   getAllPromotionDrugs,
-//   getAllPromotionDrugsForLoggedUser,
-//   getAllPromotionDrugsForSpecificInventory,
-//   updatePromotionDrug,
-//   deletePromotionDrug,
+  getAllPromotionDrugs,
+  getAllPromotionDrugsForLoggedUser,
+  getAllPromotionDrugsForSpecificInventory,
+  updatePromotion,
+  deletePromotionDrug,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -33,37 +33,36 @@ const drugRouter = express.Router({ mergeParams: true });
 const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
-
-// drugRouter.get(
-//   "/promotion",
-//   protectedRoutes,
-//   allowTo("inventory"),
-//   getAllPromotionDrugs
-// );
-// drugRouter.get(
-//   "/promotion/my",
-//   protectedRoutes,
-//   allowTo("inventory"),
-//   getAllPromotionDrugsForLoggedUser
-// )
-// drugRouter.get(
-//   "/promotion/:inventoryId",
-//   protectedRoutes,
-//   allowTo("inventory"),
-//   getAllPromotionDrugsForSpecificInventory
-// )
-// drugRouter.put(
-//   "/promotion/:id",
-//   protectedRoutes,
-//   allowTo("inventory"),
-//  updatePromotionDrug
-// )
-// drugRouter.delete(
-//   "/promotion/:id",
-//   protectedRoutes,
-//   allowTo("inventory"),
-//  deletePromotionDrug
-// )
+drugRouter.get(
+  "/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugs
+);
+drugRouter.get(
+  "/promotion/my",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugsForLoggedUser
+);
+drugRouter.get(
+  "/promotion/:inventoryId",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugsForSpecificInventory
+);
+drugRouter.put(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+  updatePromotion
+);
+drugRouter.delete(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+  deletePromotionDrug
+);
 
 drugRouter.post(
   "/promotion",
@@ -71,11 +70,6 @@ drugRouter.post(
   allowTo("inventory"),
   addDrugWithPromotion
 );
-
-
-
-
-
 
 drugRouter
   .route("/excel")
@@ -94,9 +88,7 @@ drugRouter
 
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 
-drugRouter
-  .route("/inventory")
-  .get(protectedRoutes, getOwnDrugs);
+drugRouter.route("/inventory").get(protectedRoutes, getOwnDrugs);
 
 drugRouter.route("/inventory/:id").get(getAllDrugsForSpecificInventory);
 
@@ -125,9 +117,5 @@ drugRouter
     authorizeDrugOwner,
     updateDrugImage
   );
-
-
-
-
 
 export default drugRouter;

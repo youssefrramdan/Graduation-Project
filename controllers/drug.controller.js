@@ -794,11 +794,114 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
     data: updatedDrug,
   });
 });
+/**
+ * @desc    delete drug with promotion
+ * @route   DELETE /api/v1/drugs/promotion/:id
+ * @access  Private (Authenticated users only)
+ */
+const deletePromotionDrug = asyncHandler(async (req, res, next) => {
+  const promoDrugId = req.params.id;
+
+  const promoDrug = await DrugModel.findById(promoDrugId);
+  if (!promoDrug || !promoDrug.promotion?.isActive) {
+    return next(new ApiError("Promotional drug not found.", 404));
+  }
+
+  const { originalDrugId } = promoDrug.promotion;
+  const stockToRestore = promoDrug.stock;
+
+  await DrugModel.findByIdAndDelete(promoDrugId);
+
+  await DrugModel.findByIdAndUpdate(originalDrugId, {
+    $inc: { stock: stockToRestore },
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: "Promotional drug deleted and stock restored to original drug.",
+  });
+});
+
+/**
+ * @desc    get all drug with promotion
+ * @route   GET /api/v1/drugs/promotion
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugs = asyncHandler(async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 15;
+  const skip = (page - 1) * limit;
+
+  const filter = { "promotion.isActive": true };
+
+  const totalCount = await DrugModel.countDocuments(filter);
+
+  const promotionDrugs = await DrugModel.find(filter).skip(skip).limit(limit);
+
+  const paginationResult = {
+    currentPage: page,
+    limit,
+    numberOfPages: Math.ceil(totalCount / limit),
+  };
+
+  if (skip + limit < totalCount) paginationResult.next = page + 1;
+  if (skip > 0) paginationResult.prev = page - 1;
+
+  res.status(200).json({
+    success: true,
+    paginationResult,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+/**
+ * @desc    get all drug with promotion for loggedUser
+ * @route   GET /api/v1/drugs/promotion/my
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugsForLoggedUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const promotionDrugs = await DrugModel.find({
+    createdBy: userId,
+    "promotion.isActive": true,
+  });
+
+  res.status(200).json({
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+/**
+ * @desc    get all drug with promotion for Specific Inventory
+ * @route   GET /api/v1/drugs/promotion/:inventoryId
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugsForSpecificInventory = asyncHandler(
+  async (req, res) => {
+    const { inventoryId } = req.params;
+
+    const promotionDrugs = await DrugModel.find({
+      createdBy: inventoryId,
+      "promotion.isActive": true,
+    });
+
+    res.status(200).json({
+      success: true,
+      results: promotionDrugs.length,
+      data: promotionDrugs,
+    });
+  }
+);
 
 export {
   authorizeDrugOwner,
   createFilterObject,
   addDrug,
+  getOwnDrugs,
   getAllDrugs,
   addDrugsFromExcel,
   getSpecificDrug,
@@ -806,8 +909,11 @@ export {
   updateDrugImage,
   deleteDrug,
   getAllDrugsForSpecificInventory,
-  getOwnDrugs,
   getAlternativeDrugsFromAI,
-  updatePromotion,
   addDrugWithPromotion,
+  getAllPromotionDrugs,
+  getAllPromotionDrugsForLoggedUser,
+  getAllPromotionDrugsForSpecificInventory,
+  updatePromotion,
+  deletePromotionDrug,
 };
