@@ -526,7 +526,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
  * @access  Private/Public (Based on parameters)
  */
 const getOwnDrugs = asyncHandler(async (req, res, next) => {
-  const id = req.params.id || req.user._id;
+  const id = req.user._id;
 
   const baseQuery = { createdBy: id };
 
@@ -573,7 +573,7 @@ const getOwnDrugs = asyncHandler(async (req, res, next) => {
  * @access  Private/Public (Based on parameters)
  */
 const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
-  const id = req.params.id || req.user._id;
+  const { id } = req.params;
 
   const baseQuery = { createdBy: id };
 
@@ -589,6 +589,11 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
     features.mongooseQuery,
     UserModel.findById(id),
   ]);
+
+  // Check if user exists
+  if (!user) {
+    return next(new ApiError(`No user found with ID ${id}`, 404));
+  }
 
   const paginationResult = features.getPaginationResult();
 
