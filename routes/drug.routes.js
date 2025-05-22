@@ -15,6 +15,8 @@ import {
   getAllPromotionDrugs,
   getAllPromotionDrugsForLoggedUser,
   getAllPromotionDrugsForSpecificInventory,
+  updatePromotionDrug,
+  deletePromotionDrug,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -49,6 +51,20 @@ drugRouter.get(
   allowTo("inventory"),
   getAllPromotionDrugsForSpecificInventory
 )
+drugRouter.put(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+ updatePromotionDrug
+)
+drugRouter.delete(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+ deletePromotionDrug
+)
+
+
 
 
 
