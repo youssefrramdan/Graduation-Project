@@ -64,6 +64,14 @@ drugRouter.delete(
  deletePromotionDrug
 )
 
+drugRouter.post(
+  "/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  addDrugWithPromotion
+);
+
+
 
 
 
@@ -119,18 +127,6 @@ drugRouter
 
 
 
-drugRouter.post(
-  "/promotion",
-  protectedRoutes,
-  allowTo("inventory"),
-  addDrugWithPromotion
-);
 
-drugRouter.get(
-  "/promotion",
-  protectedRoutes,
-  allowTo("inventory"),
-  getAllPromotionDrugs
-);
 
 export default drugRouter;

@@ -620,7 +620,7 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
 
 /**
  * @desc    Add new drug with promotion - Performance optimized
- * @route   POST /api/v1/drugs
+ * @route   POST /api/v1/drugs/promotion
  * @access  Private (Authenticated users only)
  */
 const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
@@ -715,18 +715,22 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
 });
 
 
-
+/**
+ * @desc    update drug with promotion 
+ * @route   PUT /api/v1/drugs/promotion/:id
+ * @access  Private (Authenticated users only)
+ */
 const updatePromotionDrug = asyncHandler(async (req, res, next) => {
   const promoDrugId = req.params.id;
   const { promotion, originalDrugId, stock, ...drugData } = req.body;
 
-  // 1. Get existing promo drug
+
   const promoDrug = await DrugModel.findById(promoDrugId);
   if (!promoDrug || !promoDrug.promotion?.isActive) {
     return next(new ApiError("Promotional drug not found.", 404));
   }
 
-  // 2. Determine originalDrugId
+
   const effectiveOriginalDrugId = originalDrugId || promoDrug.promotion.originalDrugId;
 
   const originalDrug = await DrugModel.findById(effectiveOriginalDrugId);
@@ -734,7 +738,7 @@ const updatePromotionDrug = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Original drug not found.", 404));
   }
 
-  // 3. Use old promotion values if not sent
+ 
   const quantity = promotion?.quantity ?? promoDrug.promotion.buyQuantity;
   const freeItems = promotion?.freeItems ?? promoDrug.promotion.freeQuantity;
   const unitsPerPromotion = quantity + freeItems;
@@ -751,7 +755,7 @@ const updatePromotionDrug = asyncHandler(async (req, res, next) => {
   const totalPromotions = Math.floor(newStock / unitsPerPromotion);
   const paidUnits = totalPromotions * quantity;
 
-  // 4. Prepare updated data
+
   const updatedFields = {
     ...drugData,
     stock: newStock,
@@ -766,7 +770,7 @@ const updatePromotionDrug = asyncHandler(async (req, res, next) => {
     },
   };
 
-  // 5. Update promo drug
+
   const updatedDrug = await DrugModel.findByIdAndUpdate(
     promoDrugId,
     updatedFields,
@@ -776,7 +780,7 @@ const updatePromotionDrug = asyncHandler(async (req, res, next) => {
     select: "name location shippingPrice profileImage",
   });
 
-  // 6. Update original drug stock if needed
+ 
   if (stockDifference !== 0) {
     await DrugModel.findByIdAndUpdate(effectiveOriginalDrugId, {
       $inc: { stock: -stockDifference },
@@ -798,11 +802,15 @@ const updatePromotionDrug = asyncHandler(async (req, res, next) => {
   });
 });
 
-
+/**
+ * @desc    delete drug with promotion 
+ * @route   DELETE /api/v1/drugs/promotion/:id
+ * @access  Private (Authenticated users only)
+ */
 const deletePromotionDrug = asyncHandler(async (req, res, next) => {
   const promoDrugId = req.params.id;
 
-  // 1. Get the promotional drug
+
   const promoDrug = await DrugModel.findById(promoDrugId);
   if (!promoDrug || !promoDrug.promotion?.isActive) {
     return next(new ApiError("Promotional drug not found.", 404));
@@ -811,10 +819,10 @@ const deletePromotionDrug = asyncHandler(async (req, res, next) => {
   const originalDrugId = promoDrug.promotion.originalDrugId;
   const stockToRestore = promoDrug.stock;
 
-  // 2. Delete the promotional drug
+ 
   await DrugModel.findByIdAndDelete(promoDrugId);
 
-  // 3. Restore stock to original drug
+
   await DrugModel.findByIdAndUpdate(originalDrugId, {
     $inc: { stock: stockToRestore },
   });
@@ -828,7 +836,11 @@ const deletePromotionDrug = asyncHandler(async (req, res, next) => {
 
 
 
-
+/**
+ * @desc    get all drug with promotion 
+ * @route   GET /api/v1/drugs/promotion
+ * @access  Private (Authenticated users only)
+ */
 const getAllPromotionDrugs = asyncHandler(async (req, res) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 15;
@@ -859,7 +871,11 @@ const getAllPromotionDrugs = asyncHandler(async (req, res) => {
   });
 });
 
-
+/**
+ * @desc    get all drug with promotion for loggedUser
+ * @route   GET /api/v1/drugs/promotion/my
+ * @access  Private (Authenticated users only)
+ */
 const getAllPromotionDrugsForLoggedUser = asyncHandler(async (req, res) => {
   const userId = req.user._id;
 
@@ -875,7 +891,11 @@ const getAllPromotionDrugsForLoggedUser = asyncHandler(async (req, res) => {
   });
 });
 
-
+/**
+ * @desc    get all drug with promotion for Specific Inventory
+ * @route   GET /api/v1/drugs/promotion/:inventoryId
+ * @access  Private (Authenticated users only)
+ */
 const getAllPromotionDrugsForSpecificInventory = asyncHandler(async (req, res) => {
   const { inventoryId } = req.params;
 
