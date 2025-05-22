@@ -5,6 +5,7 @@ import {
   activateSpecificUser,
   addToFavourite,
   changeUserPassword,
+  clearFavourites,
   createUser,
   deactivateMe,
   deleteUser,
@@ -51,6 +52,9 @@ userRouter
 userRouter
   .route("/favourite/:inventoryId")
   .delete(protectedRoutes, allowTo("pharmacy"), removeFromFavourite);
+userRouter
+  .route("/favourite")
+  .delete(protectedRoutes, allowTo("pharmacy"), clearFavourites);  
 userRouter
   .route("/favourite")
   .get(protectedRoutes, allowTo("pharmacy"), getMyFavourite);
