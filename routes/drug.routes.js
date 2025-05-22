@@ -12,11 +12,11 @@ import {
   updateDrug,
   updateDrugImage,
   authorizeDrugOwner,
-  getAllPromotionDrugs,
-  getAllPromotionDrugsForLoggedUser,
-  getAllPromotionDrugsForSpecificInventory,
-  updatePromotionDrug,
-  deletePromotionDrug,
+//   getAllPromotionDrugs,
+//   getAllPromotionDrugsForLoggedUser,
+//   getAllPromotionDrugsForSpecificInventory,
+//   updatePromotionDrug,
+//   deletePromotionDrug,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -33,36 +33,36 @@ const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 
 
-drugRouter.get(
-  "/promotion",
-  protectedRoutes,
-  allowTo("inventory"),
-  getAllPromotionDrugs
-);
-drugRouter.get(
-  "/promotion/my",
-  protectedRoutes,
-  allowTo("inventory"),
-  getAllPromotionDrugsForLoggedUser
-)
-drugRouter.get(
-  "/promotion/:inventoryId",
-  protectedRoutes,
-  allowTo("inventory"),
-  getAllPromotionDrugsForSpecificInventory
-)
-drugRouter.put(
-  "/promotion/:id",
-  protectedRoutes,
-  allowTo("inventory"),
- updatePromotionDrug
-)
-drugRouter.delete(
-  "/promotion/:id",
-  protectedRoutes,
-  allowTo("inventory"),
- deletePromotionDrug
-)
+// drugRouter.get(
+//   "/promotion",
+//   protectedRoutes,
+//   allowTo("inventory"),
+//   getAllPromotionDrugs
+// );
+// drugRouter.get(
+//   "/promotion/my",
+//   protectedRoutes,
+//   allowTo("inventory"),
+//   getAllPromotionDrugsForLoggedUser
+// )
+// drugRouter.get(
+//   "/promotion/:inventoryId",
+//   protectedRoutes,
+//   allowTo("inventory"),
+//   getAllPromotionDrugsForSpecificInventory
+// )
+// drugRouter.put(
+//   "/promotion/:id",
+//   protectedRoutes,
+//   allowTo("inventory"),
+//  updatePromotionDrug
+// )
+// drugRouter.delete(
+//   "/promotion/:id",
+//   protectedRoutes,
+//   allowTo("inventory"),
+//  deletePromotionDrug
+// )
 
 drugRouter.post(
   "/promotion",
