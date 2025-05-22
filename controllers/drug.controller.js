@@ -525,7 +525,7 @@ const addDrugsFromExcel = asyncHandler(async (req, res, next) => {
  * @route   GET /api/v1/drugs/inventory/:id?
  * @access  Private/Public (Based on parameters)
  */
-const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
+const getOwnDrugs = asyncHandler(async (req, res, next) => {
   const id = req.params.id || req.user._id;
 
   const baseQuery = { createdBy: id };
@@ -560,6 +560,53 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
         governorate: user.governorate,
         location: user.location,
       },
+      drugs: drugs,
+    },
+  };
+
+  res.status(200).json(responseData);
+});
+
+/**
+ * @desc    Get all drugs for specific inventory
+ * @route   GET /api/v1/drugs/inventory/:id?
+ * @access  Private/Public (Based on parameters)
+ */
+const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
+  const id = req.params.id || req.user._id;
+
+  const baseQuery = { createdBy: id };
+
+  const features = new ApiFeatures(DrugModel.find(baseQuery).lean(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .search(["name", "manufacturer", "description", "originType"]);
+
+  await features.paginate();
+
+  const [drugs, user] = await Promise.all([
+    features.mongooseQuery,
+    UserModel.findById(id),
+  ]);
+
+  const paginationResult = features.getPaginationResult();
+
+  const responseData = {
+    status: "success",
+    pagination: paginationResult,
+    user: {
+      id: user._id,
+      name: user.name,
+      profileImage: user.profileImage,
+      phone: user.phone,
+      email: user.email,
+      city: user.city,
+      governorate: user.governorate,
+      location: user.location,
+    },
+    results: drugs.length,
+    data: {
       drugs: drugs,
     },
   };
@@ -754,6 +801,7 @@ export {
   updateDrugImage,
   deleteDrug,
   getAllDrugsForSpecificInventory,
+  getOwnDrugs,
   getAlternativeDrugsFromAI,
   updatePromotion,
   addDrugWithPromotion,

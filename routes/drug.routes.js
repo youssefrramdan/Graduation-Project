@@ -12,6 +12,7 @@ import {
   updateDrug,
   updateDrugImage,
   authorizeDrugOwner,
+  getOwnDrugs,
 //   getAllPromotionDrugs,
 //   getAllPromotionDrugsForLoggedUser,
 //   getAllPromotionDrugsForSpecificInventory,
@@ -95,7 +96,7 @@ drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 
 drugRouter
   .route("/inventory")
-  .get(protectedRoutes, getAllDrugsForSpecificInventory);
+  .get(protectedRoutes, getOwnDrugs);
 
 drugRouter.route("/inventory/:id").get(getAllDrugsForSpecificInventory);
 
