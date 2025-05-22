@@ -550,16 +550,6 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
     pagination: paginationResult,
     results: drugs.length,
     data: {
-      user: {
-        id: user._id,
-        name: user.name,
-        profileImage: user.profileImage,
-        phone: user.phone,
-        email: user.email,
-        city: user.city,
-        governorate: user.governorate,
-        location: user.location,
-      },
       drugs: drugs,
     },
   };
