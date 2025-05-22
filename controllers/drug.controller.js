@@ -548,7 +548,6 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
   const responseData = {
     status: "success",
     pagination: paginationResult,
-    results: drugs.length,
     user: {
       id: user._id,
       name: user.name,
@@ -559,6 +558,7 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
       governorate: user.governorate,
       location: user.location,
     },
+    results: drugs.length,
     data: {
       drugs: drugs,
     },
