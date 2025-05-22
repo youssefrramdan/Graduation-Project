@@ -11,8 +11,12 @@ import {
   getSpecificDrug,
   updateDrug,
   updateDrugImage,
-  updatePromotion,
   authorizeDrugOwner,
+  getAllPromotionDrugs,
+  getAllPromotionDrugsForLoggedUser,
+  getAllPromotionDrugsForSpecificInventory,
+  updatePromotionDrug,
+  deletePromotionDrug,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -27,6 +31,50 @@ import createUploader from "../middlewares/uploadImageMiddleware.js";
 const drugRouter = express.Router({ mergeParams: true });
 const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
+
+
+drugRouter.get(
+  "/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugs
+);
+drugRouter.get(
+  "/promotion/my",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugsForLoggedUser
+)
+drugRouter.get(
+  "/promotion/:inventoryId",
+  protectedRoutes,
+  allowTo("inventory"),
+  getAllPromotionDrugsForSpecificInventory
+)
+drugRouter.put(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+ updatePromotionDrug
+)
+drugRouter.delete(
+  "/promotion/:id",
+  protectedRoutes,
+  allowTo("inventory"),
+ deletePromotionDrug
+)
+
+drugRouter.post(
+  "/promotion",
+  protectedRoutes,
+  allowTo("inventory"),
+  addDrugWithPromotion
+);
+
+
+
+
+
 
 drugRouter
   .route("/excel")
@@ -77,19 +125,8 @@ drugRouter
     updateDrugImage
   );
 
-drugRouter.patch(
-  "/promotion/:id",
-  protectedRoutes,
-  allowTo("inventory"),
-  authorizeDrugOwner,
-  updatePromotion
-);
 
-drugRouter.post(
-  "/promotion",
-  protectedRoutes,
-  allowTo("inventory"),
-  addDrugWithPromotion
-);
+
+
 
 export default drugRouter;

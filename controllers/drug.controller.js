@@ -610,7 +610,7 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
 
 /**
  * @desc    Add new drug with promotion - Performance optimized
- * @route   POST /api/v1/drugs
+ * @route   POST /api/v1/drugs/promotion
  * @access  Private (Authenticated users only)
  */
 const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
@@ -704,34 +704,207 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
   });
 });
 
-const updatePromotion = asyncHandler(async (req, res, next) => {
-  const { id } = req.params;
-  const { buyQuantity, freeQuantity, isActive } = req.body;
 
-  const drug = await DrugModel.findById(id);
-  if (!drug) {
-    return next(new ApiError("Drug not found.", 404));
+/**
+ * @desc    update drug with promotion 
+ * @route   PUT /api/v1/drugs/promotion/:id
+ * @access  Private (Authenticated users only)
+ */
+const updatePromotionDrug = asyncHandler(async (req, res, next) => {
+  const promoDrugId = req.params.id;
+  const { promotion, originalDrugId, stock, ...drugData } = req.body;
+
+
+  const promoDrug = await DrugModel.findById(promoDrugId);
+  if (!promoDrug || !promoDrug.promotion?.isActive) {
+    return next(new ApiError("Promotional drug not found.", 404));
   }
 
-  drug.promotion = {
-    ...drug.promotion,
-    ...(buyQuantity !== undefined ? { buyQuantity } : {}),
-    ...(freeQuantity !== undefined ? { freeQuantity } : {}),
-    ...(isActive !== undefined ? { isActive } : {}),
+
+  const effectiveOriginalDrugId = originalDrugId || promoDrug.promotion.originalDrugId;
+
+  const originalDrug = await DrugModel.findById(effectiveOriginalDrugId);
+  if (!originalDrug) {
+    return next(new ApiError("Original drug not found.", 404));
+  }
+
+ 
+  const quantity = promotion?.quantity ?? promoDrug.promotion.buyQuantity;
+  const freeItems = promotion?.freeItems ?? promoDrug.promotion.freeQuantity;
+  const unitsPerPromotion = quantity + freeItems;
+
+  const newStock = stock ?? promoDrug.stock;
+  const stockDifference = newStock - promoDrug.stock;
+
+  if (stockDifference > 0 && originalDrug.stock < stockDifference) {
+    return next(
+      new ApiError("Not enough stock in original drug to update this promotion.", 400)
+    );
+  }
+
+  const totalPromotions = Math.floor(newStock / unitsPerPromotion);
+  const paidUnits = totalPromotions * quantity;
+
+
+  const updatedFields = {
+    ...drugData,
+    stock: newStock,
+    promotion: {
+      ...promoDrug.promotion,
+      isActive: true,
+      buyQuantity: quantity,
+      freeQuantity: freeItems,
+      unitsPerPromotion,
+      totalPromotions,
+      originalDrugId: effectiveOriginalDrugId,
+    },
   };
 
-  await drug.save();
-  const updatedDrug = await DrugModel.findById(id).populate({
+
+  const updatedDrug = await DrugModel.findByIdAndUpdate(
+    promoDrugId,
+    updatedFields,
+    { new: true }
+  ).populate({
     path: "createdBy",
     select: "name location shippingPrice profileImage",
   });
 
+ 
+  if (stockDifference !== 0) {
+    await DrugModel.findByIdAndUpdate(effectiveOriginalDrugId, {
+      $inc: { stock: -stockDifference },
+    });
+  }
+
   res.status(200).json({
     status: "success",
-    message: "Promotion updated successfully",
-    data: updatedDrug,
+    message: "Promotional drug updated successfully",
+    data: {
+      drug: updatedDrug,
+      promotionDetails: {
+        totalPromotions,
+        paidUnits,
+        freeUnits: newStock - paidUnits,
+        unitsPerPromotion,
+      },
+    },
   });
 });
+
+/**
+ * @desc    delete drug with promotion 
+ * @route   DELETE /api/v1/drugs/promotion/:id
+ * @access  Private (Authenticated users only)
+ */
+const deletePromotionDrug = asyncHandler(async (req, res, next) => {
+  const promoDrugId = req.params.id;
+
+
+  const promoDrug = await DrugModel.findById(promoDrugId);
+  if (!promoDrug || !promoDrug.promotion?.isActive) {
+    return next(new ApiError("Promotional drug not found.", 404));
+  }
+
+  const originalDrugId = promoDrug.promotion.originalDrugId;
+  const stockToRestore = promoDrug.stock;
+
+ 
+  await DrugModel.findByIdAndDelete(promoDrugId);
+
+
+  await DrugModel.findByIdAndUpdate(originalDrugId, {
+    $inc: { stock: stockToRestore },
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: "Promotional drug deleted and stock restored to original drug.",
+  });
+});
+
+
+
+
+/**
+ * @desc    get all drug with promotion 
+ * @route   GET /api/v1/drugs/promotion
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugs = asyncHandler(async (req, res) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 15;
+  const skip = (page - 1) * limit;
+
+  const filter = { "promotion.isActive": true };
+
+  const totalCount = await DrugModel.countDocuments(filter);
+
+  const promotionDrugs = await DrugModel.find(filter)
+    .skip(skip)
+    .limit(limit);
+
+  const paginationResult = {
+    currentPage: page,
+    limit,
+    numberOfPages: Math.ceil(totalCount / limit),
+  };
+
+  if (skip + limit < totalCount) paginationResult.next = page + 1;
+  if (skip > 0) paginationResult.prev = page - 1;
+
+  res.status(200).json({
+    success: true,
+    paginationResult,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+/**
+ * @desc    get all drug with promotion for loggedUser
+ * @route   GET /api/v1/drugs/promotion/my
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugsForLoggedUser = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+
+  const promotionDrugs = await DrugModel.find({
+    createdBy: userId,
+    "promotion.isActive": true,
+  });
+
+  res.status(200).json({
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+/**
+ * @desc    get all drug with promotion for Specific Inventory
+ * @route   GET /api/v1/drugs/promotion/:inventoryId
+ * @access  Private (Authenticated users only)
+ */
+const getAllPromotionDrugsForSpecificInventory = asyncHandler(async (req, res) => {
+  const { inventoryId } = req.params;
+
+  const promotionDrugs = await DrugModel.find({
+    createdBy: inventoryId,
+    "promotion.isActive": true,
+  });
+
+  res.status(200).json({
+    success: true,
+    results: promotionDrugs.length,
+    data: promotionDrugs,
+  });
+});
+
+
+
+
+
 
 export {
   authorizeDrugOwner,
@@ -745,6 +918,10 @@ export {
   deleteDrug,
   getAllDrugsForSpecificInventory,
   getAlternativeDrugsFromAI,
-  updatePromotion,
   addDrugWithPromotion,
+  getAllPromotionDrugs,
+  getAllPromotionDrugsForLoggedUser,
+  getAllPromotionDrugsForSpecificInventory,
+  updatePromotionDrug,
+  deletePromotionDrug
 };

@@ -506,6 +506,8 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
     totalSalesAgg,
     totalDrugs,
     lowStockDrugsCount,
+    outOfStockDrugsCount,
+    expiredDrugsCount,
     totalSoldAndStock,
     orderStatuses,
     categoriesStats,
@@ -520,6 +522,13 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
     DrugModel.countDocuments({ createdBy: userId }),
 
     DrugModel.countDocuments({ createdBy: userId, stock: { $lt: 500 } }),
+
+    DrugModel.countDocuments({ createdBy: userId, stock: { $eq: 0 } }),
+
+    DrugModel.countDocuments({
+      createdBy: userId,
+      expirationDate: { $lt: new Date() },
+    }),
 
     DrugModel.aggregate([
       { $match: { createdBy: userId } },
@@ -583,8 +592,17 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
   const totalStock = totalSoldAndStock[0]?.totalStock || 0;
   const soldPercentage = totalStock ? (totalSold / totalStock) * 100 : 0;
 
-  const statusCounts = orderStatuses.reduce((acc, item) => {
-    acc[item.status] = item.count;
+
+  const allPossibleStatuses = ["pending",
+              "confirmed",
+              "processing",
+              "shipped",
+              "delivered",
+              "cancelled",
+              "rejected",];
+  const statusCounts = allPossibleStatuses.reduce((acc, status) => {
+    const found = orderStatuses.find((item) => item.status === status);
+    acc[status] = found ? found.count : 0;
     return acc;
   }, {});
 
@@ -595,6 +613,8 @@ const getInventoryStatistics = asyncHandler(async (req, res, next) => {
       totalSales,
       totalDrugs,
       lowStockDrugs: lowStockDrugsCount,
+      outOfStockDrugs: outOfStockDrugsCount,
+      expiredDrugs: expiredDrugsCount,
       soldPercentage,
       orderStatuses: statusCounts,
       categoriesStats,

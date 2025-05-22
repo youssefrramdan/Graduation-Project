@@ -18,6 +18,11 @@ const CategorySchema = new mongoose.Schema(
       type: String,
       required: [true, "Category cover image is required"],
     },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
   },
   {
     timestamps: true,
