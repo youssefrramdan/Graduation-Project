@@ -651,15 +651,15 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
       });
     const result = drugs.map((drug) => ({
       inventory: {
-        id: drug.createdBy?._id,
+        _id: drug.createdBy?._id,
         name: drug.createdBy?.name,
         profileImage: drug.createdBy?.profileImage,
       },
       category: {
-        id: drug.category?._id,
+        _id: drug.category?._id,
         name: drug.category?.name,
       },
-      id: drug._id,
+      _id: drug._id,
       name: drug.name,
       manufacturer: drug.manufacturer,
       description: drug.description,
