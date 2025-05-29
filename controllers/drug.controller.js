@@ -640,15 +640,24 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
       name: {
         $in: drugNames.map((name) => new RegExp(`^${name.trim()}$`, "i")),
       },
-    }).populate({
-      path: "createdBy",
-      select: "name",
-    });
-
+    })
+      .populate({
+        path: "createdBy",
+        select: "name profileImage",
+      })
+      .populate({
+        path: "category",
+        select: "name _id",
+      });
     const result = drugs.map((drug) => ({
       inventory: {
         id: drug.createdBy?._id,
         name: drug.createdBy?.name,
+        profileImage: drug.createdBy?.profileImage,
+      },
+      category: {
+        id: drug.category?._id,
+        name: drug.category?.name,
       },
       id: drug._id,
       name: drug.name,
