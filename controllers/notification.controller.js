@@ -83,13 +83,10 @@ export const getNotification = asyncHandler(async (req, res, next) => {
 });
 
 export const getMyNotifications = asyncHandler(async (req, res, next) => {
-  // Add user ID to query params for filtering
-  req.query.userId = req.user._id;
-
   // Create base mongoose query
-  const mongooseQuery = UserNotification.find().select(
-    "-expiresAt -createdAt -updatedAt -__v"
-  );
+  const mongooseQuery = UserNotification.find({ userId: req.user._id })
+    .populate("userId", "name email role")
+    .select("-expiresAt -createdAt -updatedAt -__v");
 
   // Build query using ApiFeatures
   const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
