@@ -1,6 +1,7 @@
-import asyncHandler from 'express-async-handler';
-import UserNotification from '../models/UserNotification.model.js';
-import ApiError from '../utils/apiError.js';
+import asyncHandler from "express-async-handler";
+import UserNotification from "../models/UserNotification.model.js";
+import ApiError from "../utils/apiError.js";
+import ApiFeatures from "../utils/apiFeatures.js";
 
 /**
  * @desc    Create a new notification
@@ -8,7 +9,7 @@ import ApiError from '../utils/apiError.js';
  * @access  Private
  */
 export const createNotification = asyncHandler(async (req, res, next) => {
-  const { title, body, imageUrl, type, actionUrl, data, expiresAt } = req.body;
+  const { title, body, imageUrl, type, actionUrl, data } = req.body;
 
   const notification = await UserNotification.create({
     userId: req.user._id,
@@ -18,56 +19,97 @@ export const createNotification = asyncHandler(async (req, res, next) => {
     type,
     actionUrl,
     data,
-    expiresAt: expiresAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
   });
 
   res.status(201).json({
-    status: 'success',
+    status: "success",
+    data: notification,
+  });
+});
+
+/**
+ * @desc    Get all notifications (Admin only)
+ * @route   GET /api/v1/notifications
+ * @access  Private/Admin
+ */
+export const getAllNotifications = asyncHandler(async (req, res, next) => {
+  // Create base mongoose query
+  const mongooseQuery = UserNotification.find()
+    .populate("userId", "name email role")
+    .select("-expiresAt -createdAt -updatedAt -__v");
+
+  // Build query using ApiFeatures
+  const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
+    .filter()
+    .search(["title", "body"])
+    .sort()
+    .limitFields();
+
+  // Apply pagination
+  await apiFeatures.paginate();
+
+  // Execute query
+  const notifications = await apiFeatures.mongooseQuery;
+
+  // Get pagination result
+  const paginationResult = apiFeatures.getPaginationResult();
+
+  res.status(200).json({
+    status: "success",
+    pagination: paginationResult,
+    results: notifications.length,
+    data: notifications,
+  });
+});
+
+/**
+ * @desc    Get specific notification by ID
+ * @route   GET /api/v1/notifications/:id
+ * @access  Private
+ */
+export const getNotification = asyncHandler(async (req, res, next) => {
+  const notification = await UserNotification.findById(req.params.id).select(
+    "-expiresAt -createdAt -updatedAt -__v"
+  );
+
+  if (!notification) {
+    return next(new ApiError("Notification not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
     data: notification,
   });
 });
 
 export const getMyNotifications = asyncHandler(async (req, res, next) => {
-  const { filterBy, sort } = req.query;
+  // Add user ID to query params for filtering
+  req.query.userId = req.user._id;
 
-  // Base query always filters by current user
-  const query = { userId: req.user._id };
+  // Create base mongoose query
+  const mongooseQuery = UserNotification.find().select(
+    "-expiresAt -createdAt -updatedAt -__v"
+  );
 
-  // Apply filters based on filterBy parameter
-  switch (filterBy) {
-    case 'read':
-      query.isRead = true;
-      break;
+  // Build query using ApiFeatures
+  const apiFeatures = new ApiFeatures(mongooseQuery, req.query)
+    .filter()
+    .search(["title", "body"])
+    .sort()
+    .limitFields();
 
-    case 'unRead':
-      query.isRead = false;
-      break;
+  // Apply pagination
+  await apiFeatures.paginate();
 
-    case 'active':
-      query.expiresAt = { $gt: new Date() };
-      break;
+  // Execute query
+  const notifications = await apiFeatures.mongooseQuery;
 
-    case 'all':
-    default:
-      // No additional filters needed for 'all'
-      break;
-  }
-
-  // Create and configure the mongoose query
-  let mongooseQuery = UserNotification.find(query);
-
-  // Handle sorting
-  if (sort) {
-    const sortBy = sort.split(',').join(' ');
-    mongooseQuery = mongooseQuery.sort(sortBy);
-  } else {
-    mongooseQuery = mongooseQuery.sort('-createdAt');
-  }
-
-  const notifications = await mongooseQuery;
+  // Get pagination result
+  const paginationResult = apiFeatures.getPaginationResult();
 
   res.status(200).json({
-    status: 'success',
+    status: "success",
+    pagination: paginationResult,
     results: notifications.length,
     data: notifications,
   });
@@ -85,18 +127,17 @@ export const markAsRead = asyncHandler(async (req, res, next) => {
     {
       _id: notificationId,
       userId: req.user._id,
-      expiresAt: { $gt: new Date() },
     },
     { isRead: true },
     { new: true }
   );
 
   if (!notification) {
-    return next(new ApiError('Notification not found or has expired', 404));
+    return next(new ApiError("Notification not found", 404));
   }
 
   res.status(200).json({
-    status: 'success',
+    status: "success",
     data: notification,
   });
 });
@@ -111,14 +152,13 @@ export const markAllAsRead = asyncHandler(async (req, res, next) => {
     {
       userId: req.user._id,
       isRead: false,
-      expiresAt: { $gt: new Date() }, // Only mark active notifications as read
     },
     { isRead: true }
   );
 
   res.status(200).json({
-    status: 'success',
-    message: 'All active notifications marked as read',
+    status: "success",
+    message: "All notifications marked as read",
   });
 });
 
@@ -136,12 +176,12 @@ export const deleteNotification = asyncHandler(async (req, res, next) => {
   });
 
   if (!notification) {
-    return next(new ApiError('Notification not found', 404));
+    return next(new ApiError("Notification not found", 404));
   }
 
   res.status(200).json({
-    status: 'success',
-    message: 'Notification deleted successfully',
+    status: "success",
+    message: "Notification deleted successfully",
   });
 });
 
@@ -154,32 +194,12 @@ export const getUnreadCount = asyncHandler(async (req, res, next) => {
   const count = await UserNotification.countDocuments({
     userId: req.user._id,
     isRead: false,
-    expiresAt: { $gt: new Date() },
   });
 
   res.status(200).json({
-    status: 'success',
+    status: "success",
     data: {
       unreadCount: count,
     },
   });
 });
-
-/**
- * @desc    Delete expired notifications
- * @route   DELETE /api/v1/notifications/expired
- * @access  Private
- */
-export const deleteExpiredNotifications = asyncHandler(
-  async (req, res, next) => {
-    const result = await UserNotification.deleteMany({
-      userId: req.user._id,
-      expiresAt: { $lt: new Date() },
-    });
-
-    res.status(200).json({
-      status: 'success',
-      message: `${result.deletedCount} expired notifications deleted`,
-    });
-  }
-);

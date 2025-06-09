@@ -26,7 +26,6 @@ class NotificationService {
       actionUrl,
       isRead: false,
       sentAt: new Date(),
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     });
 
     // Prepare Firebase message
@@ -67,7 +66,6 @@ class NotificationService {
           actionUrl,
           isRead: false,
           sentAt: new Date(),
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         });
       })
     );
@@ -153,10 +151,13 @@ class NotificationService {
     };
 
     const currentStatus = order.status.current;
-    const lastHistoryEntry = order.status.history[order.status.history.length - 1];
+    const lastHistoryEntry =
+      order.status.history[order.status.history.length - 1];
     const note = lastHistoryEntry?.note;
 
-    let body = statusMessages[currentStatus] || `Order status changed to ${currentStatus}`;
+    let body =
+      statusMessages[currentStatus] ||
+      `Order status changed to ${currentStatus}`;
     if (note) {
       body += `\nNote: ${note}`;
     }
@@ -297,7 +298,6 @@ class NotificationService {
       }
     );
   }
-
 }
 
 export default NotificationService;
