@@ -221,6 +221,7 @@ const clearUserCart = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "success",
+    message: "Cart cleared successfully",
     data: {
       _id: null,
       pharmacy: req.user._id,
