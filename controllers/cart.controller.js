@@ -192,6 +192,7 @@ const removeInventoryFromCart = asyncHandler(async (req, res) => {
     await CartModel.findOneAndDelete({ pharmacy: req.user._id });
     return res.status(200).json({
       status: "success",
+      message: "Cart emptied and deleted",
       data: {
         pharmacy: req.user._id,
         inventories: [],
