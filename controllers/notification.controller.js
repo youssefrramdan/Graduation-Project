@@ -200,3 +200,19 @@ export const getUnreadCount = asyncHandler(async (req, res, next) => {
     },
   });
 });
+
+/**
+ * @desc    Delete all notifications for the current user
+ * @route   DELETE /api/v1/notifications
+ * @access  Private
+ */
+export const deleteAllNotifications = asyncHandler(async (req, res, next) => {
+  const result = await UserNotification.deleteMany({ userId: req.user._id });
+
+  res.status(200).json({
+    status: "success",
+    message: "All notifications deleted successfully",
+    deletedCount: result.deletedCount,
+  });
+});
+
