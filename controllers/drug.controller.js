@@ -119,6 +119,7 @@ const createProjectStage = (query) => {
     expirationDate: "$drugs.expirationDate",
     imageCover: "$drugs.imageCover",
     distanceInKm: { $divide: ["$calcDistance", 1000] },
+    promotion: "$drugs.promotion",
     inventory: {
       _id: "$inventory._id",
       name: "$inventory.name",
@@ -334,6 +335,11 @@ const getSpecificDrug = asyncHandler(async (req, res, next) => {
     .populate({
       path: "createdBy",
       select: "name shippingPrice profileImage",
+      options: { lean: true },
+    })
+    .populate({
+      path: "category",
+      select: "name imageCover",
       options: { lean: true },
     })
     .lean();
