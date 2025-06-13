@@ -8,6 +8,7 @@ import {
   getUnreadCount,
   getAllNotifications,
   getNotification,
+  deleteAllNotifications,
 } from "../controllers/notification.controller.js";
 import { protectedRoutes, allowTo } from "../controllers/auth.controller.js";
 import admin from "../firebase/firebase.js";
@@ -71,6 +72,9 @@ router.patch("/read-all", markAllAsRead);
 
 // Create a new notification
 router.post("/", createNotification);
+
+// Delete all notifications for the current user
+router.delete("/deleteAll", deleteAllNotifications);
 
 // Public routes (for authenticated users)
 router.get("/:id", getNotification);
