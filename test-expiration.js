@@ -11,10 +11,10 @@ mongoose
     console.log("Connected to MongoDB");
     return testExpirationCheck();
   })
-  .then(() => {
-    console.log("cleanupOldOrders");
-    return CleanupService.cleanupOldOrders();
-  })
+//   .then(() => {
+//     console.log("cleanupOldOrders");
+//     return CleanupService.cleanupOldOrders();
+//   })
   .then(() => {
     console.log("Test completed");
     process.exit(0);
