@@ -36,7 +36,6 @@ const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 drugRouter.get(
   "/promotion",
   protectedRoutes,
-  allowTo("inventory"),
   getAllPromotionDrugs
 );
 drugRouter.get(
