@@ -847,28 +847,117 @@ const getAllPromotionDrugs = asyncHandler(async (req, res) => {
   const limit = Number(req.query.limit) || 15;
   const skip = (page - 1) * limit;
 
+  // ======= Create filter ===========
   const filter = { "promotion.isActive": true };
 
+  if (req.query.keyword) {
+    const keyword = req.query.keyword;
+    const regex = new RegExp(keyword, "i");
+    filter.$or = [
+      { name: { $regex: regex } },
+      { manufacturer: { $regex: regex } },
+      { description: { $regex: regex } },
+      { originType: { $regex: regex } },
+    ];
+  }
+
+  // Support price filters, discount, etc.
+  if (req.query.price) {
+    filter.price = {};
+    if (req.query.price.gte) filter.price.$gte = Number(req.query.price.gte);
+    if (req.query.price.lte) filter.price.$lte = Number(req.query.price.lte);
+  }
+
+  if (req.query.discount) {
+    filter.discount = {};
+    if (req.query.discount.gte) filter.discount.$gte = Number(req.query.discount.gte);
+    if (req.query.discount.lte) filter.discount.$lte = Number(req.query.discount.lte);
+  }
+
+  // ======= Sort ===========
+  let sort = {};
+  if (req.query.sort) {
+    const fields = req.query.sort.split(",");
+    for (const field of fields) {
+      if (field.startsWith("-")) {
+        sort[field.slice(1)] = -1;
+      } else {
+        sort[field] = 1;
+      }
+    }
+  } else {
+    sort = { createdAt: -1 }; // default sort by newest
+  }
+
+  // ======= Select fields ===========
+  let selectedFields = null;
+  if (req.query.fields) {
+    selectedFields = req.query.fields.split(",").join(" ");
+  }
+
+  // ======= Get total ===========
   const totalCount = await DrugModel.countDocuments(filter);
 
-  const promotionDrugs = await DrugModel.find(filter).skip(skip).limit(limit);
+  // ======= Query ===========
+  const rawDrugs = await DrugModel.find(filter)
+    .select(selectedFields)
+    .sort(sort)
+    .skip(skip)
+    .limit(limit)
+    .populate({
+      path: "createdBy",
+      select: "name profileImage",
+    })
+    .populate({
+      path: "category",
+      select: "name imageCover",
+    });
 
+  const drugs = rawDrugs.map((drug) => ({
+    inventory: {
+      _id: drug.createdBy?._id,
+      name: drug.createdBy?.name,
+      profileImage: drug.createdBy?.profileImage,
+      location: drug.createdBy?.location,
+      shippingPrice: drug.createdBy?.shippingPrice,
+    },
+    category: {
+      _id: drug.category?._id,
+      name: drug.category?.name,
+      imageCover: drug.category?.imageCover,
+    },
+    _id: drug._id,
+    name: drug.name,
+    manufacturer: drug.manufacturer,
+    description: drug.description,
+    price: drug.price,
+    discount: drug.discount,
+    discountedPrice: drug.discountedPrice,
+    stock: drug.stock,
+    productionDate: drug.productionDate,
+    expirationDate: drug.expirationDate,
+    imageCover: drug.imageCover,
+    promotion: drug.promotion,
+  }));
+
+  // ======= Pagination ===========
   const paginationResult = {
     currentPage: page,
     limit,
     numberOfPages: Math.ceil(totalCount / limit),
   };
-
   if (skip + limit < totalCount) paginationResult.next = page + 1;
   if (skip > 0) paginationResult.prev = page - 1;
 
   res.status(200).json({
-    success: true,
+    status: "success",
     paginationResult,
-    results: promotionDrugs.length,
-    data: promotionDrugs,
+    results: drugs.length,
+    data: drugs,
   });
 });
+
+
 
 /**
  * @desc    get all drug with promotion for loggedUser
