@@ -943,6 +943,67 @@ const getAllPromotionDrugsForSpecificInventory = asyncHandler(
   }
 );
 
+/**
+ * @desc    Process prescription image and extract drugs
+ * @route   POST /api/v1/drugs/prescription/analyze
+ * @access  Private (Authenticated users only)
+ */
+const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ApiError("Please upload a prescription image", 400));
+  }
+
+  try {
+    // Get the uploaded image URL from Cloudinary
+    const imageUrl = req.file.path;
+
+    // Send the image URL to the external API
+    const response = await axios.post(
+      "https://medical-prescription-8d8683189cd3.herokuapp.com/api/predict",
+      {
+        image_url: imageUrl,
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        timeout: 30000, // 30 seconds timeout
+      }
+    );
+
+    // Return the response from the external API
+    res.status(200).json({
+      status: "success",
+      message: "Prescription analyzed successfully",
+      data: {
+        imageUrl: imageUrl,
+        analysis: response.data,
+      },
+    });
+  } catch (error) {
+    console.error("Error analyzing prescription:", error);
+
+    if (error.code === "ECONNABORTED") {
+      return next(
+        new ApiError("Request timeout. Please try again later.", 408)
+      );
+    }
+
+    if (error.response) {
+      return next(
+        new ApiError(
+          `External API error: ${error.response.data?.message || "Failed to analyze prescription"}`,
+          error.response.status
+        )
+      );
+    }
+
+    return next(
+      new ApiError("Failed to analyze prescription. Please try again.", 500)
+    );
+  }
+});
+
 export {
   authorizeDrugOwner,
   createFilterObject,
@@ -962,4 +1023,5 @@ export {
   getAllPromotionDrugsForSpecificInventory,
   updatePromotion,
   deletePromotionDrug,
+  analyzePrescriptionImage,
 };

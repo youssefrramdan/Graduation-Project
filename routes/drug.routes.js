@@ -18,6 +18,7 @@ import {
   getAllPromotionDrugsForSpecificInventory,
   updatePromotion,
   deletePromotionDrug,
+  analyzePrescriptionImage,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -32,12 +33,13 @@ import createUploader from "../middlewares/uploadImageMiddleware.js";
 const drugRouter = express.Router({ mergeParams: true });
 const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
+const uploadPrescription = createUploader("prescriptions", [
+  "jpeg",
+  "jpg",
+  "png",
+]);
 
-drugRouter.get(
-  "/promotion",
-  protectedRoutes,
-  getAllPromotionDrugs
-);
+drugRouter.get("/promotion", protectedRoutes, getAllPromotionDrugs);
 drugRouter.get(
   "/promotion/my",
   protectedRoutes,
@@ -86,6 +88,13 @@ drugRouter
   .get(protectedRoutes, createFilterObject, getAllDrugs);
 
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
+
+drugRouter
+  .route("/prescription/analyze")
+  .post(
+    uploadPrescription.single("image"),
+    analyzePrescriptionImage
+  );
 
 drugRouter.route("/inventory").get(protectedRoutes, getOwnDrugs);
 
