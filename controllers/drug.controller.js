@@ -970,14 +970,34 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
         timeout: 30000, // 30 seconds timeout
       }
     );
-
-    // Return the response from the external API
+    // Extract and organize the data from external API response
+    const externalData = response.data.data;
+    // Return organized response
     res.status(200).json({
       status: "success",
       message: "Prescription analyzed successfully",
       data: {
         imageUrl: imageUrl,
-        analysis: response.data,
+        prescription: {
+          patient: {
+            name: externalData.patient_name,
+            age: externalData.patient_age,
+            gender: externalData.patient_gender,
+          },
+          doctor: {
+            name: externalData.doctor_name,
+            license: externalData.doctor_license,
+          },
+          prescriptionDate: externalData.prescription_date,
+          medications: externalData.medications.map((med) => ({
+            name: med.name,
+            dosage: med.dosage,
+            frequency: med.frequency,
+            duration: med.duration,
+          })),
+          additionalNotes: externalData.additional_notes,
+          medicationsCount: externalData.medications.length,
+        },
       },
     });
   } catch (error) {

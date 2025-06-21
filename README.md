@@ -8,7 +8,7 @@ This project is a **Pharmacy-Storage Management System** that connects **pharmac
 
 ## 🌍 Deployment
 
-The project is deployed using **Koyeb** at the following link:  
+The project is deployed using **Koyeb** at the following link:
 🔗 https://pflow.koyeb.app
 
 ### 🌐 Access the Live Application
@@ -27,35 +27,40 @@ You can test the API using **Postman Workspace**:
 
 ## 🔥 Features
 
-✅ **Authentication:** Login and registration for pharmacies and drug stores.  
-✅ **User Management:** Management of pharmacies, drug stores, and admin roles.  
-✅ **Medicine Management:** Add, update, and view medicines.  
-✅ **Orders System:** Create, track, and manage orders between pharmacies and drug stores.  
-✅ **Location-based Search:** Find the nearest drug store based on pharmacy location.  
-✅ **Messaging System:** Communication between pharmacies and drug stores.  
-✅ **Reports & Analytics:** Track orders, stock levels, and sales performance.  
+✅ **Authentication:** Login and registration for pharmacies and drug stores.
+✅ **User Management:** Management of pharmacies, drug stores, and admin roles.
+✅ **Medicine Management:** Add, update, and view medicines.
+✅ **Orders System:** Create, track, and manage orders between pharmacies and drug stores.
+✅ **Location-based Search:** Find the nearest drug store based on pharmacy location.
+✅ **Messaging System:** Communication between pharmacies and drug stores.
+✅ **Reports & Analytics:** Track orders, stock levels, and sales performance.
 
 ---
 
 ## 🛠 Technologies Used
 
 ### ⚙ **Backend**
+
 - 🟢 **Node.js**
 - ⚡ **Express.js**
 
 ### 💾 **Database**
+
 - 🍃 **MongoDB**
 - 🔴 **Mongoose**
 
 ### 🔧 **Version Control**
+
 - 🔴 **Git**
 - 🟡 **GitHub**
 
 ### 📦 **Other Tools**
-- 🔴 **Postman** *(API Testing)*
+
+- 🔴 **Postman** _(API Testing)_
 
 ### 🚀 **Deployment**
-- 🔴 **Koyeb** *(Hosting Service)*
+
+- 🔴 **Koyeb** _(Hosting Service)_
 - 📊 **Monitoring & Logging**
 
 ---
@@ -98,6 +103,7 @@ JWT_EXPIRE_TIME=3d
 EMAIL_USER=your_email@example.com
 EMAIL_PASS=your_email_password
 ```
+
 ⚠ **Make sure not to share these credentials publicly and add `.env` to `.gitignore`.**
 
 ### 4️⃣ Run the Application
@@ -135,11 +141,77 @@ The server will run at `http://localhost:8000`.
 | `POST` | `/verifyResetCode` | Verify reset code                      |
 | `PUT`  | `/resetPassword`   | Reset password                         |
 
+### **Prescription Analysis Endpoint** (`/api/v1/drugs/prescription/analyze`)
+
+#### POST /api/v1/drugs/prescription/analyze
+
+**Description**: تحليل صور الروشتات الطبية واستخراج معلومات الأدوية
+
+**Authentication**: Required (Bearer Token)
+
+**Request**:
+
+- Method: POST
+- Content-Type: multipart/form-data
+- Body:
+  - `image`: صورة الروشتة (jpeg, jpg, png)
+
+**Response Example**:
+
+```json
+{
+  "status": "success",
+  "message": "Prescription analyzed successfully",
+  "data": {
+    "imageUrl": "https://res.cloudinary.com/dqicm2ir2/raw/upload/v1750502532/prescriptions/image-1750502531848-photo.jpg",
+    "prescription": {
+      "patient": {
+        "name": "Patient Name",
+        "age": 30,
+        "gender": "Male"
+      },
+      "doctor": {
+        "name": "Dr. Doctor Name",
+        "license": "68237"
+      },
+      "prescriptionDate": "2022-10-17",
+      "medications": [
+        {
+          "name": "Diab Hamlo",
+          "dosage": "1mg",
+          "frequency": "Once a day",
+          "duration": "20 days"
+        },
+        {
+          "name": "Tab. Arvont",
+          "dosage": "1mg",
+          "frequency": "Once a day",
+          "duration": "30 days"
+        }
+      ],
+      "additionalNotes": "k/c/o - Hypertension & Hypothyroid\nc/o - Fever since 3 days...",
+      "medicationsCount": 4
+    },
+    "apiResponse": {
+      "success": true,
+      "message": "Prescription processed successfully"
+    }
+  }
+}
+```
+
+**Error Responses**:
+
+- `400`: No prescription image provided
+- `408`: Request timeout
+- `500`: Analysis failed or invalid API response
+
 ---
 
 ## ⚠ Error Handling
 
 The application supports **global error handling** for:
+
 - ❌ **Unhandled Promise Rejections**
 - ❌ **Uncaught Exceptions**
 - ❌ **Invalid Routes**
@@ -157,4 +229,3 @@ Contributions are welcome! Feel free to **fork** the repository and submit **pul
 This project is licensed under the **MIT License**.
 
 ---
-
