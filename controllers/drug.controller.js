@@ -115,6 +115,7 @@ const createProjectStage = (query) => {
     discount: "$drugs.discount",
     discountedPrice: "$drugs.discountedPrice",
     stock: "$drugs.stock",
+    sold: "$drugs.sold",
     productionDate: "$drugs.productionDate",
     expirationDate: "$drugs.expirationDate",
     imageCover: "$drugs.imageCover",
