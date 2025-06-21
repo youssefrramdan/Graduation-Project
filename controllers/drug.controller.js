@@ -843,70 +843,20 @@ const deletePromotionDrug = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const getAllPromotionDrugs = asyncHandler(async (req, res) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 15;
-  const skip = (page - 1) * limit;
+  const baseQuery = { "promotion.isActive": true };
 
-  // ======= Create filter ===========
-  const filter = { "promotion.isActive": true };
+  const features = new ApiFeatures(DrugModel.find(baseQuery), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .search(["name", "manufacturer", "description", "originType"]);
 
-  if (req.query.keyword) {
-    const keyword = req.query.keyword;
-    const regex = new RegExp(keyword, "i");
-    filter.$or = [
-      { name: { $regex: regex } },
-      { manufacturer: { $regex: regex } },
-      { description: { $regex: regex } },
-      { originType: { $regex: regex } },
-    ];
-  }
+  await features.paginate();
 
-  // Support price filters, discount, etc.
-  if (req.query.price) {
-    filter.price = {};
-    if (req.query.price.gte) filter.price.$gte = Number(req.query.price.gte);
-    if (req.query.price.lte) filter.price.$lte = Number(req.query.price.lte);
-  }
-
-  if (req.query.discount) {
-    filter.discount = {};
-    if (req.query.discount.gte) filter.discount.$gte = Number(req.query.discount.gte);
-    if (req.query.discount.lte) filter.discount.$lte = Number(req.query.discount.lte);
-  }
-
-  // ======= Sort ===========
-  let sort = {};
-  if (req.query.sort) {
-    const fields = req.query.sort.split(",");
-    for (const field of fields) {
-      if (field.startsWith("-")) {
-        sort[field.slice(1)] = -1;
-      } else {
-        sort[field] = 1;
-      }
-    }
-  } else {
-    sort = { createdAt: -1 }; // default sort by newest
-  }
-
-  // ======= Select fields ===========
-  let selectedFields = null;
-  if (req.query.fields) {
-    selectedFields = req.query.fields.split(",").join(" ");
-  }
-
-  // ======= Get total ===========
-  const totalCount = await DrugModel.countDocuments(filter);
-
-  // ======= Query ===========
-  const rawDrugs = await DrugModel.find(filter)
-    .select(selectedFields)
-    .sort(sort)
-    .skip(skip)
-    .limit(limit)
+  const rawDrugs = await features.mongooseQuery
     .populate({
       path: "createdBy",
-      select: "name profileImage",
+      select: "name profileImage location shippingPrice",
     })
     .populate({
       path: "category",
@@ -940,24 +890,15 @@ const getAllPromotionDrugs = asyncHandler(async (req, res) => {
     promotion: drug.promotion,
   }));
 
-  // ======= Pagination ===========
-  const paginationResult = {
-    currentPage: page,
-    limit,
-    numberOfPages: Math.ceil(totalCount / limit),
-  };
-  if (skip + limit < totalCount) paginationResult.next = page + 1;
-  if (skip > 0) paginationResult.prev = page - 1;
+  const pagination = features.getPaginationResult();
 
   res.status(200).json({
     status: "success",
-    paginationResult,
+    pagination,
     results: drugs.length,
     data: drugs,
   });
 });
-
-
 
 /**
  * @desc    get all drug with promotion for loggedUser
