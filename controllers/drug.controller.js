@@ -948,6 +948,11 @@ const getAllPromotionDrugsForSpecificInventory = asyncHandler(
  * @route   POST /api/v1/drugs/prescription/analyze
  * @access  Private (Authenticated users only)
  */
+/**
+ * @desc    Process prescription image and extract drugs
+ * @route   POST /api/v1/drugs/prescription/analyze
+ * @access  Private (Authenticated users only)
+ */
 const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
   if (!req.file) {
     return next(new ApiError("Please upload a prescription image", 400));
@@ -970,9 +975,70 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
         timeout: 30000, // 30 seconds timeout
       }
     );
-    // Extract and organize the data from external API response
+
     const externalData = response.data.data;
-    // Return organized response
+
+    // ====== Step: Check drug availability ======
+    const medicationsWithAvailability = await Promise.all(
+      externalData.medications.map(async (med) => {
+        const matchedDrugs = await DrugModel.find({
+          name: new RegExp(`^${med.name.trim()}$`, "i"),
+        });
+
+        return {
+          name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          duration: med.duration,
+          available: matchedDrugs.length > 0,
+          matchedDrugs: await Promise.all(
+            matchedDrugs.map(async (drug) => {
+              try {
+                const fullDrug = await DrugModel.findById(drug._id)
+                  .populate("createdBy", "name profileImage location shippingPrice")
+                  .populate("category", "name imageCover");
+
+                if (!fullDrug) {
+                  console.error("Drug not found by ID:", drug._id);
+                  return null;
+                }
+
+                return {
+                  inventory: {
+                    _id: fullDrug.createdBy?._id,
+                    name: fullDrug.createdBy?.name,
+                    profileImage: fullDrug.createdBy?.profileImage,
+                    
+                  },
+                  category: {
+                    _id: fullDrug.category?._id,
+                    name: fullDrug.category?.name,
+                    imageCover: fullDrug.category?.imageCover,
+                  },
+                  _id: fullDrug._id,
+                  name: fullDrug.name,
+                  manufacturer: fullDrug.manufacturer,
+                  description: fullDrug.description,
+                  price: fullDrug.price,
+                  discount: fullDrug.discount,
+                  discountedPrice: fullDrug.discountedPrice,
+                  stock: fullDrug.stock,
+                  productionDate: fullDrug.productionDate,
+                  expirationDate: fullDrug.expirationDate,
+                  imageCover: fullDrug.imageCover,
+                  promotion: fullDrug.promotion,
+                };
+              } catch (err) {
+                console.error(" Error while populating drug:", drug._id, err);
+                return null;
+              }
+            })
+          ),
+        };
+      })
+    );
+
+  
     res.status(200).json({
       status: "success",
       message: "Prescription analyzed successfully",
@@ -989,14 +1055,9 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
             license: externalData.doctor_license,
           },
           prescriptionDate: externalData.prescription_date,
-          medications: externalData.medications.map((med) => ({
-            name: med.name,
-            dosage: med.dosage,
-            frequency: med.frequency,
-            duration: med.duration,
-          })),
+          medications: medicationsWithAvailability,
+          medicationsCount: medicationsWithAvailability.length,
           additionalNotes: externalData.additional_notes,
-          medicationsCount: externalData.medications.length,
         },
       },
     });
@@ -1012,7 +1073,9 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
     if (error.response) {
       return next(
         new ApiError(
-          `External API error: ${error.response.data?.message || "Failed to analyze prescription"}`,
+          `External API error: ${
+            error.response.data?.message || "Failed to analyze prescription"
+          }`,
           error.response.status
         )
       );
@@ -1023,6 +1086,8 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
     );
   }
 });
+
+
 
 export {
   authorizeDrugOwner,
