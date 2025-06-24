@@ -94,10 +94,6 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    offer: {
-      type: Number,
-      default: 0,
-    },
     fcmToken: {
       type: String,
       default:
