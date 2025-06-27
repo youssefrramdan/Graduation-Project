@@ -618,6 +618,7 @@ const getAllDrugsForSpecificInventory = asyncHandler(async (req, res, next) => {
         city: user.city,
         governorate: user.governorate,
         location: user.location,
+        minimumOrderValue: user.minimumOrderValue,
       },
       drugs: drugs,
     },
