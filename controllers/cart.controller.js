@@ -165,7 +165,16 @@ const getLoggedUserCart = asyncHandler(async (req, res, next) => {
   ]);
 
   if (!cart) {
-    return next(new ApiError("No cart found for this user", 404));
+    return res.status(200).json({
+      status: "success",
+      message: "Cart retrieved successfully",
+      data: {
+        pharmacy: req.user._id,
+        inventories: [],
+        totalQuantity: 0,
+        totalPrice: 0,
+      },
+    });
   }
 
   res.status(200).json({
