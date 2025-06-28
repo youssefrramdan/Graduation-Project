@@ -48,8 +48,6 @@ drugRouter.get(
 );
 drugRouter.get(
   "/promotion/:inventoryId",
-  protectedRoutes,
-  allowTo("inventory"),
   getAllPromotionDrugsForSpecificInventory
 );
 drugRouter.put(
