@@ -693,8 +693,7 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
-  const { promotion, originalDrugId, stock, ...drugData } = req.body;
-  // Handle promotional drug addition
+  const { promotion, originalDrugId, stock, price, discount, discountedPrice, ...drugData } = req.body;
   const { quantity, freeItems } = promotion;
 
   // Validate promotion data
@@ -708,7 +707,7 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Original drug not found.", 404));
   }
 
-  // Validate stock
+  // Validate stock           
   const unitsPerPromotion = quantity + freeItems;
   if (!stock || stock < unitsPerPromotion) {
     return next(
@@ -734,7 +733,6 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
 
   // Create promotional drug
   const promoDrug = {
-    ...drugData,
     createdBy: req.user._id,
     promotion: {
       isActive: true,
@@ -745,9 +743,10 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
       originalDrugId,
     },
     stock,
-    price: originalDrug.price,
-    discount: originalDrug.discount,
-    discountedPrice: originalDrug.discountedPrice,
+    ...drugData,
+    price: price ?? originalDrug.price,
+    discount: discount ?? originalDrug.discount,
+    discountedPrice: discountedPrice ?? originalDrug.discountedPrice,
     expirationDate: originalDrug.expirationDate,
     productionDate: originalDrug.productionDate,
     originType: originalDrug.originType,
@@ -783,23 +782,72 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
   });
 });
 
+
+
+
 const updatePromotion = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
-  const { buyQuantity, freeQuantity, isActive } = req.body;
+  const {
+  
+    buyQuantity,
+    freeQuantity,
+    isActive,
+    freeItems,
+    unitsPerPromotion,
+    totalPromotions,
+    originalDrugId,
+    stock, // ✅ أضفنا stock
+  } = req.body;
 
   const drug = await DrugModel.findById(id);
   if (!drug) {
     return next(new ApiError("Drug not found.", 404));
   }
 
-  drug.promotion = {
-    ...drug.promotion,
-    ...(buyQuantity !== undefined ? { buyQuantity } : {}),
-    ...(freeQuantity !== undefined ? { freeQuantity } : {}),
-    ...(isActive !== undefined ? { isActive } : {}),
-  };
+  if (!drug.promotion) {
+    drug.promotion = {};
+  }
+
+  // ✅ تحقق من stock الأصلي قبل التعديل
+  if (stock !== undefined && stock !== drug.stock && drug.promotion?.originalDrugId) {
+    const originalDrug = await DrugModel.findById(drug.promotion.originalDrugId || originalDrugId);
+
+    if (!originalDrug) {
+      return next(new ApiError("Original drug not found.", 404));
+    }
+
+    const stockDiff = stock - drug.stock;
+    if (stockDiff > 0 && originalDrug.stock < stockDiff) {
+      return next(
+        new ApiError("Not enough stock in the original drug to increase this promotion", 400)
+      );
+    }
+
+    // ✅ خصم من الدواء الأصلي إذا تمت زيادة الستوك
+    if (stockDiff > 0) {
+      originalDrug.stock -= stockDiff;
+      await originalDrug.save();
+    }
+
+    // ✅ رجع ستوك للأصلي لو قلّلت
+    if (stockDiff < 0) {
+      originalDrug.stock += Math.abs(stockDiff);
+      await originalDrug.save();
+    }
+
+    drug.stock = stock;
+  }
+     
+  if (buyQuantity !== undefined) drug.promotion.buyQuantity = buyQuantity;
+  if (freeQuantity !== undefined) drug.promotion.freeQuantity = freeQuantity;
+  if (isActive !== undefined) drug.promotion.isActive = isActive;
+  if (freeItems !== undefined) drug.promotion.freeItems = freeItems;
+  if (unitsPerPromotion !== undefined) drug.promotion.unitsPerPromotion = unitsPerPromotion;
+  if (totalPromotions !== undefined) drug.promotion.totalPromotions = totalPromotions;
+  if (originalDrugId !== undefined) drug.promotion.originalDrugId = originalDrugId;
 
   await drug.save();
+
   const updatedDrug = await DrugModel.findById(id).populate({
     path: "createdBy",
     select: "name location shippingPrice profileImage",
@@ -811,6 +859,9 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
     data: updatedDrug,
   });
 });
+
+
+
 /**
  * @desc    delete drug with promotion
  * @route   DELETE /api/v1/drugs/promotion/:id

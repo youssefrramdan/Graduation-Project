@@ -98,13 +98,7 @@ drugSchema.pre("save", async function (next) {
       return next(new Error("Original drug not found for promotion"));
     }
 
-    // Validate stock availability
-    const totalUnits = this.promotion.buyQuantity + this.promotion.freeQuantity;
-    if (originalDrug.stock < totalUnits) {
-      return next(
-        new Error("Not enough stock in the original drug for this promotion")
-      );
-    }
+    
   }
   next();
 });
