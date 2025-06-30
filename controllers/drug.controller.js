@@ -693,7 +693,15 @@ const getAlternativeDrugsFromAI = asyncHandler(async (req, res, next) => {
  * @access  Private (Authenticated users only)
  */
 const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
-  const { promotion, originalDrugId, stock, price, discount, discountedPrice, ...drugData } = req.body;
+  const {
+    promotion,
+    originalDrugId,
+    stock,
+    price,
+    discount,
+    discountedPrice,
+    ...drugData
+  } = req.body;
   const { quantity, freeItems } = promotion;
 
   // Validate promotion data
@@ -707,7 +715,7 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
     return next(new ApiError("Original drug not found.", 404));
   }
 
-  // Validate stock           
+  // Validate stock
   const unitsPerPromotion = quantity + freeItems;
   if (!stock || stock < unitsPerPromotion) {
     return next(
@@ -782,13 +790,9 @@ const addDrugWithPromotion = asyncHandler(async (req, res, next) => {
   });
 });
 
-
-
-
 const updatePromotion = asyncHandler(async (req, res, next) => {
   const { id } = req.params;
   const {
-  
     buyQuantity,
     freeQuantity,
     isActive,
@@ -809,8 +813,14 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
   }
 
   // ✅ تحقق من stock الأصلي قبل التعديل
-  if (stock !== undefined && stock !== drug.stock && drug.promotion?.originalDrugId) {
-    const originalDrug = await DrugModel.findById(drug.promotion.originalDrugId || originalDrugId);
+  if (
+    stock !== undefined &&
+    stock !== drug.stock &&
+    drug.promotion?.originalDrugId
+  ) {
+    const originalDrug = await DrugModel.findById(
+      drug.promotion.originalDrugId || originalDrugId
+    );
 
     if (!originalDrug) {
       return next(new ApiError("Original drug not found.", 404));
@@ -819,7 +829,10 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
     const stockDiff = stock - drug.stock;
     if (stockDiff > 0 && originalDrug.stock < stockDiff) {
       return next(
-        new ApiError("Not enough stock in the original drug to increase this promotion", 400)
+        new ApiError(
+          "Not enough stock in the original drug to increase this promotion",
+          400
+        )
       );
     }
 
@@ -837,14 +850,17 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
 
     drug.stock = stock;
   }
-     
+
   if (buyQuantity !== undefined) drug.promotion.buyQuantity = buyQuantity;
   if (freeQuantity !== undefined) drug.promotion.freeQuantity = freeQuantity;
   if (isActive !== undefined) drug.promotion.isActive = isActive;
   if (freeItems !== undefined) drug.promotion.freeItems = freeItems;
-  if (unitsPerPromotion !== undefined) drug.promotion.unitsPerPromotion = unitsPerPromotion;
-  if (totalPromotions !== undefined) drug.promotion.totalPromotions = totalPromotions;
-  if (originalDrugId !== undefined) drug.promotion.originalDrugId = originalDrugId;
+  if (unitsPerPromotion !== undefined)
+    drug.promotion.unitsPerPromotion = unitsPerPromotion;
+  if (totalPromotions !== undefined)
+    drug.promotion.totalPromotions = totalPromotions;
+  if (originalDrugId !== undefined)
+    drug.promotion.originalDrugId = originalDrugId;
 
   await drug.save();
 
@@ -859,8 +875,6 @@ const updatePromotion = asyncHandler(async (req, res, next) => {
     data: updatedDrug,
   });
 });
-
-
 
 /**
  * @desc    delete drug with promotion
@@ -1047,7 +1061,10 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
             matchedDrugs.map(async (drug) => {
               try {
                 const fullDrug = await DrugModel.findById(drug._id)
-                  .populate("createdBy", "name profileImage location shippingPrice")
+                  .populate(
+                    "createdBy",
+                    "name profileImage location shippingPrice"
+                  )
                   .populate("category", "name imageCover");
 
                 if (!fullDrug) {
@@ -1060,7 +1077,6 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
                     _id: fullDrug.createdBy?._id,
                     name: fullDrug.createdBy?.name,
                     profileImage: fullDrug.createdBy?.profileImage,
-                    
                   },
                   category: {
                     _id: fullDrug.category?._id,
@@ -1090,7 +1106,6 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
       })
     );
 
-  
     res.status(200).json({
       status: "success",
       message: "Prescription analyzed successfully",
@@ -1139,7 +1154,93 @@ const analyzePrescriptionImage = asyncHandler(async (req, res, next) => {
   }
 });
 
+/**
+ * @desc    Process medicine image and extract medicine name
+ * @route   POST /api/v1/drugs/medicine/analyze
+ * @access  Private (Authenticated users only)
+ */
+const analyzeMedicineImage = asyncHandler(async (req, res, next) => {
+  if (!req.file) {
+    return next(new ApiError("Please upload a medicine image", 400));
+  }
+  // Get the uploaded image URL from Cloudinary
+  const imageUrl = req.file.path;
+  // Send the image URL to the external AI service
+  const response = await axios.post(
+    "https://return-drugs-7f10af486dbb.herokuapp.com/analyze",
+    {
+      image_url: imageUrl,
+    },
+    {
+      headers: {
+        "Content-Type": "application/json",
+      },
+      timeout: 30000,
+    }
+  );
 
+  const { medicine_name: medicineName, message, success } = response.data;
+
+  if (!success) {
+    return next(
+      new ApiError(message || "Failed to extract medicine name", 400)
+    );
+  }
+
+  // Search for the medicine in the database
+  const matchedDrugs = await DrugModel.find({
+    name: new RegExp(`${medicineName.trim()}`, "i"),
+    isVisible: true,
+  })
+    .populate("createdBy", "name profileImage location shippingPrice")
+    .populate("category", "name imageCover")
+    .sort({ stock: -1 }); // Sort by stock availability
+
+  // Format the drug data
+  const formatMedicineData = (drugs) =>
+    drugs.map((drug) => ({
+      _id: drug._id,
+      name: drug.name,
+      manufacturer: drug.manufacturer,
+      description: drug.description,
+      price: drug.price,
+      discount: drug.discount,
+      discountedPrice: drug.discountedPrice,
+      stock: drug.stock,
+      sold: drug.sold,
+      productionDate: drug.productionDate,
+      expirationDate: drug.expirationDate,
+      imageCover: drug.imageCover,
+      promotion: drug.promotion,
+      inventory: {
+        _id: drug.createdBy?._id,
+        name: drug.createdBy?.name,
+        profileImage: drug.createdBy?.profileImage,
+        location: drug.createdBy?.location,
+        shippingPrice: drug.createdBy?.shippingPrice,
+      },
+      category: {
+        _id: drug.category?._id,
+        name: drug.category?.name,
+        imageCover: drug.category?.imageCover,
+      },
+    }));
+
+  res.status(200).json({
+    status: "success",
+    message: "Medicine image analyzed successfully",
+    data: {
+      MedicineName: medicineName,
+      imageUrl: imageUrl,
+      exactMatches: {
+        found: matchedDrugs.length > 0,
+        count: matchedDrugs.length,
+        drugs: formatMedicineData(matchedDrugs),
+      },
+
+    },
+  });
+});
 
 export {
   authorizeDrugOwner,
@@ -1161,4 +1262,5 @@ export {
   updatePromotion,
   deletePromotionDrug,
   analyzePrescriptionImage,
+  analyzeMedicineImage,
 };

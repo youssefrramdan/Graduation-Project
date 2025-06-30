@@ -19,6 +19,7 @@ import {
   updatePromotion,
   deletePromotionDrug,
   analyzePrescriptionImage,
+  analyzeMedicineImage,
 } from "../controllers/drug.controller.js";
 import { allowTo, protectedRoutes } from "../controllers/auth.controller.js";
 import {
@@ -34,6 +35,11 @@ const drugRouter = express.Router({ mergeParams: true });
 const upload = createUploader("excel-files", ["xlsx", "csv"]);
 const uploadimg = createUploader("drugs", ["jpeg", "jpg", "png"]);
 const uploadPrescription = createUploader("prescriptions", [
+  "jpeg",
+  "jpg",
+  "png",
+]);
+const uploadMedicine = createUploader("medicine-images", [
   "jpeg",
   "jpg",
   "png",
@@ -87,6 +93,7 @@ drugRouter
 
 drugRouter.route("/getAlternatives").post(getAlternativeDrugsFromAI);
 
+drugRouter.route("/medicine/analyze").post(uploadMedicine.single("image"), analyzeMedicineImage);
 drugRouter
   .route("/prescription/analyze")
   .post(

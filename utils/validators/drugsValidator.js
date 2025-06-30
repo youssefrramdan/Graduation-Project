@@ -1,4 +1,4 @@
-import { check } from "express-validator";
+import { check, body } from "express-validator";
 import validatorMiddleware from "../../middlewares/validatorMiddleware.js";
 import CategoryModel from "../../models/Category.model.js";
 
@@ -96,7 +96,7 @@ const deleteDrugValidator = [
   validatorMiddleware,
 ];
 
-export const addDrugsFromExcelValidator = [
+const addDrugsFromExcelValidator = [
   check("startRow")
     .optional()
     .isInt({ min: 0 })
@@ -120,9 +120,23 @@ export const addDrugsFromExcelValidator = [
   validatorMiddleware,
 ];
 
+const analyzeMedicineImageValidator = [
+  body("image")
+    .optional()
+    .custom((value, { req }) => {
+      if (!req.file) {
+        throw new Error("Medicine image is required");
+      }
+      return true;
+    }),
+  validatorMiddleware,
+];
+
 export {
   addDrugValidator,
   getSpecificDrugValidator,
   updateDrugValidator,
   deleteDrugValidator,
+  addDrugsFromExcelValidator,
+  analyzeMedicineImageValidator,
 };
